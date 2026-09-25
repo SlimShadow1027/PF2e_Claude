@@ -25,13 +25,13 @@ These started life here and are now part of the spec, so you don't need to add t
   regenerated at every checkpoint with HP bars, conditions, resources, the live initiative strip,
   inventory with Bulk, quests, clocks, and the tactical map. Read-only, offline, phone-friendly, and it
   respects the transparency mode so it can't leak enemy HP.
+- **Between-session world prep** — `system/18-between-session-prep.md` and `/worldprep`, a bounded
+  off-screen turn that advances scheduled clocks, decides what factions did with the gap, and leaves a
+  prep file in `gm-private/`. Opt-in, schedulable as a Routine, and fenced by hard limits: it never
+  touches player state, never resolves anything you'd have had a say in, never advances in-world time on
+  its own, and refuses to run while a session is live.
 
 ## Worth considering
-
-**Between-session world prep on a schedule.** A recurring Routine that wakes a session between your play
-sessions, advances off-screen clocks, writes what factions did while you were away, and drafts prep for
-the next session into `gm-private/`. Makes the world feel like it moves without you. Worth it for a long
-campaign, overkill for a one-shot.
 
 **A shared world across campaigns.** A top-level `world/` folder for setting material several campaigns
 share, with `campaigns/<slug>/` holding only what that campaign changed. Lets a second campaign happen

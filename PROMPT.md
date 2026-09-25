@@ -83,6 +83,7 @@ system/                        # campaign-agnostic rules of engagement (never ca
   15-continuity-and-context-recovery.md
   16-random-tables.md
   17-encounter-objectives.md
+  18-between-session-prep.md
 
 tools/                         # all dice and math live here; nothing is done by mental arithmetic
   roll.py
@@ -148,6 +149,8 @@ gm-private/
   README.md          # states the convention: I agree not to read this folder
   secrets.md         # twists, hidden NPC agendas, planned reveals
   seeds.md           # planted foreshadowing and where it's meant to pay off
+  prep/
+    NNN-YYYY-MM-DD.md  # between-session world prep reports (see section 20)
 ```
 
 **GM-only information:** anything I shouldn't know goes in `gm-private/`, or inside a clearly fenced
@@ -559,12 +562,13 @@ Define a small vocabulary I can type at any time, and make you honor it without 
 | `what do I know about <thing>` | offer the relevant Recall Knowledge check, or recall established facts |
 | `montage <goal>` | resolve a stretch of time in summary with a few rolls |
 | `dashboard` | regenerate and open the campaign dashboard |
+| `worldprep` | run an off-screen turn now and show me the world pulse |
 | `dice audit` | run the roll-log analytics and show the fairness and play summary |
 | `end session` | write the session log, checkpoint, and give a "next time on…" teaser |
 
 Also make **`.claude/commands/`** slash commands for the ones worth having as one keystroke:
 `/checkpoint`, `/recap`, `/status`, `/sheet`, `/levelup`, `/encounter`, `/dashboard`, `/dice-audit`,
-`/endsession`, `/newcampaign`, `/resume`. Each is a short Markdown file telling you which system doc to follow.
+`/worldprep`, `/endsession`, `/newcampaign`, `/resume`. Each is a short Markdown file telling you which system doc to follow.
 
 ## 17. `system/15-continuity-and-context-recovery.md`
 
@@ -634,7 +638,56 @@ publishing is a convenience on top, not the mechanism.
 
 Add `/dashboard` as a slash command that regenerates and opens it.
 
-## 20. `CLAUDE.md` at the repository root
+## 20. `system/18-between-session-prep.md` — the world moves while I'm away
+
+A world that only changes when I'm looking at it feels like a stage set. Define an **off-screen turn**:
+a bounded pass, run between play sessions, that advances what the world is doing and leaves prep behind
+for the next session. It can be run on a schedule, or on demand when I type `worldprep`.
+
+**What an off-screen turn does, in order:**
+1. Read the boot sequence files, plus `CLOCKS.md`, `npcs/ROSTER.md`, `QUESTS.md`, and the last session log.
+2. Advance every clock marked as ticking on a schedule by its stated rate, and roll for any whose
+   advance is uncertain — with the real dice tool, logged like any other roll, tagged `offscreen`.
+3. Decide what each active faction and significant NPC did with that time, driven by the goals already
+   written in their files rather than by what would be dramatic. A faction that lost a fight last session
+   reacts to having lost it.
+4. Update NPC statuses, locations, and dispositions in the roster where the off-screen turn moved them.
+5. Write `gm-private/prep/NNN-YYYY-MM-DD.md`: what moved and why, consequences I'll notice next session,
+   three concrete hooks that could open the next scene, two or three encounter options built for my
+   current level with objectives attached, and any NPC who is now in a different place or mood.
+6. Append anything newly true to `CANON.md` **marked as GM-side truth not yet known to me**, so it can't
+   later be contradicted but also isn't treated as something my character has heard.
+7. Commit, with a message naming the in-world time that passed.
+
+**Hard limits — this is the part that matters.** An off-screen turn is the world acting, never me acting:
+- **It never touches player state.** No changes to PC or ally HP, gold, inventory, XP, level, conditions,
+  or position. If the world's actions imply a consequence for me, it goes in the prep file as a *pending*
+  consequence to be resolved in play, where I get to respond to it.
+- **It never resolves anything I would have had a say in.** No off-screen combat involving my characters,
+  no decisions made on my behalf, no "you were robbed while you slept" resolved as fact.
+- **It never advances in-world time on its own.** Time passes when we play. The off-screen turn
+  computes what *will have* happened over the gap and holds it until the next session opens.
+- **It never contradicts `CANON.md`,** and it never edits an existing canon entry — append only.
+- **It never kills a named NPC I have met** without leaving it as a proposal in the prep file for me to
+  approve or veto at the top of the next session.
+- **It is bounded.** One pass, a stated cap on how many clocks and factions it touches, and it stops
+  rather than sprawling into writing the next three sessions.
+- **It refuses to run concurrently with play.** Guard on a `session_in_progress` flag in `state.json`
+  and on uncommitted changes in the campaign folder; if either is set, do nothing and say so.
+
+**Opt-in and cadence** live in `PLAYER_PREFS.md`: off by default, with a chosen cadence (weekly, or
+between sessions), and a `world_pace` setting from `glacial` to `runaway` that scales how much moves.
+At the start of the next session, the recap opens with a one-paragraph, spoiler-free **world pulse** —
+what I could plausibly have heard about through rumor — with the rest staying in `gm-private/`.
+
+**Scheduling it.** This runs as a Claude Code Routine firing into a fresh session, so its prompt has to
+stand alone: name the campaign slug, point at this document, and state the hard limits inline rather
+than relying on memory of a previous conversation. Write the exact Routine prompt into this file as a
+copy-paste block, and include the `/worldprep` slash command for running a turn by hand. Tell me how to
+set up, pause, and delete the Routine, and make clear that pausing it costs nothing — the framework
+works identically with it off.
+
+## 21. `CLAUDE.md` at the repository root
 
 Short and dense — this gets auto-loaded into every session, so it is not the place for full rules. It
 should contain: the hard constraints from section 0 restated as blunt rules; the boot sequence; the file
@@ -643,7 +696,7 @@ under about 150 lines.
 
 ---
 
-## 21. Build order and acceptance criteria
+## 22. Build order and acceptance criteria
 
 Build in this order so the tools exist before the docs that reference them:
 `tools/roll.py` and `tools/state.py` → the rest of `tools/` → `system/` → `templates/` →
@@ -679,6 +732,10 @@ Before you report done, verify all of the following and show me the evidence:
 - [ ] `tools/dashboard.py --campaign test-run` produces a single HTML file that opens from `file://` with
       no network, renders at phone width, and respects the transparency mode for enemy HP.
 - [ ] `tools/state.py checkpoint` regenerates the dashboard as well as committing.
+- [ ] A dry-run off-screen turn on `test-run` writes a prep file, advances only scheduled clocks, leaves
+      every player-state field byte-identical, and refuses to run when `session_in_progress` is set —
+      show the diff proving player state is untouched.
+- [ ] `system/18-between-session-prep.md` contains a standalone, copy-pasteable Routine prompt.
 - [ ] No campaign-specific content exists outside `campaigns/`.
 - [ ] Every rules table is either cited or marked `⚠ UNVERIFIED`, and the unverified ones are listed in
       `DESIGN_NOTES.md`.
