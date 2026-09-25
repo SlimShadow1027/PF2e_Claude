@@ -49,6 +49,10 @@ change the architecture; use your judgment on everything else and note the assum
 6. **Campaign-agnostic core, per-campaign subfolders.** Nothing about a specific campaign, character,
    world, or house rule ever lands outside `campaigns/<campaign-slug>/`. The root-level system files
    must work unchanged for a gothic horror one-shot and a 1–20 high-fantasy epic alike.
+7. **Every checkpoint is a git commit.** Git is the campaign's time machine: `git log` is its history,
+   `git diff` shows exactly what changed between any two moments, and rewinding is a restore rather than
+   a bespoke mechanism. Because the roll log is committed alongside the state it produced, the audit
+   trail in constraint 3 becomes tamper-evident rather than merely append-only.
 
 ---
 
@@ -78,6 +82,7 @@ system/                        # campaign-agnostic rules of engagement (never ca
   14-player-commands.md
   15-continuity-and-context-recovery.md
   16-random-tables.md
+  17-encounter-objectives.md
 
 tools/                         # all dice and math live here; nothing is done by mental arithmetic
   roll.py
@@ -361,8 +366,17 @@ paragraph; the immediate situation (location, who's present, what's about to hap
 and effects with remaining durations; unresolved threads; what the world is doing off-screen (clock
 positions); and a "next likely beats" note for you to pick up from.
 
+**Every checkpoint commits.** After writing a snapshot, `git add -A` the campaign folder and commit with
+the checkpoint name as the message, e.g. `checkpoint 014: escaped the flooded crypt`. `tools/state.py
+checkpoint` should do this itself so it can't be forgotten. The commit includes `state.json`, the
+rendered `CHECKPOINT.md`, and the roll-log lines produced since the last checkpoint, which is what makes
+the audit trail tamper-evident. Keep the campaign's commits noisy and don't squash them — the history is
+the point. If I'm not ready to commit for some reason, say so and continue; never silently skip it.
+
 **Restoring:** `tools/state.py restore NNN` rewinds `state.json` and re-renders `CHECKPOINT.md`, and you
-then narrate from the snapshot's situation paragraph. Snapshots are immutable — never edit a past one.
+then narrate from the snapshot's situation paragraph. Because each checkpoint is a commit, `git diff`
+between two checkpoints answers "what actually changed" precisely, and a restore can fall back to
+`git restore` against the checkpoint's commit if the snapshot files are ever inconsistent. Snapshots are immutable — never edit a past one.
 Document that rewinding is a legitimate table move I can call at any time ("rewind to before I opened
 the door"), and that you should not resist it.
 
@@ -385,10 +399,20 @@ Specify the exact combat loop so combat is consistent and fast:
 - Positioning matters in PF2e — flanking, cover, reach, area templates, difficult terrain — so maintain
   an **ASCII grid map in `maps/`** for any fight where position matters, with a coordinate system, a
   terrain key, and updated token positions each round. Distances in feet, 5 ft per square.
+- **The reaction obligation.** Before resolving *any* trigger — a creature moving out of reach or
+  through a threatened square, an incoming attack, a spell being cast within sight, a creature standing
+  up from prone — check every party member's available reactions and **ask me before resolving**.
+  Reactive Strike, Shield Block, readied actions, and class-specific reactions are worth a large share
+  of a character's power, and forgetting to offer them is the most common way an automated GM quietly
+  shortchanges the player. A reaction that was spent this round is tracked in the per-round tracker, so
+  "you have no reaction available" is a statement you can always back with the tracker.
+- **Enemy tactics are played honestly but not omnisciently.** Creatures act on what they can perceive
+  and what their published `Tactics:` note says they want. An unintelligent creature does not focus-fire
+  optimally; a trained soldier does. State which it is when it matters.
 - End-of-turn bookkeeping: tick durations, persistent damage flat checks, sustained spells, recovery
   checks, then re-render state.
 - At the end of combat: XP awarded, treasure, conditions that persist, `encounters/history.md` entry,
-  and an automatic checkpoint.
+  and an automatic checkpoint — which per constraint 7 means a git commit.
 
 ## 10. `system/07-encounter-building.md`
 
@@ -401,6 +425,27 @@ python3 tools/pf2e.py encounter --party-level 3 --party-size 1 --add "ghoul:2" -
 ```
 …which reports the budget, what's been spent, and the resulting threat rating. Verify every table value
 against a source and cite it.
+
+**Also add `system/17-encounter-objectives.md`.** A fight whose only victory condition is reducing
+everything to 0 HP is a damage race, and solo play turns that repetitive fast — the tactical interest
+lives in the objective. Write a catalogue the GM draws from when building any encounter, with at least:
+
+- **Timers** — a ritual completing, a fuse burning, reinforcements arriving in N rounds, a building
+  collapsing, rising water.
+- **Objectives that aren't the enemy** — reach a lever, rescue or escort someone, destroy an object,
+  hold a position for N rounds, recover something and get out.
+- **Morale and surrender** — enemies who flee at a wound threshold, who can be intimidated, bribed, or
+  talked down, whose leader's death breaks the group. Specify a morale threshold per creature group.
+- **Terrain that changes** — a fight on a collapsing bridge, in spreading fire, on a moving vehicle, in
+  darkness that shifts, with hazards that can be turned on the enemy.
+- **Retreat as a real option** — chase rules, the cost of fleeing, what the enemy does with the ground
+  you gave up.
+- **Escalation** — a second wave, a creature that transforms at half HP, an ally who turns.
+
+Require that **every encounter entry in `encounters/history.md` names its objective**, and that the GM
+states or telegraphs the objective to me in the fiction before or during round 1 — a timer I can't see
+is a trap, not a tactical problem. Default guidance: at least half of all combat encounters in a
+campaign should have a win condition other than "everything hostile is dead".
 
 ## 11. `system/08-npc-and-bestiary-protocol.md`
 
@@ -531,6 +576,12 @@ Before you report done, verify all of the following and show me the evidence:
 - [ ] `tools/state.py` round-trips: damage, condition add, gold change, render, checkpoint, restore —
       and the restored state matches the pre-change state exactly.
 - [ ] `tools/state.py` refuses an impossible state with a clear error.
+- [ ] `tools/state.py checkpoint "..."` produces a git commit containing `state.json`, `CHECKPOINT.md`,
+      and the roll-log lines since the previous checkpoint — show `git log --stat` for it.
+- [ ] `system/17-encounter-objectives.md` exists with at least six objective categories, and
+      `encounters/history.md` in the templates has an `Objective:` field.
+- [ ] `system/06-encounter-runner.md` states the reaction obligation, and the per-round tracker format
+      has a reaction-available column.
 - [ ] `python3 tools/pf2e.py encounter --party-level 3 --party-size 1 --threat moderate` reports a budget,
       and every table it uses has a `Source:` line.
 - [ ] `python3 tools/validate.py --campaign test-run` passes on a fresh campaign and catches a deliberately

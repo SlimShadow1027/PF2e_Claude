@@ -3,18 +3,22 @@
 Features that aren't in `PROMPT.md`, with a recommendation on each. Add the ones you want to the prompt
 before running it, or ask for them later as add-ons.
 
+## Already folded into `PROMPT.md`
+
+These three started life here and are now part of the spec, so you don't need to add them:
+
+- **Git as the time machine** — every checkpoint is a commit, so `git log` is the campaign history,
+  `git diff` shows what changed between any two moments, and the roll log is committed alongside the
+  state it produced, which makes the audit trail tamper-evident rather than merely append-only.
+- **Encounter objectives beyond "reduce to 0 HP"** — `system/17-encounter-objectives.md`, a catalogue of
+  timers, non-combat win conditions, morale and surrender, shifting terrain, retreat, and escalation.
+  Every encounter records its objective, the objective gets telegraphed in the fiction, and the default
+  target is that at least half of all fights have a win condition other than killing everything.
+- **The reaction obligation** — before resolving any trigger, the GM checks the party's available
+  reactions and asks. Forgetting Reactive Strike and Shield Block is the most common way an automated
+  GM quietly shortchanges a player, so it's a stated duty with a tracker column behind it.
+
 ## Strongly recommended
-
-**Git as the time machine.** Commit once per checkpoint with the checkpoint name as the message. Then
-`git log` is the campaign's history, `git diff` shows exactly what changed between any two moments, and
-rewinding becomes `git restore` instead of a bespoke snapshot system. Cheap to add, and it makes the
-"prove nothing was fudged" property airtight because the roll log is committed alongside the state it
-produced. Cost: one commit per checkpoint cluttering the repo history, which is fine.
-
-**Encounter objectives other than "reduce to 0 HP".** A timer, an escort, a ritual to interrupt, a
-retreat under fire, enemies with morale who flee at a threshold, terrain that changes mid-fight. Solo
-PF2e combat gets repetitive fast when every fight is a damage race, and objectives are where the tactical
-depth actually lives. Ask for an `encounters/objectives.md` catalogue the GM draws from.
 
 **A roll-log analytics command.** `tools/analyze.py` over `logs/rolls.jsonl`: mean d20 by character,
 crit and crit-fail rates, success rate by skill, damage taken per encounter, how often you were at
@@ -25,11 +29,6 @@ the weak one. Add `/dice-audit` as a slash command.
 list, clocks, the tactical map, the party table — rendered from `state.json` and republished after each
 checkpoint. Much easier to read mid-combat than scrolling a terminal. Ask for it once the framework
 exists and `state.json` has a stable shape.
-
-**A reaction-prompt rule.** The single most common way an LLM GM cheats you out of value is forgetting to
-offer your reactions — Reactive Strike when something moves past you, Shield Block when you're hit, a
-prepared readied action. Make it an explicit obligation in the encounter runner: before resolving any
-trigger, check the party's available reactions and ask.
 
 ## Worth considering
 
