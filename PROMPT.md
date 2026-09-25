@@ -90,6 +90,8 @@ tools/                         # all dice and math live here; nothing is done by
   state.py
   new_campaign.py
   validate.py
+  analyze.py
+  dashboard.py
   README.md
 
 templates/                     # copied into a new campaign folder by new_campaign.py
@@ -99,7 +101,7 @@ campaigns/
   .gitkeep                     # generated campaigns live here, one folder each
 
 .claude/
-  commands/                    # slash commands (see section 8)
+  commands/                    # slash commands (see section 16)
 ```
 
 ---
@@ -140,6 +142,8 @@ checkpoints/
 logs/
   rolls.jsonl        # append-only audit log of every die roll
   loot.md            # gold and item ledger with treasure-pacing comparison
+  dice-audit.md      # latest analytics report over rolls.jsonl
+dashboard.html       # generated single-file campaign dashboard (see section 19)
 gm-private/
   README.md          # states the convention: I agree not to read this folder
   secrets.md         # twists, hidden NPC agendas, planned reveals
@@ -241,6 +245,41 @@ nothing was invented.
 
 **Also mandate:** one roll per tool call batch is wasteful — support rolling several expressions in a
 single invocation (e.g. all four enemies' saves against one Fireball) so combat doesn't crawl.
+
+### `tools/analyze.py` — the roll-log audit
+
+The audit log is only worth keeping if something reads it. Build `tools/analyze.py` to report over
+`logs/rolls.jsonl`, writing to `logs/dice-audit.md` and printing a summary:
+
+```
+python3 tools/analyze.py --campaign ashen-covenant
+python3 tools/analyze.py --campaign ashen-covenant --since session-7 --actor kaelen
+python3 tools/analyze.py --campaign ashen-covenant --fairness
+```
+
+**Fairness section** (does the framework actually roll straight?):
+- Total d20 count, observed mean against the expected 10.5, and the standard error, so I can see whether
+  any gap is noise or not. Give the number rather than a verdict dressed as one.
+- Face distribution as a histogram, with a chi-square goodness-of-fit result against a uniform d20.
+- The same split by **public vs. private rolls**, which is the check that matters: if secret rolls and
+  enemy saves drift favorable or unfavorable relative to public ones, that is visible here and nowhere
+  else. Report both subsets side by side.
+- Longest streaks, and the count of natural 20s and natural 1s against expectation.
+
+**Play section** (what the numbers say about the campaign):
+- Mean d20 and success rate per character, and per skill or save, with the sample size next to each so a
+  three-roll "weakness" is not presented as a pattern.
+- Degree-of-success breakdown: critical success / success / failure / critical failure rates, overall and
+  by check type. Which save is actually the weak one, and by how much.
+- Combat load: damage taken per encounter, rounds per encounter, how often a fight ended below a quarter
+  HP, how many times I reached Dying and at what value.
+- Hero Point usage and what it was spent on.
+- Attack routines: hit rate at each multiple-attack-penalty step, which tends to show whether third
+  attacks are worth taking with the current build.
+
+Add `/dice-audit` as a slash command, and have the end-of-session routine append a one-line fairness
+summary to the session log. If the fairness numbers ever look off, say so unprompted — the point of the
+log is that neither of us has to take the dice on faith.
 
 ---
 
@@ -519,11 +558,13 @@ Define a small vocabulary I can type at any time, and make you honor it without 
 | `who is <name>` | NPC recall from the roster |
 | `what do I know about <thing>` | offer the relevant Recall Knowledge check, or recall established facts |
 | `montage <goal>` | resolve a stretch of time in summary with a few rolls |
+| `dashboard` | regenerate and open the campaign dashboard |
+| `dice audit` | run the roll-log analytics and show the fairness and play summary |
 | `end session` | write the session log, checkpoint, and give a "next time on…" teaser |
 
 Also make **`.claude/commands/`** slash commands for the ones worth having as one keystroke:
-`/checkpoint`, `/recap`, `/status`, `/sheet`, `/levelup`, `/encounter`, `/endsession`, `/newcampaign`,
-`/resume`. Each is a short Markdown file telling you which system doc to follow.
+`/checkpoint`, `/recap`, `/status`, `/sheet`, `/levelup`, `/encounter`, `/dashboard`, `/dice-audit`,
+`/endsession`, `/newcampaign`, `/resume`. Each is a short Markdown file telling you which system doc to follow.
 
 ## 17. `system/15-continuity-and-context-recovery.md`
 
@@ -551,7 +592,49 @@ tavern and settlement details, rumors, weather by climate and season, random urb
 encounters by level, complications for skill-check failures, treasure flavor, dungeon dressing, and a
 "what goes wrong" table. Machine-readable enough to roll on — numbered entries under a heading.
 
-## 19. `CLAUDE.md` at the repository root
+## 19. `tools/dashboard.py` — the campaign dashboard
+
+Scrolling terminal history to find current HP mid-combat is the worst part of playing this way. Generate
+a **single self-contained HTML file** at `campaigns/<slug>/dashboard.html` from `state.json` plus a few
+of the Markdown files, regenerated at every checkpoint (so `tools/state.py checkpoint` calls it, the same
+way it makes the git commit).
+
+**What it shows,** in rough priority order:
+- **Party panel** — one card per character: HP as a bar with current/max and temp HP, AC, saves,
+  Perception, speed, and the conditions currently on them with their values and remaining durations.
+  Dying and Wounded get their own prominent treatment, because that is the number needed fastest.
+- **Resources** — Hero Points, Focus Points and whether Refocus is available, spell slots used and
+  remaining by rank, consumables with counts, ammunition, item charges.
+- **Encounter strip** — when a fight is live, the initiative order with the current turn marked, each
+  combatant's status, and the round number. Enemy HP shows as the descriptor or the number depending on
+  the campaign's transparency mode — the dashboard has to respect that setting, or it leaks.
+- **Inventory and money** — carried items with Bulk, the running Bulk total against the limit, and coins
+  by denomination.
+- **Quests and clocks** — active quests with their next lead, and progress clocks drawn as filled
+  segments so a deadline reads at a glance.
+- **Scene** — current location, in-world date and time, who is present, and the last checkpoint's
+  situation paragraph.
+- **Tactical map** — the current ASCII grid from `maps/`, in a monospace block.
+
+**Build requirements:**
+- Standard library only, no build step, no network fetches at runtime. Inline the CSS and any JavaScript;
+  the file must open correctly from `file://` with no internet connection.
+- Read-only. The dashboard reflects state and never writes it — `state.json` stays the single source of
+  truth, and every edit goes through `tools/state.py`.
+- Works at phone width as well as desktop, since this is the thing I will glance at on a second screen.
+- Light and dark themes following the system preference, with an explicit background on `body`.
+- A visible "generated at <timestamp> from checkpoint NNN" line, so a stale file is obvious rather than
+  quietly misleading.
+- Degrade gracefully: a campaign with no live encounter, no map, or no clocks renders the rest without
+  empty scaffolding.
+
+**Optional, once the local file works:** publish it as an Artifact so it has a URL openable on any
+device, republished to the same URL at each checkpoint. The local file stays the primary output —
+publishing is a convenience on top, not the mechanism.
+
+Add `/dashboard` as a slash command that regenerates and opens it.
+
+## 20. `CLAUDE.md` at the repository root
 
 Short and dense — this gets auto-loaded into every session, so it is not the place for full rules. It
 should contain: the hard constraints from section 0 restated as blunt rules; the boot sequence; the file
@@ -560,10 +643,14 @@ under about 150 lines.
 
 ---
 
-## 20. Build order and acceptance criteria
+## 21. Build order and acceptance criteria
 
 Build in this order so the tools exist before the docs that reference them:
-`tools/` → `system/` → `templates/` → `.claude/commands/` → `CLAUDE.md` → `README.md` → `DESIGN_NOTES.md`.
+`tools/roll.py` and `tools/state.py` → the rest of `tools/` → `system/` → `templates/` →
+`tools/analyze.py` → `tools/dashboard.py` → `.claude/commands/` → `CLAUDE.md` → `README.md` →
+`DESIGN_NOTES.md`. Build `analyze.py` and `dashboard.py` last of the tools, once `rolls.jsonl` and
+`state.json` have settled into their final shapes — both read those formats, and reworking them twice is
+wasted effort.
 
 Before you report done, verify all of the following and show me the evidence:
 
@@ -586,6 +673,12 @@ Before you report done, verify all of the following and show me the evidence:
       and every table it uses has a `Source:` line.
 - [ ] `python3 tools/validate.py --campaign test-run` passes on a fresh campaign and catches a deliberately
       corrupted state.
+- [ ] Feed `analyze.py` a synthetic log of 10,000 fair rolls: it reports a mean near 10.5 and a chi-square
+      consistent with uniform. Feed it a deliberately biased log: it flags the bias. Show both runs.
+- [ ] `analyze.py` reports public and private rolls as separate subsets.
+- [ ] `tools/dashboard.py --campaign test-run` produces a single HTML file that opens from `file://` with
+      no network, renders at phone width, and respects the transparency mode for enemy HP.
+- [ ] `tools/state.py checkpoint` regenerates the dashboard as well as committing.
 - [ ] No campaign-specific content exists outside `campaigns/`.
 - [ ] Every rules table is either cited or marked `⚠ UNVERIFIED`, and the unverified ones are listed in
       `DESIGN_NOTES.md`.

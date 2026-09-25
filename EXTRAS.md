@@ -5,7 +5,7 @@ before running it, or ask for them later as add-ons.
 
 ## Already folded into `PROMPT.md`
 
-These three started life here and are now part of the spec, so you don't need to add them:
+These started life here and are now part of the spec, so you don't need to add them:
 
 - **Git as the time machine** — every checkpoint is a commit, so `git log` is the campaign history,
   `git diff` shows what changed between any two moments, and the roll log is committed alongside the
@@ -17,18 +17,14 @@ These three started life here and are now part of the spec, so you don't need to
 - **The reaction obligation** — before resolving any trigger, the GM checks the party's available
   reactions and asks. Forgetting Reactive Strike and Shield Block is the most common way an automated
   GM quietly shortchanges a player, so it's a stated duty with a tracker column behind it.
-
-## Strongly recommended
-
-**A roll-log analytics command.** `tools/analyze.py` over `logs/rolls.jsonl`: mean d20 by character,
-crit and crit-fail rates, success rate by skill, damage taken per encounter, how often you were at
-Dying. It confirms the dice are honest over hundreds of rolls, and it surfaces which of your defenses is
-the weak one. Add `/dice-audit` as a slash command.
-
-**A live campaign dashboard as an HTML artifact.** HP bars, conditions, inventory with Bulk, gold, quest
-list, clocks, the tactical map, the party table — rendered from `state.json` and republished after each
-checkpoint. Much easier to read mid-combat than scrolling a terminal. Ask for it once the framework
-exists and `state.json` has a stable shape.
+- **Roll-log analytics** — `tools/analyze.py` and `/dice-audit`, reporting a fairness section (d20 mean,
+  chi-square against uniform, and public vs. private rolls as separate subsets) and a play section
+  (success rates by skill and save, damage taken per encounter, Dying counts, hit rate by
+  multiple-attack-penalty step).
+- **The campaign dashboard** — `tools/dashboard.py` and `/dashboard`, a self-contained HTML file
+  regenerated at every checkpoint with HP bars, conditions, resources, the live initiative strip,
+  inventory with Bulk, quests, clocks, and the tactical map. Read-only, offline, phone-friendly, and it
+  respects the transparency mode so it can't leak enemy HP.
 
 ## Worth considering
 
