@@ -84,6 +84,8 @@ system/                        # campaign-agnostic rules of engagement (never ca
   16-random-tables.md
   17-encounter-objectives.md
   18-between-session-prep.md
+  19-solo-oracle.md
+  20-player-flags.md
 
 tools/                         # all dice and math live here; nothing is done by mental arithmetic
   roll.py
@@ -91,6 +93,7 @@ tools/                         # all dice and math live here; nothing is done by
   state.py
   new_campaign.py
   validate.py
+  oracle.py
   analyze.py
   dashboard.py
   README.md
@@ -115,6 +118,7 @@ campaigns/
 CAMPAIGN.md          # premise, tone, genre, setting, themes, pitch, the answers from intake
 RULES_DELTAS.md      # every variant rule, house rule and difficulty lever chosen, with its effect
 PLAYER_PREFS.md      # pacing, verbosity, combat/RP/exploration mix, tactical-hint level, safety lines
+FLAGS.md             # what I've said I want to see, and whether it has paid off yet
 state.json           # CANONICAL machine-readable volatile state (see section 3)
 CHECKPOINT.md        # human-readable current-state snapshot, rendered from state.json + narrative notes
 CANON.md             # append-only ledger of established facts that must never be contradicted
@@ -308,6 +312,8 @@ option that actually rolls on a table in `16-random-tables.md`. Cover at least:
   sidekicks, or narrative-only. (Cross-reference section 6.)
 - **Content boundaries:** lines (never appears) and veils (happens off-screen). Ask plainly, once, and
   record it in `PLAYER_PREFS.md`.
+- **Flags:** what I actively want to see happen in this campaign. Ask for three to five, seed the list
+  with examples, and write them to `FLAGS.md` (see section 22).
 - **Play preferences:** narration length, whether you offer tactical suggestions, whether you remind me
   of my available actions and feats, whether you name the rules being applied, how much prose vs.
   bullet summary, second person vs. third person, present vs. past tense.
@@ -563,19 +569,21 @@ Define a small vocabulary I can type at any time, and make you honor it without 
 | `montage <goal>` | resolve a stretch of time in summary with a few rolls |
 | `dashboard` | regenerate and open the campaign dashboard |
 | `worldprep` | run an off-screen turn now and show me the world pulse |
+| `oracle <question>` | consult the oracle; the result is binding on you |
+| `flags` | show my flags with their status, and let me add, change, or retire one |
 | `dice audit` | run the roll-log analytics and show the fairness and play summary |
 | `end session` | write the session log, checkpoint, and give a "next time on…" teaser |
 
 Also make **`.claude/commands/`** slash commands for the ones worth having as one keystroke:
 `/checkpoint`, `/recap`, `/status`, `/sheet`, `/levelup`, `/encounter`, `/dashboard`, `/dice-audit`,
-`/worldprep`, `/endsession`, `/newcampaign`, `/resume`. Each is a short Markdown file telling you which system doc to follow.
+`/worldprep`, `/oracle`, `/endsession`, `/newcampaign`, `/resume`. Each is a short Markdown file telling you which system doc to follow.
 
 ## 17. `system/15-continuity-and-context-recovery.md`
 
 Assume a future session starts with no memory of this one. Define the **boot sequence**:
 
 1. Read `CLAUDE.md`, then the `system/` docs relevant to what's happening.
-2. Read `campaigns/<slug>/CHECKPOINT.md`, `state.json`, `RULES_DELTAS.md`, `PLAYER_PREFS.md`.
+2. Read `campaigns/<slug>/CHECKPOINT.md`, `state.json`, `RULES_DELTAS.md`, `PLAYER_PREFS.md`, `FLAGS.md`.
 3. Read `CANON.md`, `QUESTS.md`, `CLOCKS.md`, `npcs/ROSTER.md`.
 4. Read the last one or two files in `sessions/`.
 5. Read the sheets of characters currently in play, and the bestiary entries for anything on screen.
@@ -687,7 +695,96 @@ copy-paste block, and include the `/worldprep` slash command for running a turn 
 set up, pause, and delete the Routine, and make clear that pausing it costs nothing — the framework
 works identically with it off.
 
-## 21. `CLAUDE.md` at the repository root
+## 21. `system/19-solo-oracle.md` and `tools/oracle.py` — asking the world questions
+
+In solo play I sometimes want to interrogate the fiction directly rather than wait to be told: *is the
+gate guarded? does she believe me? is there another way out?* An oracle answers those with dice instead
+of with your judgment, which keeps the world from bending toward whatever either of us expected.
+
+**The core move — a yes/no question with odds.** I state the question and how likely it feels; the tool
+rolls; the answer is what came up. Build a likelihood ladder on a d20 and write the exact thresholds into
+the document rather than leaving them vague — something like:
+
+| Odds | Yes on |
+|---|---|
+| Almost certain | 2+ |
+| Very likely | 4+ |
+| Likely | 6+ |
+| Even | 11+ |
+| Unlikely | 16+ |
+| Very unlikely | 18+ |
+| Almost impossible | 20 |
+
+Layer three refinements on top:
+- **"And" / "but" results.** A roll that clears its threshold by 5 or more is *yes, and* — the answer
+  plus something in my favor. Within 2 of the threshold on either side is *yes, but* or *no, but*.
+- **Random event trigger.** On a natural 1 or 20, or on a doubles-style condition you define, something
+  unrelated intrudes — roll it on the tables in `16-random-tables.md` and fold it in.
+- **Exceptional results.** A natural 20 on a question that was already likely is an emphatic yes with
+  consequences; a natural 1 on an unlikely question is an emphatic no.
+
+**Other oracle moves to include:**
+- **Scene check** — before a scene opens, roll whether it plays out as expected, altered, or interrupted.
+- **Meaning tables** — an action-plus-theme or descriptor-plus-focus pair for when a result needs
+  interpretation and neither of us has a read on it.
+- **How many / how bad / how long** — bounded quantity rolls, so "a few guards" becomes a number.
+- **NPC reaction and attitude shifts** — where the rules don't already cover it.
+
+```
+python3 tools/oracle.py ask "Is the side gate guarded?" --odds unlikely
+python3 tools/oracle.py scene --expectation "the meeting goes ahead quietly"
+python3 tools/oracle.py meaning --pair action-theme
+python3 tools/oracle.py howmany --range 1-6 --label "guards at the gate"
+```
+
+**The rule that makes it work: an oracle result is binding on you.** When I consult it, you take the
+answer as established fact and build forward from it, including when it wrecks what you had planned.
+You do not reroll it, reinterpret it toward your prep, or quietly route around it. If the answer
+contradicts something already in `CANON.md`, say so and we re-ask a better question — that's the only
+legitimate override. Oracle rolls go through the same dice engine and the same audit log, tagged
+`oracle`, and their results get appended to `CANON.md` once they're established in play.
+
+Also: you may consult the oracle yourself when you genuinely don't have a prepared answer, and you should
+say when you do. "I rolled for it" is a better answer than an invented certainty.
+
+Add `/oracle` as a slash command, and `oracle <question>` to the player command vocabulary.
+
+## 22. `system/20-player-flags.md` and `FLAGS.md` — telling you what I want
+
+Guessing what I'd enjoy is the hardest part of your job, and you'll guess wrong more often when I'm the
+only player. Flags fix that by letting me author content requests directly.
+
+**What a flag is:** a short statement of something I want the campaign to deliver, written by me, kept in
+`campaigns/<slug>/FLAGS.md`. Not a plot outline — a target you aim at on your own terms. Examples to seed
+the list with during intake:
+
+- "I want to face my old mentor, and I want it to be complicated."
+- "I want a moral choice where both options cost me something real."
+- "I want to be genuinely outmatched at least once and have to run."
+- "I want a stretch where my character's faith is the only thing holding."
+- "I want one fight that's pure spectacle with no moral weight at all."
+- "I want to found something that outlasts me."
+
+**Each flag carries:** the request in my words, how hot it is (`burning` / `warm` / `someday`), status
+(`open` / `set up` / `paid off` / `retired`), and a short note on where you've seeded it. I add, change,
+and retire flags at any time by saying so — a flag I've gone cold on gets retired without ceremony.
+
+**Your obligations:**
+- Read `FLAGS.md` during the boot sequence, and again when planning an arc or an off-screen turn.
+- Aim at `burning` flags deliberately: seed toward them, don't wait for them to become convenient.
+- **Never deliver a flag literally or immediately.** A flag is a destination, not a script — if I asked
+  to face my old mentor, the interesting version is the one I didn't see coming, arriving when it costs
+  me something. Telegraph, complicate, and let me work for it.
+- When a flag pays off, mark it and note what happened, so the same beat doesn't get served twice.
+- **Report at arc boundaries:** which flags paid off, which are set up and waiting, which have sat
+  untouched for a long time. An old untouched flag is either something I've lost interest in or something
+  you've been avoiding — surface it and ask which.
+- Flags never override the lines and veils in `PLAYER_PREFS.md`, and a flag that conflicts with one gets
+  raised with me rather than quietly dropped.
+
+Add `flags` to the player command vocabulary for reviewing and editing the list mid-game.
+
+## 23. `CLAUDE.md` at the repository root
 
 Short and dense — this gets auto-loaded into every session, so it is not the place for full rules. It
 should contain: the hard constraints from section 0 restated as blunt rules; the boot sequence; the file
@@ -696,7 +793,7 @@ under about 150 lines.
 
 ---
 
-## 22. Build order and acceptance criteria
+## 24. Build order and acceptance criteria
 
 Build in this order so the tools exist before the docs that reference them:
 `tools/roll.py` and `tools/state.py` → the rest of `tools/` → `system/` → `templates/` →
@@ -736,6 +833,12 @@ Before you report done, verify all of the following and show me the evidence:
       every player-state field byte-identical, and refuses to run when `session_in_progress` is set —
       show the diff proving player state is untouched.
 - [ ] `system/18-between-session-prep.md` contains a standalone, copy-pasteable Routine prompt.
+- [ ] `tools/oracle.py ask` at each odds level, 2,000 rolls per level, produces yes-rates matching the
+      published ladder within sampling error — show the table.
+- [ ] Oracle rolls land in `rolls.jsonl` tagged `oracle`, and `19-solo-oracle.md` states plainly that a
+      result is binding on the GM.
+- [ ] `FLAGS.md` in the templates has the request / heat / status / seeding fields, and the boot sequence
+      in `15-continuity-and-context-recovery.md` reads it.
 - [ ] No campaign-specific content exists outside `campaigns/`.
 - [ ] Every rules table is either cited or marked `⚠ UNVERIFIED`, and the unverified ones are listed in
       `DESIGN_NOTES.md`.

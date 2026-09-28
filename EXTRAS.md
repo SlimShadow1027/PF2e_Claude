@@ -30,6 +30,12 @@ These started life here and are now part of the spec, so you don't need to add t
   prep file in `gm-private/`. Opt-in, schedulable as a Routine, and fenced by hard limits: it never
   touches player state, never resolves anything you'd have had a say in, never advances in-world time on
   its own, and refuses to run while a session is live.
+- **The solo oracle** — `system/19-solo-oracle.md`, `tools/oracle.py` and `/oracle`: yes/no questions on
+  a published likelihood ladder with "and/but" results, scene checks, meaning tables, and bounded
+  quantity rolls. The rule that makes it worth having is that an oracle result is binding on the GM.
+- **Player-authored flags** — `system/20-player-flags.md` and a per-campaign `FLAGS.md`: what you want
+  the campaign to deliver, with heat and status, read during the boot sequence, aimed at deliberately,
+  never delivered literally, and reported on at arc boundaries.
 
 ## Worth considering
 
@@ -37,14 +43,6 @@ These started life here and are now part of the spec, so you don't need to add t
 share, with `campaigns/<slug>/` holding only what that campaign changed. Lets a second campaign happen
 in the aftermath of the first — a legacy game where your old character is now a rumor. Slightly
 complicates the "nothing outside `campaigns/`" rule, so only add it if you want a persistent setting.
-
-**A solo oracle.** A yes/no-with-complications oracle you can consult directly ("is the gate guarded?"),
-plus random-event tables, so you can drive scenes yourself when you want to rather than always asking the
-GM. Comes from solo tabletop tradition and fits naturally next to `16-random-tables.md`.
-
-**Player-authored flags.** A short list in `PLAYER_PREFS.md` of what you want to see: "I want to fight my
-old mentor", "I want a moral choice with no clean answer", "I want to be genuinely outmatched once".
-Gives the GM targets instead of guesses. Pairs well with a per-arc check-in on which flags have paid off.
 
 **Session-start trailer.** A short "previously on" recap in the campaign's voice, generated from the last
 session log. Good for a campaign you touch once a week.
