@@ -36,13 +36,14 @@ These started life here and are now part of the spec, so you don't need to add t
 - **Player-authored flags** — `system/20-player-flags.md` and a per-campaign `FLAGS.md`: what you want
   the campaign to deliver, with heat and status, read during the boot sequence, aimed at deliberately,
   never delivered literally, and reported on at arc boundaries.
+- **A shared world across campaigns** — `system/21-shared-worlds.md` and an optional `worlds/<slug>/`
+  layer holding setting material, a dated `CHRONICLE.md`, per-character legacy records, and a `LEGENDS.md`
+  for how events are misremembered in-world. Campaign files stay fully separate: writes flow to the world
+  only at confirmed promotion points, never during play, nothing live is ever promoted, campaign canon
+  wins locally, and reads are date-gated so a prequel or parallel campaign can't be informed — or you
+  spoiled — by events later than its own in-world date.
 
 ## Worth considering
-
-**A shared world across campaigns.** A top-level `world/` folder for setting material several campaigns
-share, with `campaigns/<slug>/` holding only what that campaign changed. Lets a second campaign happen
-in the aftermath of the first — a legacy game where your old character is now a rumor. Slightly
-complicates the "nothing outside `campaigns/`" rule, so only add it if you want a persistent setting.
 
 **Session-start trailer.** A short "previously on" recap in the campaign's voice, generated from the last
 session log. Good for a campaign you touch once a week.

@@ -46,9 +46,12 @@ change the architecture; use your judgment on everything else and note the assum
    value, write `⚠ UNVERIFIED` next to it rather than guessing silently. Prefer Archives of Nethys
    (`2e.aonprd.com`) as the lookup source; if this session has no network access, mark the table
    `⚠ UNVERIFIED — verify before first play` and list it in `DESIGN_NOTES.md` under "to verify".
-6. **Campaign-agnostic core, per-campaign subfolders.** Nothing about a specific campaign, character,
-   world, or house rule ever lands outside `campaigns/<campaign-slug>/`. The root-level system files
-   must work unchanged for a gothic horror one-shot and a 1–20 high-fantasy epic alike.
+6. **Campaign-agnostic core, per-campaign subfolders.** Nothing about a specific campaign, character, or
+   house rule ever lands outside `campaigns/<campaign-slug>/` — no live state, no sheets, no checkpoints,
+   no logs. The root-level system files must work unchanged for a gothic horror one-shot and a 1–20
+   high-fantasy epic alike. The one exception is the optional shared-setting layer in section 23, which
+   holds setting material and the chronicle of *concluded* events, written only at defined promotion
+   points and never during play.
 7. **Every checkpoint is a git commit.** Git is the campaign's time machine: `git log` is its history,
    `git diff` shows exactly what changed between any two moments, and rewinding is a restore rather than
    a bespoke mechanism. Because the roll log is committed alongside the state it produced, the audit
@@ -86,6 +89,7 @@ system/                        # campaign-agnostic rules of engagement (never ca
   18-between-session-prep.md
   19-solo-oracle.md
   20-player-flags.md
+  21-shared-worlds.md
 
 tools/                         # all dice and math live here; nothing is done by mental arithmetic
   roll.py
@@ -94,12 +98,16 @@ tools/                         # all dice and math live here; nothing is done by
   new_campaign.py
   validate.py
   oracle.py
+  world.py
   analyze.py
   dashboard.py
   README.md
 
 templates/                     # copied into a new campaign folder by new_campaign.py
   (mirrors the per-campaign layout in section 2, with {{PLACEHOLDER}} fields)
+
+worlds/                        # OPTIONAL shared settings, one folder each (see section 23)
+  .gitkeep
 
 campaigns/
   .gitkeep                     # generated campaigns live here, one folder each
@@ -116,6 +124,7 @@ campaigns/
 
 ```
 CAMPAIGN.md          # premise, tone, genre, setting, themes, pitch, the answers from intake
+                     #   includes `World:` (a worlds/<slug> link, or `none`) and `Era:` / start date
 RULES_DELTAS.md      # every variant rule, house rule and difficulty lever chosen, with its effect
 PLAYER_PREFS.md      # pacing, verbosity, combat/RP/exploration mix, tactical-hint level, safety lines
 FLAGS.md             # what I've said I want to see, and whether it has paid off yet
@@ -305,6 +314,9 @@ option that actually rolls on a table in `16-random-tables.md`. Cover at least:
 - **Setting:** Golarion (and where — Absalom, Ustalav, the Mwangi Expanse, Cheliax, the Mana Wastes,
   Tian Xia…), a lightly-reskinned Golarion, or fully original. Ask which setting assumptions I want
   kept: gods, planes, ancestries, magic prevalence, technology level.
+- **Shared world:** whether this campaign is standalone (`World: none`) or set in an existing world under
+  `worlds/` — and if so, in what era relative to what has already happened there (see section 23). If it
+  joins one, ask for a start date and confirm that the date gate will keep me unspoiled on later events.
 - **Premise and stakes:** what's wrong with the world, who's causing it, what happens if nobody stops it.
 - **Protagonist framing:** why is this character (or these characters) the one who acts? Patron,
   obligation, revenge, curiosity, curse, accident.
@@ -584,7 +596,9 @@ Assume a future session starts with no memory of this one. Define the **boot seq
 
 1. Read `CLAUDE.md`, then the `system/` docs relevant to what's happening.
 2. Read `campaigns/<slug>/CHECKPOINT.md`, `state.json`, `RULES_DELTAS.md`, `PLAYER_PREFS.md`, `FLAGS.md`.
-3. Read `CANON.md`, `QUESTS.md`, `CLOCKS.md`, `npcs/ROSTER.md`.
+3. Read `CANON.md`, `QUESTS.md`, `CLOCKS.md`, `npcs/ROSTER.md`, `FLAGS.md`.
+   If `CAMPAIGN.md` names a world, also load the date-gated world view
+   (`tools/world.py as-of <world> <current in-world date>`) — and nothing dated later.
 4. Read the last one or two files in `sessions/`.
 5. Read the sheets of characters currently in play, and the bestiary entries for anything on screen.
 6. Give me a recap and confirm the current situation **before** narrating anything new.
@@ -675,6 +689,8 @@ for the next session. It can be run on a schedule, or on demand when I type `wor
   no decisions made on my behalf, no "you were robbed while you slept" resolved as fact.
 - **It never advances in-world time on its own.** Time passes when we play. The off-screen turn
   computes what *will have* happened over the gap and holds it until the next session opens.
+- **It never writes to the shared world layer.** Promotion to a world chronicle happens only at the
+  promotion points in section 23, with my confirmation, never from an unattended pass.
 - **It never contradicts `CANON.md`,** and it never edits an existing canon entry — append only.
 - **It never kills a named NPC I have met** without leaving it as a proposal in the prep file for me to
   approve or veto at the top of the next session.
@@ -755,8 +771,14 @@ Guessing what I'd enjoy is the hardest part of your job, and you'll guess wrong 
 only player. Flags fix that by letting me author content requests directly.
 
 **What a flag is:** a short statement of something I want the campaign to deliver, written by me, kept in
-`campaigns/<slug>/FLAGS.md`. Not a plot outline — a target you aim at on your own terms. Examples to seed
-the list with during intake:
+`campaigns/<slug>/FLAGS.md`. Not a plot outline — a target you aim at on your own terms.
+
+**The list below is illustrative only.** These are sample phrasings to show me the *shape* of a flag
+during intake, nothing more. They are not defaults, not suggestions about my character, and not content
+to plan around. My flags are whatever I actually say during intake and afterward; if I give none, the file
+stays empty and you aim at nothing. Never treat an example from this document as an established element of
+a campaign — in particular, no mentor, rival, faith, or legacy exists in any campaign unless it came from
+intake or from play.
 
 - "I want to face my old mentor, and I want it to be complicated."
 - "I want a moral choice where both options cost me something real."
@@ -772,9 +794,9 @@ and retire flags at any time by saying so — a flag I've gone cold on gets reti
 **Your obligations:**
 - Read `FLAGS.md` during the boot sequence, and again when planning an arc or an off-screen turn.
 - Aim at `burning` flags deliberately: seed toward them, don't wait for them to become convenient.
-- **Never deliver a flag literally or immediately.** A flag is a destination, not a script — if I asked
-  to face my old mentor, the interesting version is the one I didn't see coming, arriving when it costs
-  me something. Telegraph, complicate, and let me work for it.
+- **Never deliver a flag literally or immediately.** A flag is a destination, not a script. Whatever I
+  asked for, the interesting version is the one I didn't see coming, arriving when it costs me something.
+  Telegraph, complicate, and let me work for it.
 - When a flag pays off, mark it and note what happened, so the same beat doesn't get served twice.
 - **Report at arc boundaries:** which flags paid off, which are set up and waiting, which have sat
   untouched for a long time. An old untouched flag is either something I've lost interest in or something
@@ -784,7 +806,104 @@ and retire flags at any time by saying so — a flag I've gone cold on gets reti
 
 Add `flags` to the player command vocabulary for reviewing and editing the list mid-game.
 
-## 23. `CLAUDE.md` at the repository root
+## 23. `system/21-shared-worlds.md` and `worlds/` — a setting several campaigns share
+
+Optional, and off unless a campaign asks for it. A shared world lets a second campaign happen in the
+aftermath of the first: the same continent, the same factions, and your previous character remembered as
+a name people invoke. Campaign files stay fully separate — the shared layer is setting material plus a
+record of what has already been concluded.
+
+```
+worlds/<world-slug>/
+  README.md          # what this world is, which campaigns are set in it, and their date spans
+  CHRONICLE.md       # the overarching record: dated significant events, each tagged with its campaign
+  characters/
+    <name>.md        # one legacy record per character who has played in this world
+  GAZETTEER.md       # places, regions, settlements, and their item levels
+  FACTIONS.md        # long-lived organizations, their current standing and leadership
+  PANTHEON.md        # gods and cosmology (for an original setting; a pointer to Golarion otherwise)
+  CALENDAR.md        # calendar, eras, and the current "present day" of the world
+  canon.md           # world-level established facts, append-only
+  LEGENDS.md         # how past events are now *remembered* in-world, distortions included
+  npcs/
+    <name>.md        # NPCs who persist beyond one campaign
+  gm-private/
+    threads.md       # unresolved world-level threads a future campaign could pick up
+```
+
+**A campaign declares its world** in `CAMPAIGN.md` with a `World:` field naming a `worlds/<slug>` folder,
+or `none` for a standalone campaign. A campaign with `World: none` behaves exactly as it does today —
+nothing about the shared layer becomes mandatory.
+
+### The separation rules — this is what keeps the two layers from corrupting each other
+
+- **Writes flow one way, and only at promotion points.** During play you write to the campaign folder and
+  nowhere else. The world layer is updated only when an arc concludes, a campaign concludes, or I say an
+  event is world-significant. `tools/world.py promote` does it, and it asks for confirmation.
+- **Nothing live is ever promoted.** Current HP, gold, inventory, conditions, positions, checkpoints, and
+  roll logs stay in the campaign folder permanently. The world gets concluded facts: what happened, when,
+  who did it, and what it changed.
+- **Campaign canon wins locally; world canon is the default.** Inside a campaign, `CANON.md` takes
+  precedence over `worlds/<slug>/canon.md` for anything the campaign has touched. Where a campaign
+  contradicts world canon, record it in the campaign as a **local divergence** rather than rewriting the
+  world — the world stays the version other campaigns inherit.
+- **Date-gated reads — the rule that makes prequels and parallel campaigns possible.** Each campaign has a
+  start date and an era in `CAMPAIGN.md`. When running that campaign you read world material dated **at or
+  before its own current in-world date** and nothing later. A campaign set two centuries earlier must not
+  be informed by events that, from its perspective, have not happened, and I must not be spoiled on a
+  world event from another campaign I haven't reached. `tools/world.py as-of <date>` returns the
+  date-filtered view, and that view is what the boot sequence loads.
+- **Concurrent campaigns share cautiously.** Two campaigns running in the same era can both promote to the
+  chronicle; the chronicle records who did what and the reader resolves order by date. Flag a collision
+  (two campaigns claiming the same event differently) rather than silently merging them.
+
+### `CHRONICLE.md` — the overarching record
+
+Append-only, ordered by in-world date, each entry carrying: the date, the campaign that produced it, the
+characters involved, what happened in two or three sentences, what it changed about the world, and
+whether it is **public knowledge, rumor, or secret**. That last field matters: a later campaign can only
+have heard the public and rumored entries, and the secret ones stay in the world's `gm-private/`.
+
+### Per-character legacy records
+
+One file per character who has played in this world, written at retirement or campaign end and updated if
+they return:
+
+- Name, ancestry, class, the level they reached, and the campaign they played in.
+- What they actually did, as a short list of deeds tied to chronicle entries.
+- **What they are known for** — which is not the same list. Reputation is lossy, and `LEGENDS.md` is where
+  a deed becomes a distorted story. Record both, and note the gap.
+- Current status and whereabouts: alive, dead, retired, ascended, missing, unknown even to you.
+- Titles, holdings, organizations founded, debts owed and held, and surviving relationships.
+- Notable items they carried, and where those items are now — a resurfacing artifact is one of the better
+  payoffs a shared world offers.
+- **Availability in other campaigns:** as a playable returning character, as an NPC you may use freely, as
+  an NPC only with my say-so, or off-limits. I set this per character and you honor it.
+
+### Legends and the remembered-versus-real gap
+
+`LEGENDS.md` holds the in-world telling of past events: exaggerated, misattributed, politically edited,
+or plain wrong. When an NPC in a later campaign refers to a past event, they speak from `LEGENDS.md`, not
+from `CHRONICLE.md`. Keeping the two separate is what makes a legacy campaign land — I get to hear my old
+character's story told wrong, and know it.
+
+### Tooling
+
+```
+python3 tools/world.py init "The Verdant Reach"
+python3 tools/world.py link --campaign ashen-covenant --world verdant-reach --start-date "4712 AR"
+python3 tools/world.py as-of verdant-reach "4712 AR"          # date-filtered read for play
+python3 tools/world.py promote --campaign ashen-covenant      # arc/campaign events → chronicle
+python3 tools/world.py legacy --campaign ashen-covenant --character kaelen
+python3 tools/world.py timeline verdant-reach                 # all campaigns on one axis
+```
+
+`tools/validate.py` gains world checks: a `World:` field pointing at a folder that exists, chronicle
+entries in date order with a campaign tag and a visibility field, no live-state fields anywhere in the
+world layer, every character in a legacy record traceable to a campaign, and no campaign reading world
+material dated after its own current date.
+
+## 24. `CLAUDE.md` at the repository root
 
 Short and dense — this gets auto-loaded into every session, so it is not the place for full rules. It
 should contain: the hard constraints from section 0 restated as blunt rules; the boot sequence; the file
@@ -793,7 +912,7 @@ under about 150 lines.
 
 ---
 
-## 24. Build order and acceptance criteria
+## 25. Build order and acceptance criteria
 
 Build in this order so the tools exist before the docs that reference them:
 `tools/roll.py` and `tools/state.py` → the rest of `tools/` → `system/` → `templates/` →
@@ -839,6 +958,15 @@ Before you report done, verify all of the following and show me the evidence:
       result is binding on the GM.
 - [ ] `FLAGS.md` in the templates has the request / heat / status / seeding fields, and the boot sequence
       in `15-continuity-and-context-recovery.md` reads it.
+- [ ] `system/20-player-flags.md` states that its example flags are illustrative only and are never to be
+      treated as established campaign elements.
+- [ ] `tools/world.py init` plus `link` produces a world, attaches `test-run` to it, and `promote` moves a
+      concluded event into `CHRONICLE.md` with a date, a campaign tag, and a visibility field.
+- [ ] `as-of` with a date before an event's date omits that event — show the filtered and unfiltered views
+      side by side.
+- [ ] No live-state field (HP, gold, inventory, conditions) appears anywhere under `worlds/`, and
+      `validate.py` fails if one is introduced.
+- [ ] A campaign created with `World: none` builds and runs with no reference to `worlds/` at all.
 - [ ] No campaign-specific content exists outside `campaigns/`.
 - [ ] Every rules table is either cited or marked `⚠ UNVERIFIED`, and the unverified ones are listed in
       `DESIGN_NOTES.md`.
