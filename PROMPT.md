@@ -90,6 +90,7 @@ system/                        # campaign-agnostic rules of engagement (never ca
   19-solo-oracle.md
   20-player-flags.md
   21-shared-worlds.md
+  22-session-flow.md
 
 tools/                         # all dice and math live here; nothing is done by mental arithmetic
   roll.py
@@ -99,6 +100,7 @@ tools/                         # all dice and math live here; nothing is done by
   validate.py
   oracle.py
   world.py
+  graph.py
   analyze.py
   dashboard.py
   README.md
@@ -329,8 +331,9 @@ option that actually rolls on a table in `16-random-tables.md`. Cover at least:
 - **Play preferences:** narration length, whether you offer tactical suggestions, whether you remind me
   of my available actions and feats, whether you name the rules being applied, how much prose vs.
   bullet summary, second person vs. third person, present vs. past tense.
-- **Session rhythm:** how long a typical sitting is, whether to aim for a cliffhanger, how aggressively
-  to checkpoint.
+- **Session rhythm:** how long a typical sitting is and roughly how many scenes that means, whether to
+  open with a trailer or a cold open, whether to aim for a cliffhanger, and how aggressively to
+  checkpoint (see section 24).
 
 The intake ends with you writing `CAMPAIGN.md`, `RULES_DELTAS.md`, `PLAYER_PREFS.md`, `WORLD.md`, and a
 **one-page pitch for my approval before anything else is generated.** Do not build the world until I
@@ -440,6 +443,12 @@ between two checkpoints answers "what actually changed" precisely, and a restore
 Document that rewinding is a legitimate table move I can call at any time ("rewind to before I opened
 the door"), and that you should not resist it.
 
+**A checkpoint must survive being taken mid-combat.** If a session ends or context runs out in round 3 of
+a fight, the encounter tracker — initiative order, whose turn it is, actions spent, multiple attack
+penalty so far, reactions used, every combatant's current HP and conditions with durations, and positions
+on the map — has to be serialized into `state.json` and restored exactly. A framework that can only
+checkpoint between encounters will lose a combat eventually. Test this explicitly.
+
 **`CHECKPOINT.md` must be small enough to be cheap to reload** — aim under ~400 lines. Deep history
 lives in `sessions/` and `CANON.md`, not in the checkpoint.
 
@@ -469,6 +478,17 @@ Specify the exact combat loop so combat is consistent and fast:
 - **Enemy tactics are played honestly but not omnisciently.** Creatures act on what they can perceive
   and what their published `Tactics:` note says they want. An unintelligent creature does not focus-fire
   optimally; a trained soldier does. State which it is when it matters.
+- **Batched minions.** A one-versus-six fight resolved creature by creature takes an hour and most of it
+  is bookkeeping. Where several identical creatures at least three levels below the party act together,
+  group them into a **squad**: one initiative entry, all their attacks rolled in a single tool call, and
+  one line of narration for the lot ("three of the six find gaps in your guard"). Each member still keeps
+  its own hit points and conditions, because pooling them would break area damage and single-target
+  focus — the batching is a speed change, not a math change. Any creature that becomes individually
+  interesting (it flanks, it flees, it's the one carrying the key) is promoted out of the squad and
+  tracked on its own from then on.
+- **True minion mode is a separate, optional homebrew** — minions dropping to any solid hit, stated as
+  homebrew in `RULES_DELTAS.md` with its difficulty effect spelled out, and never enabled without my say.
+  Batching is the default because it costs nothing.
 - End-of-turn bookkeeping: tick durations, persistent damage flat checks, sustained spells, recovery
   checks, then re-render state.
 - At the end of combat: XP awarded, treasure, conditions that persist, `encounters/history.md` entry,
@@ -524,6 +544,18 @@ campaign should have a win condition other than "everything hostile is dead".
   so the blacksmith's name and attitude don't drift. Dead NPCs stay in the roster marked dead.
 - **Stat blocks for NPCs only when needed** — a shopkeeper needs a personality, not a stat block. Build
   one when combat or a meaningful contest becomes plausible.
+- **Structured relationships.** Each NPC file carries its ties as structured fields — `ally-of`,
+  `rival-of`, `owes`, `owed-by`, `serves`, `related-to`, `fears`, each naming another NPC, a faction, or a
+  player character, with a one-phrase reason. `tools/graph.py` reads those fields plus `FACTIONS.md` and
+  writes a **Mermaid diagram into `WORLD.md`**, regenerated whenever the roster changes. It renders on
+  GitHub and in any Markdown viewer with no dependency to install.
+  - Produce **two versions**: a player-safe graph covering what I've actually learned in play, and a full
+    one in `gm-private/` including hidden allegiances. Never show me the second by accident — the
+    player-safe graph is the default output and the GM one is written only to `gm-private/`.
+  - The dashboard shows relationships as a plain adjacency list rather than a rendered diagram, since it
+    must not fetch a diagramming script at runtime.
+  - Worth the most in intrigue and faction play; in a dungeon crawl with six named NPCs it is noise, so
+    make it opt-in per campaign and say so.
 
 ## 12. `system/09-loot-and-economy.md`
 
@@ -903,7 +935,52 @@ entries in date order with a campaign tag and a visibility field, no live-state 
 world layer, every character in a legacy record traceable to a campaign, and no campaign reading world
 material dated after its own current date.
 
-## 24. `CLAUDE.md` at the repository root
+## 24. `system/22-session-flow.md` — opening, pacing, and closing a session
+
+How a session starts and ends does more for the feel of a campaign than any single rule, and both are
+easy to get wrong when there's no table full of people to set the rhythm.
+
+### Opening: the trailer
+
+Start each session after the first with a short **"previously on"** written in the campaign's voice
+rather than as a status report — 100 to 150 words, present tense, ending on the decision or the danger I
+was facing when we stopped. Build it from the last session log, not from the raw checkpoint.
+
+Two hard rules: it contains **only what my characters actually know** (nothing out of `gm-private/`,
+nothing from an off-screen turn I haven't encountered), and the mechanical recap stays separate. After
+the trailer, give the plain-facts version — HP, conditions, resources, location, what I was about to do —
+so I get the fiction and the state without either contaminating the other.
+
+Offer a **cold open** as an alternative: skip the recap and drop straight into a scene already in motion,
+with the recap available on `recap` if I want it. Which one is the default goes in `PLAYER_PREFS.md`.
+
+### Pacing: the scene budget
+
+Ask during intake roughly how long a sitting runs and record a **target scene count** in
+`PLAYER_PREFS.md`. Then track scenes as they pass and steer with that budget in mind:
+
+- Aim to reach a natural stopping point — a resolution, a reveal, or a cliffhanger — near the end of the
+  budget rather than trailing off mid-corridor.
+- At roughly three quarters of the budget, say so out of character in one line, and offer the choice:
+  push toward a stopping point, or open something new knowing we'll stop mid-thread.
+- **Never truncate a scene to hit the budget.** It's a steering aid, not a timer. A fight that runs long
+  runs long; the budget just means you don't start a dungeon level with ten minutes left.
+- If we do stop mid-combat, that's fine — checkpoint the encounter state per section 8 and resume from it.
+- Track how the estimate performs and adjust. If every session runs two scenes over, the budget is wrong,
+  not the session.
+
+### Closing: the session log
+
+On `end session`, in this order: finish or safely suspend the current beat, write the prose recap to
+`sessions/NNN-<slug>.md`, append anything newly established to `CANON.md`, update quests, clocks, and
+flag statuses, append the one-line dice-fairness summary, take a checkpoint (which commits and
+regenerates the dashboard), and close with a short **"next time on…"** teaser of one or two sentences.
+
+The session log is written for a future session that remembers nothing, so it records what happened, what
+changed, what's unresolved, and what I said I wanted to do next — the last of which is the single most
+useful line in the file.
+
+## 25. `CLAUDE.md` at the repository root
 
 Short and dense — this gets auto-loaded into every session, so it is not the place for full rules. It
 should contain: the hard constraints from section 0 restated as blunt rules; the boot sequence; the file
@@ -912,7 +989,7 @@ under about 150 lines.
 
 ---
 
-## 25. Build order and acceptance criteria
+## 26. Build order and acceptance criteria
 
 Build in this order so the tools exist before the docs that reference them:
 `tools/roll.py` and `tools/state.py` → the rest of `tools/` → `system/` → `templates/` →
@@ -967,6 +1044,13 @@ Before you report done, verify all of the following and show me the evidence:
 - [ ] No live-state field (HP, gold, inventory, conditions) appears anywhere under `worlds/`, and
       `validate.py` fails if one is introduced.
 - [ ] A campaign created with `World: none` builds and runs with no reference to `worlds/` at all.
+- [ ] A checkpoint taken in the middle of round 3 of a combat restores the full encounter tracker —
+      initiative order, current turn, actions spent, multiple attack penalty, reactions used, every
+      combatant's HP and conditions, and map positions. Show the before and after.
+- [ ] `tools/graph.py` produces a Mermaid diagram in `WORLD.md` from the NPC relationship fields, and the
+      player-safe version omits every tie marked GM-only.
+- [ ] `system/22-session-flow.md` states that the trailer contains only player-known information and that
+      the scene budget never truncates a scene.
 - [ ] No campaign-specific content exists outside `campaigns/`.
 - [ ] Every rules table is either cited or marked `⚠ UNVERIFIED`, and the unverified ones are listed in
       `DESIGN_NOTES.md`.

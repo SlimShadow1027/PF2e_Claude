@@ -10,7 +10,7 @@ Right now this repository contains the **setup prompt**, not the framework itsel
 | File | What it is |
 |---|---|
 | `PROMPT.md` | The prompt to paste into a fresh Claude Code session. That session builds the whole framework — system docs, dice tooling, state tracking, templates, slash commands. Appendices at the bottom hold the short prompts for creating a campaign, making a character, and resuming play. |
-| `EXTRAS.md` | Optional features and systems not baked into the prompt, with a recommendation on each. Add the ones you want to `PROMPT.md` before running it, or bolt them on later. |
+| `EXTRAS.md` | Where the optional features ended up — everything worth adding has been folded into the prompt, so what remains is the short list of things deliberately left out and the failure modes to watch for once you're playing. |
 
 ## How to use it
 

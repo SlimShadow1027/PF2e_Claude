@@ -1,11 +1,12 @@
 # Optional Extras
 
-Features that aren't in `PROMPT.md`, with a recommendation on each. Add the ones you want to the prompt
-before running it, or ask for them later as add-ons.
+Where the optional features ended up. Everything that was worth adding has been folded into `PROMPT.md`;
+what's left below is the short list of things deliberately left out, and the failure modes to watch for
+once you're actually playing.
 
-## Already folded into `PROMPT.md`
+## Folded into `PROMPT.md`
 
-These started life here and are now part of the spec, so you don't need to add them:
+These started life here as optional extras and are now part of the spec:
 
 - **Git as the time machine** — every checkpoint is a commit, so `git log` is the campaign history,
   `git diff` shows what changed between any two moments, and the roll log is committed alongside the
@@ -42,21 +43,18 @@ These started life here and are now part of the spec, so you don't need to add t
   only at confirmed promotion points, never during play, nothing live is ever promoted, campaign canon
   wins locally, and reads are date-gated so a prequel or parallel campaign can't be informed — or you
   spoiled — by events later than its own in-world date.
-
-## Worth considering
-
-**Session-start trailer.** A short "previously on" recap in the campaign's voice, generated from the last
-session log. Good for a campaign you touch once a week.
-
-**Aggregate mook resolution.** A "fast combat" mode where minions below a level threshold are resolved in
-batches rather than individually, to keep a 1-vs-6 fight from taking an hour. Trades tactical precision
-for pace.
-
-**NPC relationship graph.** A Mermaid diagram in `WORLD.md` of who owes what to whom, regenerated when
-the roster changes. Useful specifically in intrigue campaigns; skip for dungeon crawls.
-
-**Session-length pacing budget.** Target scenes per sitting, with the GM steering toward a cliffhanger as
-you approach the end. Helps if your sessions have a natural stopping time.
+- **Session trailers and the scene budget** — `system/22-session-flow.md`: a 100–150 word "previously on"
+  in the campaign's voice containing only what your characters know, with the mechanical recap kept
+  separate and a cold open available instead; a target scene count that steers toward a stopping point
+  without ever truncating a scene; and a closing routine that writes the log, updates canon, quests,
+  clocks and flags, checkpoints, and ends on a teaser.
+- **Batched minions** — in the encounter runner: identical creatures three or more levels below the party
+  act as a squad with one initiative entry and their attacks rolled in a single call, while each keeps its
+  own HP and conditions so area damage and focus fire still work. A speed change, not a math change.
+  True minion rules stay optional homebrew.
+- **The NPC relationship graph** — `tools/graph.py` builds a Mermaid diagram in `WORLD.md` from structured
+  relationship fields on each NPC file, in a player-safe version and a GM version with hidden allegiances.
+  Opt-in per campaign, since it earns its place in intrigue play and is noise in a dungeon crawl.
 
 ## Probably skip
 
@@ -72,9 +70,10 @@ pictures, because the GM can read positions back out of them.
 
 ## Things to watch for once you're playing
 
-- **Context loss mid-encounter.** Combat state in chat is the most fragile thing in the system. If a
-  long fight is going badly for continuity, ask for the initiative tracker and HP to be written to
-  `encounters/active.md` after every round, not just at the end.
+- **Context loss mid-encounter.** Combat state in chat is the most fragile thing in the system. The
+  prompt requires the encounter tracker to serialize into `state.json` so a mid-combat checkpoint
+  restores exactly — confirm that actually works before you trust it with a long fight, and ask for
+  `encounters/active.md` to be rewritten every round if a fight is going badly for continuity.
 - **Difficulty drift.** A GM that wants you to have a good time will quietly get easier. The
   post-encounter difficulty note and the periodic check-in in `03-difficulty-and-solo-levers.md` exist to
   catch that — actually read them.
