@@ -717,10 +717,26 @@ def item_use(data: dict[str, Any], name: str, owner: str | None, n: int = 1) -> 
 def bulk_report(data: dict[str, Any]) -> list[dict[str, Any]]:
     """Bulk carried against the encumbered and maximum limits, per carrier.
 
-    Source: Player Core, "Bulk" — 10 light items make 1 Bulk; a creature is encumbered
-    while carrying more than 5 + Strength modifier Bulk and cannot carry more than
-    10 + Strength modifier. Verified against Foundry VTT PF2e
-    src/module/actor/inventory/bulk.ts (`encumberedAfter` = 5 + Str, `max` = 10 + Str).
+    Source: Player Core p.269, "Bulk" — read from https://2e.aonprd.com/Rules.aspx?ID=2153
+    and ?ID=2154: "You can carry an amount of Bulk equal to 5 plus your Strength modifier
+    without penalty; if you carry more, you gain the encumbered condition. You can't hold
+    or carry more Bulk than 10 plus your Strength modifier." Ten light items make 1 Bulk
+    and fractions round down (?ID=2155); negligible items do not count. A thousand coins
+    are 1 Bulk (?ID=2157).
+
+    Two optional per-character fields, because feats and containers change the answer and
+    reporting a limit that is wrong is worse than reporting none:
+
+      bulk_bonus  raises BOTH limits. Hefty Hauler (Player Core, trained in Athletics)
+                  reads "Increase your maximum and encumbered Bulk limits by 2", so it
+                  is bulk_bonus: 2.
+      bulk_free   Bulk that does not count against the limits. A backpack "holds up to
+                  4 Bulk of items, and the first 2 Bulk of these items don't count
+                  against your Bulk limits" (Player Core p.287), so it is bulk_free: 2.
+
+    Both default to 0, so a character with neither field behaves exactly as before.
+    Nothing here reduces worn armour's Bulk: no such rule was found in Player Core's Bulk
+    section, and worn armour counts in full.
     """
     rows = []
     for key, pc in data.get("pcs", {}).items():
@@ -728,16 +744,25 @@ def bulk_report(data: dict[str, Any]) -> list[dict[str, Any]]:
         for it in pc.get("items", []):
             tenths += pf2e.bulk_tenths(it.get("bulk", "-")) * int(it.get("qty", 1))
         str_mod = int(pc.get("str_mod", 0))
+        bonus = int(pc.get("bulk_bonus", 0))
+        free_tenths = max(0, int(pc.get("bulk_free", 0))) * 10
+        counted = max(0, tenths - free_tenths)
+        encumbered_after = 5 + str_mod + bonus
+        maximum = 10 + str_mod + bonus
         rows.append(
             {
                 "id": key,
                 "name": pc.get("name", key),
                 "bulk_tenths": tenths,
                 "bulk": tenths / 10.0,
-                "encumbered_after": 5 + str_mod,
-                "max": 10 + str_mod,
-                "encumbered": tenths > (5 + str_mod) * 10,
-                "over_max": tenths > (10 + str_mod) * 10,
+                "counted_tenths": counted,
+                "counted": counted / 10.0,
+                "bulk_free": free_tenths / 10.0,
+                "bulk_bonus": bonus,
+                "encumbered_after": encumbered_after,
+                "max": maximum,
+                "encumbered": counted > encumbered_after * 10,
+                "over_max": counted > maximum * 10,
             }
         )
     return rows
@@ -1968,8 +1993,13 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
         out = []
         for row in bulk_report(data):
             flag = " OVER THE LIMIT" if row["over_max"] else (" encumbered" if row["encumbered"] else "")
-            out.append(f"{row['name']}: {row['bulk']:.1f} Bulk / encumbered after {row['encumbered_after']}"
-                       f" / max {row['max']}{flag}")
+            carried = f"{row['bulk']:.1f} Bulk"
+            if row["bulk_free"]:
+                carried += f" ({row['counted']:.1f} counted, {row['bulk_free']:.1f} free)"
+            limits = f"encumbered after {row['encumbered_after']} / max {row['max']}"
+            if row["bulk_bonus"]:
+                limits += f" (includes +{row['bulk_bonus']} from a feat)"
+            out.append(f"{row['name']}: {carried} / {limits}{flag}")
         return out or ["no characters"], False, data
 
     if cmd == "checkpoint":

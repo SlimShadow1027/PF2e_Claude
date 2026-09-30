@@ -165,9 +165,10 @@ def check_campaign(slug: str, r: Report) -> None:
 
     for row in st.bulk_report(data):
         if row["over_max"]:
-            r.error(f"{row['name']} carries {row['bulk']:.1f} Bulk, over the maximum of {row['max']}")
+            r.error(f"{row['name']} carries {row['counted']:.1f} Bulk that counts, "
+                    f"over the maximum of {row['max']}")
         elif row["encumbered"]:
-            r.warn(f"{row['name']} carries {row['bulk']:.1f} Bulk and is encumbered "
+            r.warn(f"{row['name']} carries {row['counted']:.1f} Bulk that counts and is encumbered "
                    f"(clumsy 1 and a 10-foot Speed penalty) — is that recorded as a condition?")
 
     # -- clocks ----------------------------------------------------------------
