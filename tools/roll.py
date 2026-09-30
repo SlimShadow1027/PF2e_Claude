@@ -51,7 +51,10 @@ def list_campaigns() -> list[str]:
     root = repo_root() / "campaigns"
     if not root.is_dir():
         return []
-    return sorted(p.name for p in root.iterdir() if p.is_dir() and not p.name.startswith("."))
+    # A leading "_" marks a folder that is not a campaign — parked pitches, notes for a
+    # campaign not yet started. Same convention as new_campaign.py and the bestiary check.
+    return sorted(p.name for p in root.iterdir()
+                  if p.is_dir() and not p.name.startswith(".") and not p.name.startswith("_"))
 
 
 def atomic_write(path: Path, text: str) -> None:
