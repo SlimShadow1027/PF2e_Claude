@@ -1,0 +1,42 @@
+{
+  "schema_version": 2,
+  "campaign": "third-beginnings",
+  "title": "Third Beginnings",
+  "created_at": "2026-09-30T12:41:19Z",
+  "updated_at": "2026-09-30T12:41:19Z",
+  "transparency": "standard",
+  "difficulty_preset": "Standard",
+  "session_in_progress": false,
+  "session_number": 0,
+  "scene_count": 0,
+  "checkpoint_counter": 0,
+  "last_checkpoint": null,
+  "time": {
+    "calendar": "golarion",
+    "year": 4725,
+    "month": 1,
+    "day": 1,
+    "minute_of_day": 480,
+    "elapsed_minutes": 0
+  },
+  "location": "unset",
+  "party": {
+    "level": 1,
+    "xp": 0,
+    "gold": {
+      "pp": 0,
+      "gp": 0,
+      "sp": 0,
+      "cp": 0
+    },
+    "stash": []
+  },
+  "pcs": {},
+  "clocks": {},
+  "quests": {},
+  "encounter": null,
+  "notes": {
+    "situation": "",
+    "next_beats": ""
+  }
+}
