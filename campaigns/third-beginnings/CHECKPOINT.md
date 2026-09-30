@@ -3,8 +3,8 @@
 > Rendered from `state.json` by `tools/state.py render`. **Do not hand-edit this file.**
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
-- Checkpoint: **—**
-- Rendered at: 2026-09-30T12:41:27Z
+- Checkpoint: **001** intake complete — Varisia, dungeon crawl x hexcrawl, heroic, one PC plus a GM-run ally
+- Rendered at: 2026-09-30T16:21:10Z
 - Session: 0 (not in session)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Standard**

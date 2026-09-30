@@ -15,7 +15,8 @@ only and are never treated as established elements of this campaign.
 
 | # | The request, in the player's words | Heat | Status | Where it has been seeded |
 |---|---|---|---|---|
-| | | | | |
+| 1 | "Somewhere nobody has been in centuries" — a room, a valley or a vault that is genuinely untouched, and the campaign treats that as the event it would be | warm | open | — |
+| 2 | "A moral choice that costs either way" — both options take something real; no correct answer available | warm | open | — |
 
 - **Heat:** `burning` (aim at it now) / `warm` (soon) / `someday` (whenever it fits)
 - **Status:** `open` / `set up` / `paid off` / `retired`

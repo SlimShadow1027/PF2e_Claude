@@ -7,9 +7,30 @@ any line mid-game with one sentence (`meta: ...`).
 
 These outrank everything else in this repository, including flags.
 
-- **Lines** (never appears, at all): _Not asked yet. Ask plainly, once, during intake._
-- **Veils** (happens, off-screen, not described): _Not asked yet._
-- **Check in before:** _Not asked yet._
+- **Lines** (never appears, at all): none stated.
+- **Veils** (happens, off-screen, not described): **harm to children.** It may exist in the
+  fiction and drive events; it is never depicted, described or played out on screen. The
+  player's words: *"Off screen child harm."*
+- **Check in before:** nothing named.
+
+### Tone of depiction — asked for, not merely permitted
+
+The player asked, in their own words, for *"an explicit graphically violent/mature adventure
+story."* So:
+
+- **Violence is described in detail.** Wounds, their effects and their aftermath land on the
+  page. A critical hit reads like one. Death reads like one.
+- **Mature subject matter is in scope** — cruelty, desperation, atrocity, moral rot, the
+  cost of the things the protagonist does. The campaign does not flinch and does not
+  euphemise.
+- **This does not override the veil above**, and it is not a request for sexual content or
+  sexual violence, neither of which was asked for and neither of which appears.
+- **It does not change the lethality setting.** Lethality 2 still stands: death is
+  telegraphed hard and always avoidable. Graphic is a matter of *description*, not of
+  *how often the player dies*. Those are separate dials and they stay separate.
+
+The player can move this with `dial it back` or `dial it up` at any point, and neither
+needs a justification.
 
 ## Transparency
 
@@ -24,20 +45,22 @@ These outrank everything else in this repository, including flags.
 
 ## Narration
 
-- **Length:** not yet decided
-- **Prose vs. bullets:** not yet decided
+- **Length:** two or three paragraphs per beat
+- **Prose vs. bullets:** prose for scenes, bullets for mechanics
 - **Person:** second person
 - **Tense:** present
-- **Name the rules being applied:** not yet decided
-- **Offer tactical suggestions:** not yet decided
-- **Remind the player of available actions and feats:** not yet decided
+- **Name the rules being applied:** when it matters
+- **Offer tactical suggestions:** **one option per turn** — a single thing worth considering,
+  never a full solve and never the decision
+- **Remind the player of available actions and feats:** folded into the one option per turn;
+  a full list on request or when the player is visibly stuck
 
 ## Session rhythm
 
-- **Typical sitting:** not yet decided
-- **Target scene count:** not yet decided
+- **Typical sitting:** an evening, open-ended
+- **Target scene count:** 5-7 — a steering aid, corrected by experience, never a timer
 - **Open with:** trailer (trailer / cold open)
-- **Aim for a cliffhanger:** not yet decided
+- **Aim for a cliffhanger:** **only when it is earned** — never manufactured
 - **Checkpoint aggressiveness:** as specified in system/05-checkpoint-protocol.md
 
 The scene budget is a steering aid, never a timer. It never truncates a scene. See
