@@ -17,15 +17,36 @@
 > with `World: none` behaves exactly as it does today — nothing about the shared layer
 > becomes mandatory. See `system/21-shared-worlds.md`.
 
-## The pitch
+## The pitch — The Sump Door
 
-_Not written yet. Intake ends with three one-page pitches; the player picks one before anything else is generated._
+Chosen by the player on 2026-09-30 from three offered. The other two are not canon; one is
+parked at `campaigns/_parked/the-cartographers-error.md` at the player's request, the third
+was discarded.
+
+Roderic's Cove pays a bounty for anything dredged out of the sea caves under the cliff. For
+thirty years the haul has been shipwreck junk — rigging, coin, the occasional body. Last
+month a diver brought up a door. Freestanding. Upright. Seated in bedrock forty feet down.
+Thassilonian, and shut.
+
+The Cove's answer was to build a windlass over it and start charging admission. Yours is to
+ask why anyone would build a door underwater.
+
+You are the third person to open it. The first two are still down there. One of them is
+still moving.
 
 ## Premise and stakes
 
-- **What is wrong with the world:** not yet decided
-- **Who is causing it:** not yet decided
-- **What happens if nobody stops it:** not yet decided
+- **What is wrong with the world:** A Thassilonian door in the sea caves beneath Roderic's
+  Cove has been opened. It was not a door *into* anywhere — it was a seal, and it was
+  holding. The town has spent a month monetising the hole in it.
+- **Who is causing it:** Nobody is causing it on purpose. The Cove's dredging economy opened
+  it by accident and now cannot afford to close it. The thing behind it is patient and does
+  not need anyone's cooperation. The two previous openers are complications, not villains —
+  at least one is still a person.
+- **What happens if nobody stops it:** The water table under the Cove keeps dropping. That
+  is the visible symptom and the campaign's clock: the deeper levels get drier, and when the
+  last of them does, whatever the seal was for walks out on dry stone. Roughly seven
+  chapters, and the player can watch it happen on the cliff face.
 
 ## Protagonist framing
 
@@ -73,7 +94,16 @@ See `system/03-difficulty-and-solo-levers.md` for what each party shape does to 
 
 ## Themes to keep returning to
 
-_Not yet decided._
+- **Curiosity is not innocent.** The protagonist opens the door because nobody else asked.
+  That is admirable and it is also the inciting harm. The campaign never lets them forget
+  they did this.
+- **A town that cannot afford the right answer.** The Cove is not corrupt or stupid. It is
+  poor, and the dredging is the only thing it has. Everyone who obstructs the protagonist
+  has a reason that would hold up in front of their own family.
+- **Down is drier.** The one physical fact that is wrong, stated early and never explained
+  until it has to be. It is the clock, the mystery and the tell, all at once.
+- **The other two.** Someone already did what the protagonist is doing. Twice. What they
+  became is the campaign's honest forecast.
 
 ## Intake answers not captured above
 
