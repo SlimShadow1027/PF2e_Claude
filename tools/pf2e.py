@@ -44,6 +44,33 @@ def _src(key: str, text: str, verified: bool = True) -> str:
 
 
 # --------------------------------------------------------------------------------------
+# Markdown front-matter-ish fields
+# --------------------------------------------------------------------------------------
+
+# Matches `World: x`, `- World: x`, `- **World:** x` and `**World**: x` alike, so the
+# three tools that read these fields cannot disagree about the syntax.
+def _field_re(name: str) -> re.Pattern[str]:
+    return re.compile(
+        rf"^(?P<lead>\s*[-*]?\s*\*{{0,2}}{re.escape(name)}\*{{0,2}}\s*:\*{{0,2}}\s*)(?P<value>.*?)\s*$",
+        re.MULTILINE | re.IGNORECASE,
+    )
+
+
+def read_field(text: str, name: str) -> str | None:
+    """The value of a `Name:` field in a Markdown file, or None if it is absent."""
+    m = _field_re(name).search(text)
+    return m.group("value").strip() if m else None
+
+
+def set_field(text: str, name: str, value: str) -> str:
+    """Replace a `Name:` field's value in place, or append the field if it is absent."""
+    pat = _field_re(name)
+    if pat.search(text):
+        return pat.sub(lambda m: m.group("lead") + value, text, count=1)
+    return text.rstrip() + f"\n\n- **{name}:** {value}\n"
+
+
+# --------------------------------------------------------------------------------------
 # Difficulty classes
 # --------------------------------------------------------------------------------------
 
