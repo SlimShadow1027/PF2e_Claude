@@ -203,6 +203,35 @@ def parse_chronicle(text: str) -> list[Entry]:
     return entries
 
 
+def insert_by_date(path: Path, entry: Entry, marker: str) -> None:
+    """Add an entry in date order.
+
+    The chronicle is append-only in the sense that matters — no entry is ever edited or
+    removed — but it is also *read* in date order, so a new entry goes where its date puts
+    it rather than at the end of the file. A campaign concluding a prequel arc would
+    otherwise leave the file unreadable and fail validation.
+    """
+    text = path.read_text(encoding="utf-8")
+    head, sep, body = text.partition(marker)
+    if not sep:
+        head, sep, body = text, "", ""
+    existing = parse_chronicle(body)
+    block = entry.render()
+    if not existing:
+        path.write_text(head + sep + "\n\n" + block, encoding="utf-8")
+        return
+    pieces = []
+    placed = False
+    for e in existing:
+        if not placed and entry.date.key() < e.date.key():
+            pieces.append(block)
+            placed = True
+        pieces.append(e.raw.rstrip() + "\n")
+    if not placed:
+        pieces.append(block)
+    path.write_text(head + sep + "\n\n" + "\n".join(pieces), encoding="utf-8")
+
+
 def read_chronicle(world: str) -> tuple[Path, list[Entry]]:
     path = world_dir(world) / "CHRONICLE.md"
     if not path.exists():
@@ -215,7 +244,11 @@ def read_chronicle(world: str) -> tuple[Path, list[Entry]]:
 # --------------------------------------------------------------------------------------
 
 def _slug(name: str) -> str:
-    s = re.sub(r"[^a-z0-9]+", "-", str(name).lower()).strip("-")
+    """'The Verdant Reach' -> 'verdant-reach'. A leading article is dropped, because a folder
+    called `the-verdant-reach` reads badly in every path that mentions it. Pass --slug to
+    override."""
+    text = re.sub(r"^\s*(the|a|an)\s+", "", str(name), flags=re.IGNORECASE)
+    s = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
     return s or "world"
 
 
@@ -549,9 +582,10 @@ def cmd_promote(args: argparse.Namespace) -> int:
             print("Nothing written.")
             return 1
 
-    text = path.read_text(encoding="utf-8")
-    atomic_write(path, text.rstrip() + "\n\n" + entry.render())
-    print(f"\nappended to worlds/{world}/CHRONICLE.md")
+    insert_by_date(path, entry, "<!-- CHRONICLE-ENTRIES-BELOW -->")
+    _, after = read_chronicle(world)
+    pos = next((i for i, e in enumerate(after, start=1) if e.title == entry.title), len(after))
+    print(f"\nappended to worlds/{world}/CHRONICLE.md as entry {pos} of {len(after)}, in date order")
     if args.legend:
         lpath = world_dir(world) / "LEGENDS.md"
         legend = Entry(
@@ -563,8 +597,8 @@ def cmd_promote(args: argparse.Namespace) -> int:
             happened=args.legend,
             changed="_(what the telling gets wrong, and who benefits from the version told)_",
         )
-        atomic_write(lpath, lpath.read_text(encoding="utf-8").rstrip() + "\n\n" + legend.render())
-        print(f"appended the telling to worlds/{world}/LEGENDS.md")
+        insert_by_date(lpath, legend, "<!-- LEGEND-ENTRIES-BELOW -->")
+        print(f"appended the telling to worlds/{world}/LEGENDS.md, in date order")
     print("\nNo live state was promoted. Current HP, coins, inventory, conditions, checkpoints and")
     print("roll logs stay in the campaign folder permanently.")
     return 0

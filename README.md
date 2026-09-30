@@ -24,6 +24,7 @@ trustworthy:
 CLAUDE.md              auto-loaded GM operating contract — the seven rules and the boot sequence
 README.md              this file
 DESIGN_NOTES.md        assumptions, decisions made without the user, and the "to verify" list
+ACCEPTANCE.md          the transcript of the acceptance run, including what failed first
 LICENSE_NOTES.md       ORC and Paizo Community Use attribution; what this repo does and does not copy
 PROMPT.md              the original specification
 EXTRAS.md              what was deliberately left out, and the failure modes to watch for
@@ -157,5 +158,7 @@ Full CLI reference: `tools/README.md`.
   handful of smaller values. `DESIGN_NOTES.md` lists every one of them under "To verify before first
   play", and each is marked in place. Nothing is silently guessed, but nothing unverified should be
   used to make a pacing decision without a look at the book first.
-- **The mid-combat restore has been tested but not played.** `DESIGN_NOTES.md` shows the test. Run
-  one real fight and take a checkpoint in the middle of it before trusting it with a long one.
+- **The mid-combat restore has been tested but not played.** `ACCEPTANCE.md` holds the transcript:
+  a checkpoint taken in the middle of round 3 of a four-combatant fight, and every tracker field
+  restored identically. Run one real fight and take a checkpoint in the middle of it before
+  trusting it with a long one.

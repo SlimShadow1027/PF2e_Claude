@@ -111,11 +111,14 @@ def parse_ties(path: Path) -> tuple[str, list[dict[str, Any]]]:
             target, reason = body.split(":", 1)
         else:
             target, reason = body, ""
+        target = target.strip().strip("*`").strip()
+        if not target or set(target) <= set("*_-—`"):
+            continue  # an unfilled template field, not a relationship
         ties.append(
             {
                 "from": who,
                 "kind": kind,
-                "to": target.strip().strip("*`"),
+                "to": target,
                 "reason": reason.strip(),
                 "gm_only": gm,
                 "unknown": unknown,
@@ -239,7 +242,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     gm_path = cdir / "gm-private" / "relationships.md"
     splice(
         gm_path,
-        "> **GM-ONLY.** Includes hidden allegiances and ties the player has not learned.\n\n"
+        "> **GM-ONLY** — includes hidden allegiances and ties the player has not learned.\n\n"
         + mermaid(ties, people)
         + f"\n\n{len(hidden)} tie(s) here are absent from the player-safe graph in WORLD.md.",
         "Relationships (full)",

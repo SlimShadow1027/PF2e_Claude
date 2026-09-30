@@ -1019,10 +1019,17 @@ def encounter_status(data: dict[str, Any]) -> list[str]:
     for i, c in enumerate(e["combatants"]):
         hp = combatant_hp(data, c)
         hp_s = f"{hp['current']}/{hp['max']}" if hp else "?"
+        conds: list[dict[str, Any]] = []
+        dying = 0
         if c.get("ref"):
-            _, pc = find_character(data, c["ref"])
-            conds = pc.get("conditions", [])
-            dying = int(pc.get("dying", 0))
+            try:
+                _, pc = find_character(data, c["ref"])
+            except StateError:
+                cs_note = f"⚠ ref {c['ref']!r} has no character in pcs"
+                conds = [{"name": cs_note}]
+            else:
+                conds = pc.get("conditions", [])
+                dying = int(pc.get("dying", 0))
         else:
             conds = c.get("conditions") or []
             dying = int(c.get("dying") or 0)
@@ -1375,11 +1382,27 @@ def read_snapshot(path: Path) -> dict[str, Any]:
         ) from exc
 
 
+def highest_checkpoint(slug: str) -> int:
+    """The largest checkpoint number on disk, so a restore never rewinds the counter."""
+    cdir = campaign_dir(slug) / "checkpoints"
+    if not cdir.is_dir():
+        return 0
+    best = 0
+    for p in cdir.glob("*.md"):
+        m = re.match(r"(\d+)-", p.name)
+        if m:
+            best = max(best, int(m.group(1)))
+    return best
+
+
 def restore(slug: str, cid: str, *, commit: bool = True, dashboard: bool = True) -> list[str]:
     path = find_snapshot(slug, cid)
     data = read_snapshot(path)
     if data.get("campaign") != slug:
         raise StateError(f"{path} belongs to campaign {data.get('campaign')!r}, not {slug!r}")
+    # The counter never rewinds. A restore is history, not an erasure: the next checkpoint
+    # takes a fresh number, so `restore NNN` can never become ambiguous between two snapshots.
+    data["checkpoint_counter"] = max(int(data.get("checkpoint_counter", 0)), highest_checkpoint(slug))
     save(slug, data)
     write_render(slug, data)
     notes = [f"restored {path.relative_to(repo_root())}",
@@ -1975,7 +1998,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         lines, dirty, data = dispatch(args)
         if dirty and data is not None:
             save(args.campaign, data)
-    except (StateError, DiceError) as exc:
+    except (StateError, DiceError, ValueError) as exc:
         print(f"state.py: refused: {exc}", file=sys.stderr)
         return 2
     except KeyError as exc:

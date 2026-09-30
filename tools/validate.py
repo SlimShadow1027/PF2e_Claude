@@ -213,8 +213,12 @@ def check_campaign(slug: str, r: Report) -> None:
     if not cpath.exists():
         r.error("CHECKPOINT.md is missing — run `state.py render`")
     else:
-        rendered = st.render_checkpoint(slug, data)
         on_disk = cpath.read_text(encoding="utf-8")
+        try:
+            rendered = st.render_checkpoint(slug, data)
+        except (st.StateError, KeyError, TypeError, ValueError) as exc:
+            r.error(f"state.json cannot be rendered, so CHECKPOINT.md cannot be checked against it: {exc}")
+            rendered = on_disk  # do not also report a spurious mismatch
         if _strip_timestamps(rendered) != _strip_timestamps(on_disk):
             r.error("CHECKPOINT.md does not match state.json — state.json wins; run "
                     f"`python3 tools/state.py --campaign {slug} render`")
