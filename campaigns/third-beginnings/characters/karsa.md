@@ -69,8 +69,13 @@ permanently at **doomed 4** (*War of Immortals* p.76).
 
 ## Speed and senses
 
-- **Speed 25 feet.** Human base 25. Breastplate has a Strength requirement of 16, which
-  Str 18 clears, so no armour speed penalty.
+- **Speed 25 feet.** Human base 25. Breastplate's **Strength entry is +3 — a modifier, not a
+  score** (*Player Core* p.271). Str 18 is +4, which clears it, so Karsa **takes neither the
+  breastplate's −2 check penalty nor its −5-foot Speed penalty**. The check penalty is the
+  part that matters most: without clearing the threshold, Athletics, Acrobatics, Stealth and
+  Thievery would all be 2 lower, and Athletics is the spine of this build.
+- **Shield:** steel shield, AC +2, **Hardness 5**, HP 20 (BT 10). Shield Block reduces damage
+  by 5 and the shield absorbs the rest.
 - **Low-light vision**, from **Gloomseer** (*Character Guide* p.12) — and it is the reason
   the Nidalese descent is on the sheet rather than in the backstory only.
 

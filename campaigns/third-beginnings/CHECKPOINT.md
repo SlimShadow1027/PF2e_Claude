@@ -3,8 +3,8 @@
 > Rendered from `state.json` by `tools/state.py render`. **Do not hand-edit this file.**
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
-- Checkpoint: **003** Karsa imported and verified; Varisia shared world created; Roderic set up as a join candidate
-- Rendered at: 2026-09-30T17:52:10Z
+- Checkpoint: **004** Vessa Tarn built; Roderic legends written; Cove and Sump Door in the gazetteer
+- Rendered at: 2026-09-30T19:05:32Z
 - Session: 0 (not in session)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Standard**
@@ -21,6 +21,7 @@ _(no situation paragraph recorded yet)_
 | Character | HP | AC | Fort | Ref | Will | Perc | Hero | Focus | Conditions |
 |---|---|---|---|---|---|---|---|---|---|
 | Karsa | 22/22 | 18 | +8 | +6 | +8 | +6 | 0 | 1/1 | — |
+| Vessa Tarn | 20/20 | 18 | +7 | +9 | +5 | +7 | 1 | 0/0 | — |
 
 ### Spell slots
 
@@ -29,8 +30,10 @@ _(no situation paragraph recorded yet)_
 ## Money and carried items
 
 - **Purse:** 5 gp
-- **Karsa** Bulk 6.6 (encumbered after 11, max 16)
-  - Karsa: Breastplate (worn), Steel shield, Healer's toolkit, Rope (50 ft) ×2, Climbing kit, Grappling hook, Lantern (hooded), Oil (pint) ×6, Torch ×5, Flint and steel, Chalk (10 pieces), Piton ×10, Crowbar, Rations (1 week) ×2, Waterskin, Bedroll, Sack ×2, Backpack
+- **Karsa** Bulk 8.7 (encumbered after 11, max 16)
+- **Vessa Tarn** Bulk 3.6 (encumbered after 6, max 11)
+  - Karsa: Breastplate (worn), Steel shield, Healer's toolkit, Rope (50 ft) ×3, Climbing kit, Grappling hook, Lantern (hooded), Oil (pint) ×6, Torch ×5, Flint and steel, Chalk (10 pieces), Piton ×10, Crowbar, Rations (1 week) ×2, Waterskin, Bedroll, Sack ×2, Backpack, Diving line and lead weights, Repair kit
+  - Vessa Tarn: Leather armour (worn), Shortbow, Shortsword, Lantern (hooded), Salvage tools, Arrows (bundle of 10) ×4, Backpack
 
 ---
 

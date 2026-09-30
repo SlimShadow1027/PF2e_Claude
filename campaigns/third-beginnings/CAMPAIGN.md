@@ -64,8 +64,10 @@ to be there.
 
 ## Party structure
 
-- **Characters the player controls:** 1
-- **Characters the GM runs:** 1
+- **Characters the player controls:** 1 — **Karsa**, cleric of Irori (Warpriest) / monk,
+  dual-class, mythic. `characters/karsa.md`
+- **Characters the GM runs:** 1 — **Vessa Tarn**, human ranger (precision), the diver who
+  found the door. `characters/vessa-tarn.md`
 - **Ally status:** a **GM-run ally built as a full PC**, in the initiative order, levelling
   alongside the protagonist.
 

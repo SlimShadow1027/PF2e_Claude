@@ -1,3 +1,44 @@
+# Checkpoint 004 — Vessa Tarn built; Roderic legends written; Cove and Sump Door in the gazetteer
+
+**Immutable.** Never edit a past checkpoint. Restore it with `python3 tools/state.py --campaign third-beginnings restore 004`.
+
+- Taken: 2026-09-30T19:05:32Z
+- In-world: 1 Abadius 4725 AR, 08:00
+- Location: unset
+- Session: 0
+- Mid-combat: no
+
+## Where we are
+
+_(no situation paragraph recorded)_
+
+## Immediate situation
+
+- Who is present: _unrecorded_
+- What is about to happen: _unrecorded_
+
+## Active conditions and effects
+
+- none
+
+## Clocks (what the world is doing off-screen)
+
+- none
+
+## Unresolved threads
+
+- see QUESTS.md
+
+## Next likely beats
+
+_(unrecorded)_
+
+## State snapshot
+
+The canonical machine-readable state at this moment. `restore` reads this block.
+
+<!-- STATE-SNAPSHOT-BEGIN -->
+```json
 {
   "schema_version": 2,
   "campaign": "third-beginnings",
@@ -355,3 +396,6 @@
     "next_beats": ""
   }
 }
+```
+<!-- STATE-SNAPSHOT-END -->
+
