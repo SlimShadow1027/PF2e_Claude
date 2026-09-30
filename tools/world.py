@@ -484,9 +484,16 @@ def cmd_as_of(args: argparse.Namespace) -> int:
     if later:
         print("---")
         print()
-        print("**Withheld by the date gate** (do not read, do not let them inform this campaign):")
-        for e in later:
-            print(f"- {e.date} — {e.title} ({e.campaign})")
+        if args.gm:
+            print("**Withheld by the date gate** (shown because --gm was passed):")
+            for e in later:
+                print(f"- {e.date} — {e.title} ({e.campaign})")
+        else:
+            # A gate that names what it is hiding is not a gate: reading the title is
+            # already the spoiler. Count only, same as the secret-visibility path below.
+            print(f"**Withheld by the date gate:** {len(later)} entry/entries dated later "
+                  f"than {args.date}. Titles are not shown — reading them would defeat "
+                  f"the gate. Use --gm if you need them.")
         print()
     if withheld and not args.gm:
         print(f"**Withheld as secret:** {len(withheld)} entry/entries. They are in the world's gm-private view.")
