@@ -4,17 +4,17 @@
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
 - Checkpoint: **004** Vessa Tarn built; Roderic legends written; Cove and Sump Door in the gazetteer
-- Rendered at: 2026-09-30T19:05:32Z
-- Session: 0 (not in session)
+- Rendered at: 2026-09-30T19:59:01Z
+- Session: 1 (in progress)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Standard**
 
 ## Scene
 
-- **Where:** unset
+- **Where:** Roderic's Cove — the windlass platform on the shingle, beneath the cliff
 - **When:** 1 Abadius 4725 AR, 08:00
 
-_(no situation paragraph recorded yet)_
+Session 1, scene 1. Karsa has bought a place in the viewing queue. Vessa has just refused to take the descent line. Dorrow wants the platform cleared.
 
 ## Party
 

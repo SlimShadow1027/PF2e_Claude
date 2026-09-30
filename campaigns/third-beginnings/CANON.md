@@ -21,6 +21,10 @@ contradicted but also are not treated as something the character has heard.
 | 5 | — | **Karsa** is Nidalese by descent, several generations removed; the family left Nidal and did not discuss why. Karsa has a smattering of Shadowtongue, not conversational. | Player, at character import | known |
 | 6 | — | Karsa is a cleric of **Irori** and came to the Cove because Roderic's story does not survive in any form that agrees with itself. | Player, at character import | known |
 | 7 | — | Vessa Tarn is the only person known to have entered the caves below the door and returned. | Pitch | known |
+| 10 | 1 Abadius 4725 AR | The syndicate charges **two silver** to stand on the windlass platform and be lowered to look at the door through a glass-bottomed viewing box. Karsa paid it. | Session 1, scene 1 | known |
+| 11 | 1 Abadius 4725 AR | **Dorrow Half-Coin** is the syndicate's tallyman on the platform. He tells the "Roderic bought the Cove" version of the name. | Session 1, scene 1 | known |
+| 12 | 1 Abadius 4725 AR | Vessa Tarn has refused to take the descent line since she reported the door, and says so publicly. | Session 1, scene 1 | known |
+| 13 | — | The dredging has brought up **three human skeletons** in thirty years, none of them identified. | Session 1, scene 1 | known |
 | 8 | — | **Roderic is alive.** He is a serving mercenary officer, not a historical figure. | Carried from the player's other campaign, 2026-09-30 | **GM-side truth** |
 | 9 | — | Every account of Roderic circulating in the Cove is wrong in some specific way. Four are recorded in `worlds/varisia/LEGENDS.md`. | GM | **GM-side truth** |
 
