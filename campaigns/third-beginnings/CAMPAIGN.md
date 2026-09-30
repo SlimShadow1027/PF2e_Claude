@@ -2,8 +2,8 @@
 
 - **Slug:** third-beginnings
 - **Created:** 2026-09-30
-- **World:** none
-- **Era:** present day
+- **World:** worlds/varisia
+- **Era:** 1 Abadius 4725 AR
 - **Start date:** 1 Abadius 4725 AR
 - **Shape:** original campaign built to Adventure Path discipline, shaped after a known AP — chapters with level gates, every encounter built to a verified XP budget, treasure paced off GM Core Table 6-1, every creature a cited published stat block. No published adventure text is reproduced; the specifics are this table's, and are flagged as unverifiable against a published adventure.
 - **Expected level range:** 1 to roughly 5-8
