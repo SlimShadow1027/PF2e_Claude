@@ -321,6 +321,11 @@ These are the GM's own suggestions, from having built it.
 
 - **The treasure table is the weakest number in the framework.** It is the one unverified table
   that feeds a tracker the GM is told to act on. Check it before it makes a pacing decision.
+- **A sixth defect was found after the run, not by it** (commit `26d52eb`): `world.py as-of`
+  printed the title of every entry the date gate withheld, so the gate leaked the thing it
+  existed to hide. The acceptance checks confirmed the gate *filtered* correctly and never asked
+  whether the filtering itself leaked. Worth remembering when reading the other 32 checks: they
+  test what they were written to test.
 - **The mid-combat restore is tested, not played.** The acceptance run takes a checkpoint in the
   middle of round 3 of a four-combatant fight and restores every tracker field identically,
   including actions spent, MAP step, the reaction that was used and on what, positions, persistent

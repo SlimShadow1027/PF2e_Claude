@@ -1255,6 +1255,19 @@ two standard errors of it, which is the ~95% band for a fair d20.
 
 ## Shared world
 
+> **Superseded, and worth reading as a failure.** The transcript below shows `world.py as-of`
+> printing the **date, title and campaign** of every entry it withheld, under a "do not read"
+> header. Reading the title *is* the spoiler, so the gate defeated itself: a GM loading the
+> gated view for a prequel learned what happens later just by loading it. Commit `26d52eb`
+> fixed it — the player-facing path now prints a count only, and the list stays behind `--gm`,
+> matching the secret-visibility path directly below it in the same function.
+>
+> The evidence is left as captured rather than regenerated, because that is what the run
+> produced. This was a sixth defect, found after the acceptance run rather than by it — the
+> checks confirmed the gate *filtered* correctly and never asked whether the filtering itself
+> leaked.
+
+
 ```
 === [23] world.py init + link produces a world, attaches test-run to it, and promote
          moves a concluded event into CHRONICLE.md with a date, a campaign tag and a
