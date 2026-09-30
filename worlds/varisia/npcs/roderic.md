@@ -4,12 +4,66 @@
 > `python3 tools/world.py as-of varisia "<current date>"` — the date gate decides what a
 > campaign in progress is allowed to know.
 
-- **Status:** **JOIN CANDIDATE — not yet canon in either direction.**
-- **Appears in:** `third-beginnings` (as history, not as a person on screen)
-- **Also claimed by:** a second campaign of this player's, run in a separate Claude Code
-  session on their own machine. **That campaign's material has not been read and cannot be
-  read from here** — see "The bridge problem" below.
+- **Status:** **ALIVE AND IN PLAY ELSEWHERE.** Not a historical figure.
+- **Owned by:** a second campaign of this player's, run in a separate Claude Code session on
+  their own machine. **That campaign is the real story.** This session cannot read it.
+- **Appears in `third-beginnings`:** only as **legend**, never as established fact. See
+  `worlds/varisia/LEGENDS.md`.
+- **Bridge in use:** hand-carried (option 2 below). The player passed the premise across on
+  2026-09-30; nothing is synced automatically.
 
+## What the other campaign has established
+
+The only facts in this file. Everything else about Roderic is legend.
+
+| Fact |
+|---|
+| He is **alive now** |
+| **Commander / Fighter**, dual-class — the same variant Karsa uses |
+| **Second-in-command of the 5th squad** of a mercenary company |
+| He lives in a city of **dark-grey legality**, where much of what would be crime elsewhere is routine business |
+| He was the **last of his first company to survive** |
+| He was left holding that company's **debts**, and his **contract was sold** to the group that now owns it |
+
+The campaign's own project is **correcting the legends** — working out what actually happened
+under the distortions. Which means the legends are not decoration in that campaign either.
+They are the thing being excavated from the other end.
+
+## The licence this file operates under
+
+The player's words, 2026-09-30: *"make up whatever events you like for the myth and it can be
+rectified or ignored as the other campaign continues."*
+
+So the myth is invented **here**, deliberately, in four mutually exclusive versions, and it is
+written to be **falsifiable in specific ways**. The real story overrules it without
+ceremony. When it does, **strike the legend and keep the record of it having been believed** —
+a legend disproved is still a legend people repeat.
+
+## The one rule
+
+**Do not assert who Roderic is.** Not in `third-beginnings`, not in `CANON.md`, not in play.
+The gap is load-bearing: Karsa's entire reason for being at the Cove is that the story does
+not survive in a form that agrees with itself, and that gap is shaped like whatever the other
+campaign decides. Filling it from this side is the one move that would break the join.
+
+## Timeline: concurrent, and that was a choice
+
+Roderic is alive and a mercenary officer, and the Cove already bears his name. Those two
+things can coexist three ways, and **this campaign assumes the first**:
+
+1. **Concurrent, and the legends are already wrong while he lives.** A man whose contract is
+   an asset has a reputation that is also an asset, and whoever owns the contract has been
+   selling the story. The name reached the coast ahead of any facts. **Assumed here** — it is
+   the darkest reading, it fits a grey-legality mercenary economy, and it leaves open the
+   possibility that Karsa could simply **meet him**, which is a far better payoff than
+   archaeology.
+2. **He is a descendant or namesake** of an earlier Roderic the Cove is actually named for.
+3. **The other campaign is set earlier** and `third-beginnings` is its downstream future.
+
+Switching to 2 or 3 costs one edit to this file and one to `LEGENDS.md`. Nothing in
+`third-beginnings` depends on the choice yet, and that is on purpose.
+
+## Why this file exists
 ## Why this file exists
 
 The player noticed that *Third Beginnings* is set in **Roderic's Cove**, and that a "Roderic"
@@ -20,14 +74,13 @@ They can. This file is the join point. It is deliberately **almost empty**, beca
 thing that would ruin the join is this session inventing a Roderic and then discovering the
 other campaign had already established a different one.
 
-## What is established, and by whom
+## What the Cove itself contributes
 
 | Fact | Established by | Status |
 |---|---|---|
 | Roderic's Cove is a settlement on the Varisian coast, named for a man called Roderic | published Varisian geography | **Published**, though the gazetteer detail could not be verified from this container — Archives of Nethys does not host setting text |
-| The Cove's dredging economy, the sea caves beneath the cliff, and the Thassilonian door | `third-beginnings` | **This campaign's own invention**, labelled as such |
-| Who Roderic actually was | **nobody yet** | **Open.** This is the gap Karsa is walking into, and the natural place for the other campaign's Roderic to land |
-| Anything from the other campaign | — | **Unknown to this session** |
+| The dredging economy, the sea caves, the Thassilonian door | `third-beginnings` | **This campaign's own invention**, labelled as such |
+| Who Roderic actually was | **nobody, here** | **Open, and staying open** |
 
 ## What *Third Beginnings* has deliberately left open
 
