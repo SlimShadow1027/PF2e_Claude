@@ -1,17 +1,25 @@
 # 12 — Rules quick reference
 
 The cheat sheet to consult **instead of recalling from memory**. Every table carries a
-`Source:` line, and any value that could not be checked against a source reachable from the
-machine that built this framework is marked `⚠ UNVERIFIED`.
+`Source:` line with the page it was read from. Anything that is this framework's own convention
+rather than a published value says so in place, and anything unverified would be marked
+`⚠ UNVERIFIED` — there is currently one such mark in this file, on the level −1 DC row.
 
-Run `python3 tools/pf2e.py sources` for the full provenance list, and see `DESIGN_NOTES.md`
-for what still needs verifying before first play.
+Run `python3 tools/pf2e.py sources` for the full provenance list, and see `DESIGN_NOTES.md` for
+how each table was checked.
 
-> **Verification note.** Archives of Nethys (`2e.aonprd.com`) was unreachable when this
-> framework was built, so the numeric tables were checked against the Foundry VTT PF2e system
-> source — an ORC-licensed implementation that cites AoN rule IDs inline — at version 8.5.1,
-> commit `06b904d6ced9795c4c07af085e6f61a56f845c60`. That is a secondary source. Where it does
-> not implement a table, the value here says so.
+> **Verification note.** Archives of Nethys (`2e.aonprd.com`) is reachable from this machine and
+> is the **primary** source for everything in this file: page IDs are cited inline and the values
+> were read from the published text, not recalled. A handful of tables that AoN does not present as
+> a table — the degrees-of-success thresholds, the multiple attack penalty, the item-bonus curve,
+> the dying/wounded/doomed numbers, the condition text and the Earn Income rates — are additionally
+> or solely checked against the Foundry VTT PF2e system source, an ORC-licensed implementation
+> citing AoN rule IDs inline, at version 8.5.1, commit
+> `06b904d6ced9795c4c07af085e6f61a56f845c60`. Each `Source:` line below says which applies.
+>
+> Three figures in earlier versions of this file were **wrong** and are corrected here: the
+> persistent-damage assisted flat check (10, not 11), the weakness/resistance order, and the cover
+> bonuses, which are now quoted rather than guessed.
 
 ---
 
@@ -80,6 +88,10 @@ kind made after the first that turn — weapon Strikes, spell attacks, and unarm
 | 5 | 20 | | 14 | 32 | | 23 | 46 |
 | 6 | 22 | | 15 | 34 | | 24 | 48 |
 | 7 | 23 | | 16 | 35 | | 25 | 50 |
+
+⚠ The published table runs **level 0 to 25**. The level −1 row (DC 13) is not in it — it is an
+extrapolation for level −1 creatures, taken from the Foundry VTT implementation. Treat that one
+row as a convention rather than a quotation.
 
 **Source:** GM Core, DCs by Level (https://2e.aonprd.com/Rules.aspx?ID=552). Verified against foundryvtt/pf2e v8.5.1 @06b904d6ced9795c4c07af085e6f61a56f845c60 (ORC implementation citing Archives of Nethys inline), src/module/dc.ts `dcByLevel`.
 
@@ -211,14 +223,23 @@ A flat check has no modifiers and no degrees of success: roll `1d20` against a D
 
 | Situation | Flat check DC |
 |---|---|
-| Ending persistent damage at the end of your turn | 15 (11 if you spend actions to help) |
+| Ending persistent damage at the end of your turn | **15** |
+| — the same check, with appropriate help (**Assisted Recovery**) | **10** |
 | Targeting a **concealed** creature | 5 |
 | Targeting a **hidden** creature | 11 |
-| A **deafened** creature using an auditory action | 5 |
+| A **deafened** creature using an action with the **auditory** trait | 5 |
 
-⚠ The "11 if you take steps to help" figure for persistent damage, and the deafened DC, could
-not be checked against a source reachable from this machine — see `DESIGN_NOTES.md`. The
-concealed (5) and hidden (11) DCs come from the condition text below, which is verified.
+The assisted figure was **11** in earlier versions of this file. It is **10**. Player Core, under
+Assisted Recovery: *"Reduce the DC of the flat check to 10 for a particularly appropriate type of
+help, such as dousing you in water to put out flames."*
+
+The deafened check is attempted **after** spending the action but **before** any effects apply, and
+the action is lost on a failure.
+
+**Source:** Persistent Damage, Player Core p.445 —
+<https://2e.aonprd.com/Conditions.aspx?ID=86>. Deafened, Player Core p.443 —
+<https://2e.aonprd.com/Conditions.aspx?ID=66>. Concealed and hidden, Player Core p.432, Perception
+and Detection — <https://2e.aonprd.com/Rules.aspx?ID=2400>.
 
 ---
 
@@ -226,17 +247,26 @@ concealed (5) and hidden (11) DCs come from the condition text below, which is v
 
 | State | Effect |
 |---|---|
-| **Lesser cover** | +1 circumstance bonus to AC |
-| **Standard cover** | +2 circumstance bonus to AC, and to Stealth to Hide/Sneak |
-| **Greater cover** | +4 circumstance bonus to AC (needs a specific source, e.g. Take Cover) |
+| **Lesser cover** | +1 circumstance bonus to AC. **Does not** let you Hide. |
+| **Standard cover** | +2 circumstance bonus to AC, to Reflex saves against area effects, and to Stealth to Hide, Sneak or otherwise avoid detection |
+| **Greater cover** | +4 circumstance bonus to the same three things |
 | **Flanking** | the flanked creature is **off-guard** to both flankers |
 | **Off-guard** | −2 circumstance penalty to AC |
 
-⚠ The cover bonuses are `⚠ UNVERIFIED` against a reachable source; the off-guard penalty and
-the flanking definition are verified from the condition text below.
+**Take Cover** (◆) upgrades what you have: standard cover becomes greater cover, and anything less
+becomes standard. It requires that you are already benefiting from cover, are next to something you
+can take cover behind, or are prone, and it lasts until you move, attack, fall unconscious, or end
+it as a free action.
 
-**Flanking** requires you and an ally to be on opposite sides of the target, both able to act,
-both wielding a melee weapon or unarmed attack, and each able to reach it.
+**Flanking** requires you and an ally to be on opposite sides of the target, both able to act, both
+wielding a melee weapon or unarmed attack, and each able to reach it. **At a party of one, flanking
+is off the table** — which is why `03-difficulty-and-solo-levers.md` treats off-guard as something
+the solo character has to buy with Feint, Trip or a spell rather than something that arrives free.
+
+**Source:** Cover, Player Core p.424 — <https://2e.aonprd.com/Rules.aspx?ID=2372>: lesser +1 to AC
+only, standard +2 to AC, Reflex against area effects and Stealth, greater +4 to the same. Take
+Cover — <https://2e.aonprd.com/Actions.aspx?ID=90>. The off-guard penalty and the flanking
+definition come from the condition text below.
 
 ### Detection states
 
@@ -265,13 +295,23 @@ Apply in this order, and say you did:
 
 1. **Immunity** — the damage does not apply at all.
 2. **Doubling and halving** from the effect itself (a critical hit, a basic save).
-3. **Resistance** — subtract it.
-4. **Weakness** — add it.
+3. **Weakness** — add it.
+4. **Resistance** — subtract it, to a minimum of 0.
 
-Resistance and weakness to the same damage type cancel to the difference, applied once.
+**Weakness comes before resistance.** Player Core states it directly, under Resistance:
+*"After any weaknesses, apply resistances."*
 
-⚠ `⚠ UNVERIFIED` against a reachable source. The order matters mostly at the margins, but say
-which order was used when it changes an outcome.
+The order changes the answer whenever resistance would take the total below zero. Five damage
+against weakness 5 and resistance 10 is `5 + 5 = 10`, then `10 − 10 = 0`. Doing it the other way
+round gives 5, which is wrong.
+
+A single effect can trigger more than one weakness, but **each weakness applies only once**. The
+same goes for resistances, and if two resistances cover the same damage type only one applies —
+usually the highest. Where a resistance covers a category (physical, spells, all damage) and the
+damage has several types in that category, **the defender chooses** which type to apply it to.
+
+**Source:** Player Core p.408, Immunity, Weakness, and Resistance —
+<https://2e.aonprd.com/Rules.aspx?ID=2312>.
 
 ---
 
@@ -316,8 +356,20 @@ refuses the combination rather than picking one.
 Grapple, Shove, Trip and Disarm are **attack** actions and so raise the multiple attack
 penalty.
 
-⚠ The Grapple/Shove/Trip/Disarm target DCs and the Aid DC are `⚠ UNVERIFIED` against a
-reachable source. Check them before a fight turns on one.
+**Aid in full**, because it is the action a small table most wants and most often gets wrong: it
+is a **reaction**, it triggers on an ally about to attempt a skill check or attack roll, and you
+must have **prepared to help on a previous turn**. The typical DC is **15**, adjustable. Critical
+success grants **+2**, or **+3** if you are master with the check attempted and **+4** if
+legendary; success grants **+1**; critical failure gives your ally **−1**. Aiding the same
+creature repeatedly has diminishing returns and the GM raises the DC.
+
+**Source:** Grapple (Fortitude DC) — <https://2e.aonprd.com/Actions.aspx?ID=35>; Shove (Fortitude
+DC) — <https://2e.aonprd.com/Actions.aspx?ID=38>; Trip (Reflex DC) —
+<https://2e.aonprd.com/Actions.aspx?ID=40>; Disarm (Reflex DC) —
+<https://2e.aonprd.com/Actions.aspx?ID=41>; Aid, Player Core p.416 —
+<https://2e.aonprd.com/Actions.aspx?ID=2292>. Note that AoN still serves the four Athletics
+actions from the pre-Remaster Core Rulebook p.242-243, so their text says *flat-footed* where
+Remaster says **off-guard**; the DCs and degrees of success are unchanged.
 
 ---
 

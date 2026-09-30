@@ -566,6 +566,15 @@ date   Wed Sep 30 03:25:17 2026 +0000
 
 ## Encounter budget
 
+> **Superseded, and worth reading as a failure.** The transcript below is the original run. Its
+> budget table is **wrong**: it reports a Low budget of 15 XP at a party of one, from a Character
+> Adjustment of 10/15/20/30/40. The published adjustment is **10/20/20/30/40** — Low and Moderate
+> share the figure of 20 — so the published Low budget at a party of one is **0 XP**, not 15.
+> The 15 came from the Foundry implementation's smoothed `partySize × 20` computation, which the
+> original source line described accurately and which nobody checked against the book, because the
+> table was not marked unverified. See **Verification pass 2** at the end of this file for the corrected output. This check passed; it was checking the wrong
+> number.
+
 ```
 === [11] pf2e.py encounter reports a budget, and every table it uses has a Source: line ===
 
@@ -2235,3 +2244,136 @@ Level-based DC, level 3, common: 18
 
 Checks 21, 22 and 29 are in the [Off-screen turn](#off-screen-turn) transcript above,
 which was captured in one run with them.
+
+---
+
+## Verification pass 2 — Archives of Nethys
+
+The original run was made while `2e.aonprd.com` was unreachable, so the numeric tables were checked
+against the Foundry VTT PF2e source and five of seventeen were marked `⚠ UNVERIFIED`. The egress
+policy later allowed AoN. Every table was re-read from the published text, and the checks that
+depend on a corrected table were re-run. The full list of what was wrong is in `DESIGN_NOTES.md`
+under "Pass 2"; this section holds the re-run output.
+
+### Provenance, after the re-read
+
+```
+$ python3 tools/pf2e.py sources | tail -6
+
+0 of 23 tables are unverified.
+
+Every table above was read from Archives of Nethys, or is labelled as this
+framework's own convention rather than a published rule. Re-verifying against
+AoN found eight errors in this file; DESIGN_NOTES.md lists them under 'Pass 2'.
+```
+
+### Check 11, re-run — the corrected budget
+
+```
+$ python3 tools/pf2e.py encounter --party-level 3 --party-size 1 --threat moderate
+
+Party level 3, party size 1
+
+XP budget by threat level (as published):
+  trivial      10 XP
+  low           0 XP   (smoothed: 15)
+  moderate     20 XP  <-- requested
+  severe       30 XP
+  extreme      40 XP
+
+  ⚠ At a party of 1 the published rule sends low to 0 XP, because the Character Adjustment for Low and
+    Moderate is the same (20). An encounter with nothing in it is not a threat level.
+    Pass --smoothed for the 20-XP-per-character reading many tables use instead, or
+    build to trivial and accept that it is trivial.
+
+Build to 20 XP for a moderate encounter.
+On clearing it, award 80 XP — the four-character figure.
+```
+
+The last line is the second correction, and it is the one that matters most to this campaign. XP
+**awards** do not scale with party size — GM Core p.76: *"the XP awards for the encounter don't
+change—you'll always award the amount of XP listed for a group of four characters."* The original
+build scaled them, which would have made a solo character take roughly four times as long to level.
+
+The whole grid, published against smoothed:
+
+```
+$ python3 tools/pf2e.py tables budgets
+
+party_size | trivial | low      | moderate | severe | extreme
+-----------|---------|----------|----------|--------|--------
+1          | 10      | 0 (15)   | 20       | 30     | 40     
+2          | 20      | 20 (30)  | 40       | 60     | 80     
+3          | 30      | 40 (45)  | 60       | 90     | 120    
+4          | 40      | 60       | 80       | 120    | 160    
+5          | 50      | 80 (75)  | 100      | 150    | 200    
+6          | 60      | 100 (90) | 120      | 180    | 240    
+
+Published figure, with the smoothed alternative in brackets where they differ.
+XP awarded is always the four-character figure: trivial 40, low 60, moderate 80, severe 120, extreme 160.
+```
+
+### Treasure, re-run — the percentage split was not a rule
+
+```
+$ python3 tools/pf2e.py treasure --level 5 --party-size 1
+
+Treasure for one level of play at level 5, party size 1
+Published total for four characters: 1350 gp
+
+  As published, for four characters:
+    permanent items (4): level 6, level 6, level 5, level 5
+    consumables (6):     level 6, level 6, level 5, level 5, level 4, level 4
+    currency:                320 gp
+
+  Strict subtraction for the missing characters:
+    permanent items (1): level 6
+    consumables (0):     none
+    currency:                80 gp
+
+  The gentler reading the book invites (half the subtraction):
+    permanent items (3): level 6, level 6, level 5
+    consumables (4):     level 6, level 6, level 5, level 5
+    currency:                240 gp
+
+  Which to use is a judgement call, and the rule says so. Decide, write it in
+  RULES_DELTAS.md, and keep logs/loot.md measured against the same choice.
+```
+
+The original build reported a single gp figure and a ~50/25/25 split. There is no such split in
+GM Core: Table 6-1 names item counts and item levels.
+
+### Settlements — a table that was not a table
+
+```
+$ python3 tools/pf2e.py settlement --level 6
+
+A settlement of level 6:
+  buys and sells common items up to item level 6
+  how many of the top-end items, from the level-5 treasure row:
+    permanent:   2x level 6, 2x level 5
+    consumables: 2x level 6, 2x level 5, 2x level 4
+  above that level: special order or commission; costs time, and the GM sets how much
+```
+
+`settlement_item_levels` was marked "unverified published table". It is not a published table at
+all — GM Core p.168 gives a settlement a **level**. The size names remain as this framework's own
+suggestion for picking one, now labelled as such, and the real rule is implemented beside it.
+
+### The `system/` docs
+
+Six inline values were wrong and are corrected in place, each with the AoN page it was read from:
+the persistent-damage assisted flat check (**10**, not 11), the invented "at least 6 hours of
+sleep" in a night's rest, the rune transfer cost (**10%** of the rune's Price and 1 day, not half),
+the missing full-Price exception when selling coins, gems, art objects and raw materials, the
+Treat Wounds toolkit requirement and 1-hour doubling, and the level-up progression presented as
+universal when Player Core says the class table is the authority.
+
+```
+$ python3 tools/validate.py --all --repo
+campaign third-beginnings: 0 error(s), 1 warning(s)
+  warn  state.json holds no characters yet
+repository: 0 error(s), 0 warning(s)
+
+PASS — 0 errors, 1 warning(s)
+```

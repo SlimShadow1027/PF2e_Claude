@@ -9,24 +9,30 @@ time. Changing it takes no action; it is simply what they are doing.
 
 | Activity | Speed | What it does |
 |---|---|---|
-| Search | half | you get a Perception check against anything you pass; without it, hidden things stay hidden |
-| Detect Magic | maximum ~300 ft/min | repeatedly cast detect magic as you go |
-| Avoid Notice | half | Stealth instead of a normal approach; sets up an ambush or avoids one |
-| Scout | half | +1 circumstance bonus to the party's initiative |
-| Defend | half | you have your shield raised when combat starts |
-| Track | half | follow a trail with Survival |
-| Cover Tracks | half | hide the party's own trail |
-| Investigate | half | Recall Knowledge as you go |
-| Repeat a Spell | half | keep a spell active as you travel |
-| Hustle | full ×2 | double speed, for a number of minutes equal to your Constitution modifier × 10 |
+| Avoid Notice | half | Stealth while travelling; at the start of an encounter you roll Stealth for initiative *and* to see whether the enemies notice you |
+| Defend | half | you have your shield raised before your first turn begins |
+| Detect Magic | half or slower | no chance of overlooking an aura up to 300 ft/min; **150 ft/min or slower** to detect auras *before* you walk into them |
+| Follow the Expert | matches the ally | add your level as a proficiency bonus even if untrained, plus +2 / +3 / +4 for an expert / master / legendary ally |
+| Hustle | **double** | for a number of minutes equal to your Constitution modifier × 10, minimum 10 |
+| Investigate | half | Recall Knowledge as a **secret** check for clues as you go |
+| Repeat a Spell | half | keep a 2-action-or-less spell going; the GM may make you fatigued |
+| Scout | half | +1 circumstance bonus to **everyone's** initiative in the next encounter |
+| Search | half | Seek meticulously; **300 ft/min** to guarantee you checked everything, **150 ft/min** to check it before walking into it. The GM rolls a free **secret** Seek |
 
-**The important one for solo play:** a single character can only do one of these. Choosing
-Search means not Avoiding Notice, which means being seen. That is a real decision and it should
-be presented as one, not defaulted.
+Skill exploration activities also exist and run at whatever the skill says: Borrow an Arcane Spell,
+Coerce, Cover Tracks, Decipher Writing, Gather Information, Identify Alchemy, Identify Magic,
+Impersonate, Learn a Spell, Make an Impression, Repair, Sense Direction, Squeeze, Track, Treat
+Wounds.
 
-⚠ The activity list and their speed effects are `⚠ UNVERIFIED` against a source reachable from
-this machine, except the half-speed rule and the 8-hour travel day, which are verified — see
-`python3 tools/pf2e.py sources` (`travel_speed`).
+**The important one for solo play:** a single character can only do one of these. Choosing Search
+means not Avoiding Notice, which means being seen. That is a real decision and it should be
+presented as one, not defaulted. It is also why Scout's "+1 to everyone's initiative" is worth
+less at this table than its reputation suggests, and why Follow the Expert is worth nothing at
+all with no ally to follow.
+
+**Source:** Player Core p.438-439, Exploration Activities —
+<https://2e.aonprd.com/Rules.aspx?ID=2442>. Every activity and its speed effect read from the
+published text.
 
 ---
 
@@ -34,15 +40,19 @@ this machine, except the half-speed rule and the 8-hour travel day, which are ve
 
 | Speed | Feet per minute | Miles per hour | Miles per day (8 hours) |
 |---|---|---|---|
-| 10 ft | 100 | 1.0 | 8 |
+| 10 ft | 100 | 1 | 8 |
 | 15 ft | 150 | 1.5 | 12 |
-| 20 ft | 200 | 2.0 | 16 |
+| 20 ft | 200 | 2 | 16 |
 | 25 ft | 250 | 2.5 | 20 |
-| 30 ft | 300 | 3.0 | 24 |
+| 30 ft | 300 | 3 | 24 |
 | 35 ft | 350 | 3.5 | 28 |
-| 40 ft | 400 | 4.0 | 32 |
+| 40 ft | 400 | 4 | 32 |
+| 50 ft | 500 | 5 | 40 |
+| 60 ft | 600 | 6 | 48 |
 
-⚠ **PARTLY UNVERIFIED —** GM Core, Travel Speed. The 8-hour travel day is verified against foundryvtt/pf2e v8.5.1 @06b904d6ced9795c4c07af085e6f61a56f845c60 (ORC implementation citing Archives of Nethys inline), src/scripts/macros/travel/travel-speed.ts (`hoursPerDay = 8`), and feet per minute is Speed x 10. The miles-per-hour and miles-per-day columns are UNVERIFIED: they are derived from Speed / 10 miles per hour x 8 hours, which reproduces the familiar published rows, but the published table itself could not be checked from this machine.
+**Source:** Player Core p.438, Travel Speed — <https://2e.aonprd.com/Rules.aspx?ID=2441>. All nine
+rows read from the published table. `python3 tools/pf2e.py tables travel` prints the same rows with
+the terrain multipliers.
 
 Terrain multipliers, applied to the day's distance:
 
@@ -53,7 +63,14 @@ Terrain multipliers, applied to the day's distance:
 | Greater difficult terrain (swamp, thick ice, a cliff face) | one third speed |
 | Hot or cold climate without protection | fewer travel hours per day |
 
-⚠ `⚠ UNVERIFIED`.
+The published table *"assume[s] traveling over flat and clear terrain at a determined pace, but one
+that's not exhausting."* **Difficult terrain halves** the rate; **greater difficult terrain reduces
+it to one third.** Where travel needs a skill check — climbing, swimming — the GM may call for one
+**once per hour** and read progress off the table.
+
+⚠ The hot/cold-climate row is this framework's own note, not a published figure.
+
+**Source:** Player Core p.438, Travel Speed — <https://2e.aonprd.com/Rules.aspx?ID=2441>.
 
 Advance the clock through the tool, so the in-world date cannot drift from the narration:
 
@@ -119,13 +136,21 @@ answers.
 
 ### Resting
 
-A full night's rest requires **8 hours** of rest, of which at least 6 must be sleep, without
-being interrupted by combat. It restores:
+**Once every 24 hours you can take a period of rest, typically 8 hours.** The published rule is
+exactly that — there is no separate "hours of sleep" requirement, and this framework previously
+invented one. It restores:
 
-- **Hit points** equal to Constitution modifier × level (minimum 1 × level).
-- **All spell slots** and **all Focus Points**.
-- **Reduces drained and doomed by 1** each.
-- **Removes fatigued**, given a full and uninterrupted night.
+- **Hit points** equal to **Constitution modifier (minimum 1) × level**.
+- **All spell slots** and **all Focus Points** — though those come from the daily preparations
+  afterwards, not the sleep itself.
+- **Reduces drained and doomed by 1** each (from the condition text).
+- **Removes fatigued**, given a full night.
+
+Two penalties are published and both matter on the road:
+
+- **Sleeping in armour** gives poor rest and leaves you **fatigued**.
+- **More than 16 hours without resting** makes you **fatigued**, and you cannot recover from that
+  fatigue until you rest **at least 8 continuous hours**.
 
 ```
 python3 tools/state.py --campaign X daily-prep
@@ -134,15 +159,30 @@ python3 tools/state.py --campaign X daily-prep
 restores slots and focus, steps drained and doomed down by 1, and reports what changed. It does
 **not** restore the hit points drained took away — that is correct, and the tool says so.
 
-⚠ The hit-points-per-night formula is `⚠ UNVERIFIED` against a reachable source. The
-drained/doomed/wounded step-downs are verified from the condition text in
-`12-rules-quick-reference.md`.
+**Source:** Player Core p.439, Rest and Daily Preparations —
+<https://2e.aonprd.com/Rules.aspx?ID=2443>, quoting: *"Once every 24 hours, you can take a period
+of rest (typically 8 hours), during which you heal naturally, regaining Hit Points equal to your
+Constitution modifier (minimum 1) times your level."*
+
+### Long-term rest, in downtime
+
+Spending **an entire day and night resting** during downtime recovers **Constitution modifier
+(minimum 1) × double your level** in hit points. That is the lever for a character who is a long
+way down and has no Medicine: two days of doing nothing beats one long night.
+
+**Source:** Player Core p.440, Downtime Mode — <https://2e.aonprd.com/Rules.aspx?ID=2444>.
 
 ### Daily preparations
 
-Half an hour after waking: prepare spells, invest worn items (up to 10), ready the kit. This is
-the moment to ask the player what they are preparing *for*, which is a better question than
-what they are preparing.
+**Around 1 hour** after resting, and only once per day, and only if you rested. During it:
+spellcasters regain slots and prepared casters choose the day's spells; Focus Points and
+per-day item uses reset; you don armour and equip gear; you **invest up to 10 worn magic
+items**.
+
+This is the moment to ask the player what they are preparing *for*, which is a better question
+than what they are preparing.
+
+**Source:** Player Core p.439 — <https://2e.aonprd.com/Rules.aspx?ID=2443>.
 
 ---
 
@@ -170,12 +210,29 @@ python3 tools/roll.py damage "2d8" --label "Treat Wounds healing" --campaign X
 python3 tools/state.py --campaign X heal kaelen 11
 ```
 
-**Source:** the healing dice and the bonus-by-rank figures are verified against the Foundry VTT
-PF2e implementation (`src/module/system/action-macros/medicine/`), which gives 2d8 on a success,
-4d8 on a critical, and +0 / +0 / +10 / +30 / +50 by proficiency rank. The DCs come from the
-verified simple-DC table, with master at 30 and legendary at 40.
+**Requires a healer's toolkit**, worn or held.
 
-⚠ The once-per-hour-per-patient limit and the 10-minute duration are `⚠ UNVERIFIED` here.
+**Two things the framework originally missed, and both matter solo:**
+
+- **An hour of treatment doubles the healing.** *"If you succeed at your check, you can continue
+  treating the target to grant additional healing. If you treat it for a total of 1 hour, double
+  the Hit Points it regains from Treat Wounds."* For a character with no healer in the party this
+  is the single largest attrition lever available, and it costs only in-world time.
+- **A critical success removes the wounded condition too**, not just a success.
+
+The immunity window is precise: the target is immune to Treat Wounds for **1 hour**, and that hour
+*overlaps the ten minutes spent treating* — so a patient can be treated **once per hour, not once
+per seventy minutes**.
+
+Attempting a higher DC than your rank allows is optional and the critical-failure damage stays
+1d8 either way.
+
+**Source:** Treat Wounds — <https://2e.aonprd.com/Actions.aspx?ID=57>. Every figure in the table
+above, the DCs, the healing, the 1d8 on a critical failure, the healer's-tools requirement, the
+1-hour immunity window and the 1-hour doubling are quoted from it, including the parenthesis
+*"so a patient can be treated once per hour, not once per 70 minutes"*. Both success and critical
+success remove **wounded**. AoN still serves this action from the pre-Remaster Core Rulebook
+p.249; the Remaster text renames the tools and is otherwise unchanged.
 
 For a solo character this is the main attrition lever. The `Story` and some `Standard` presets
 in `03-difficulty-and-solo-levers.md` grant a free one between encounters precisely because
@@ -183,12 +240,23 @@ there is nobody else to cast a heal.
 
 ### Administer First Aid
 
-Two actions, Medicine, in combat. **Stabilise** a dying creature (DC 15 + their dying value) or
-**stop bleeding** (DC 15, or the persistent damage's DC).
+Two actions, Medicine, untrained, on an **adjacent** creature that is dying or bleeding. You are
+holding healer's tools, or wearing them with a hand free. If the creature is both, choose which
+before you roll.
 
-For one character this is the one they cannot use on themselves while unconscious, which is what
-makes the death spiral in `03-difficulty-and-solo-levers.md` a structural problem rather than a
-bad-luck problem.
+| Use | DC | Success | Critical failure |
+|---|---|---|---|
+| **Stabilise** | **5 + the creature's recovery DC** — typically **15 + its dying value** | it loses dying, but stays unconscious | its dying value **increases by 1** |
+| **Stop bleeding** | usually the DC of the effect that caused the bleed | it attempts a flat check to end the persistent damage | it immediately takes damage equal to its persistent bleed |
+
+The stabilise DC is the one worth having right: against a creature at dying 2 that is **DC 17**,
+not 15, and the critical failure pushes it to dying 3.
+
+**Source:** Administer First Aid — <https://2e.aonprd.com/Actions.aspx?ID=54>.
+
+For one character this is the action they cannot use on themselves while unconscious, which is
+what makes the death spiral in `03-difficulty-and-solo-levers.md` a structural problem rather than
+a bad-luck problem.
 
 ### Refocus
 

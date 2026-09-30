@@ -55,12 +55,29 @@ creature built from the benchmarks, or a ghoul with the Elite adjustment — say
 
 ### Adjustments
 
-Elite and Weak are the official ±2 dial. Record in the bestiary file whether they are applied,
-and say so to the player when it matters — "these are the weaker sort" is information a player
-can act on.
+Elite and Weak are the official dial. Record in the bestiary file whether they are applied, and
+say so to the player when it matters — "these are the weaker sort" is information a player can act
+on.
 
-⚠ The HP column of the Elite/Weak table is marked `⚠ UNVERIFIED` in `tools/pf2e.py`. Check it
-before leaning on it.
+```
+python3 tools/pf2e.py tables adjustments
+```
+
+| | Elite | Weak |
+|---|---|---|
+| Level | +1, or **+2 if the creature is level −1 or 0** | −1, or **−2 if the creature is level 1** |
+| AC, attack modifiers, DCs, saves, Perception, skills | +2 | −2 |
+| Strike and offensive-ability damage | +2 | −2 |
+| …if the ability has a **use limit** (spells, a dragon's breath) | **+4** | **−4** |
+| HP | +10 (level **1 or lower**), +15 (**2–4**), +20 (5–19), +30 (20+) | −10 (level **1–2**), −15 (**3–5**), −20 (**6–20**), −30 (**21+**) |
+| XP | award for its **new** level | award for its **new** level |
+
+**The two HP columns do not share their level boundaries.** A level-3 creature gains 15 HP elite
+but loses 15 weak; a level-5 creature gains 20 but loses only 15; a level-20 creature gains 30 but
+loses 20. This framework had them wrong — one shared set of bands — until the table was read from
+the source. If you have a bestiary file written before that, recheck its adjusted HP.
+
+**Source:** Monster Core p.6, Adjusting Creatures — <https://2e.aonprd.com/Rules.aspx?ID=3262>.
 
 ---
 

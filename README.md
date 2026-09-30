@@ -133,9 +133,10 @@ Full CLI reference: `tools/README.md`.
   the GM cannot decide an outcome and then produce a roll that matches it.
 - **Creatures come from published stat blocks**, cited by source. Homebrew names its base creature.
   The validator fails a bestiary file with no source.
-- **Numbers get verified, not remembered.** Every table carries a `Source:` line, and anything that
-  could not be checked says `⚠ UNVERIFIED` rather than guessing quietly.
-  `python3 tools/pf2e.py sources` prints the lot.
+- **Numbers get verified, not remembered.** Every table carries a `Source:` line naming the
+  Archives of Nethys page it was read from, anything that is this framework's own convention
+  rather than a published rule says so in place, and anything that could not be checked says
+  `⚠ UNVERIFIED` rather than guessing quietly. `python3 tools/pf2e.py sources` prints the lot.
 - **One source of truth per kind of fact.** Volatile numbers live in `state.json`; prose and built
   character choices live in Markdown. `CHECKPOINT.md` is rendered from state, never hand-edited.
 - **Impossible states are refused, not clamped.** HP above maximum, negative coins, spending a Hero
@@ -154,10 +155,15 @@ Full CLI reference: `tools/README.md`.
 
 ## Two things to know before you trust it with a long campaign
 
-- **The treasure-by-level table is unverified.** So are travel speeds, settlement item levels, and a
-  handful of smaller values. `DESIGN_NOTES.md` lists every one of them under "To verify before first
-  play", and each is marked in place. Nothing is silently guessed, but nothing unverified should be
-  used to make a pacing decision without a look at the book first.
+- **Every rules table has now been read from Archives of Nethys, and that pass found fourteen
+  errors.** The framework was first built while AoN was unreachable and the numeric tables were
+  checked against the Foundry VTT PF2e source instead, with five marked `⚠ UNVERIFIED`. When AoN
+  became reachable, re-reading the published text found **eight wrong values in `tools/pf2e.py` and
+  six more stated inline in `system/`** — most of them in tables that had *not* been flagged. They
+  are all listed in `DESIGN_NOTES.md` under "Pass 2", corrected in place, and
+  `python3 tools/pf2e.py sources` now reports 0 of 23 tables unverified. Two of the eight would
+  have been felt immediately at a solo table: XP awards do **not** scale with party size, and the
+  published Low encounter budget really does collapse to 0 XP at a party of one.
 - **The mid-combat restore has been tested but not played.** `ACCEPTANCE.md` holds the transcript:
   a checkpoint taken in the middle of round 3 of a four-combatant fight, and every tracker field
   restored identically. Run one real fight and take a checkpoint in the middle of it before

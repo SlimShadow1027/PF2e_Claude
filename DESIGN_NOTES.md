@@ -7,10 +7,14 @@ Written by the session that built this framework, for the person who has to run 
 ## Verification: what happened, and what it means
 
 The spec requires every rules table to be checked against a source before it is committed, and
-names Archives of Nethys (`2e.aonprd.com`) as the preferred lookup.
+names Archives of Nethys (`2e.aonprd.com`) as the preferred lookup. This happened in two passes,
+and the second one matters more than the first.
 
-**Archives of Nethys was unreachable from the machine that built this.** The container's egress
-policy allows GitHub and the package registries and denies everything else:
+### Pass 1 — AoN unreachable, Foundry used as a labelled secondary source
+
+**Archives of Nethys was unreachable from the container that built this.** The egress policy at the
+time allowed GitHub and the package registries and denied everything else — not AoN specifically;
+`example.com` and Wikipedia failed identically:
 
 ```
 $ curl -sS -o /dev/null -w "%{http_code}\n" https://2e.aonprd.com/
@@ -22,73 +26,87 @@ $ curl -sS -o /dev/null -w "%{http_code}\n" https://raw.githubusercontent.com/..
 So rather than either guessing or marking every table unverified, the numeric tables were checked
 against the **Foundry VTT Pathfinder 2e system source** — an open-source, ORC-licensed
 implementation of the same rules, which cites Archives of Nethys rule IDs inline in its own
-comments — at version **8.5.1**, commit **`06b904d6ced9795c4c07af085e6f61a56f845c60`**.
+comments — at version **8.5.1**, commit **`06b904d6ced9795c4c07af085e6f61a56f845c60`**
+(<https://github.com/foundryvtt/pf2e>). That pass left **5 of 17 tables `⚠ UNVERIFIED`**.
 
-<https://github.com/foundryvtt/pf2e>
+### Pass 2 — AoN reachable, and eight real errors found
 
-**That is a secondary source and this document does not pretend otherwise.** It is a working
-implementation many thousands of tables' worth of play has been run against, which makes it good
-evidence; it is not the book. Where it does not implement a table, the value here says
-`⚠ UNVERIFIED` and appears in the list below.
+The network policy later allowed `2e.aonprd.com`, so every table was re-read from the published
+text. An index of **518 rule pages** was built and the values read page by page. `pf2e.py` now
+reports **0 of 23 tables unverified**, and each `Source:` note cites the AoN page ID it was read
+from.
 
-`python3 tools/pf2e.py sources` prints the provenance of all 17 tables, verified or not.
+**Re-verification was not a formality. It found eight errors in `tools/pf2e.py` and six more in
+the `system/` docs**, every one of which had previously read as either confident or merely
+"unverified but almost certainly right". They are listed below because a framework that claims
+numbers get verified rather than remembered should show what remembering cost.
 
-### What was verified, and from which file
+#### Errors found in `tools/pf2e.py`
+
+| # | What was wrong | What the book says |
+|---|---|---|
+| 1 | `treasure_mix` — a ~50% permanent / 25% consumable / 25% currency **percentage split** | There is no percentage split. GM Core Table 6-1 names **how many** permanent items and consumables, **at which item levels**, plus a currency figure and a per-additional-PC column. The table was replaced by `TREASURE_DETAIL`. |
+| 2 | XP awards were being scaled with party size | GM Core p.76: *"the XP awards for the encounter don't change—you'll always award the amount of XP listed for a group of four characters."* This is how a small party keeps pace with the 1,000-XP curve, and getting it wrong would have starved this campaign of levels. |
+| 3 | The Low encounter budget at small party sizes was smoothed silently | The published Low and Moderate Character Adjustments are **both 20**, so the published rule really does send Low to **0 XP** at a party of one. `encounter_budgets` now reports that honestly and offers `--smoothed` as a labelled alternative. |
+| 4 | `settlement_item_levels` was presented as an unverified **published** table | There is no such published table. The real rule is GM Core p.168, Marketplaces: a settlement has a **level**. Relabelled as this framework's own convention, with the actual rule implemented alongside as `settlement_availability`. |
+| 5 | Elite/Weak HP bands shared their boundaries | They do not. Elite: +10 / +15 / +20 / +30 at levels ≤1 / 2–4 / 5–19 / 20+. Weak: −10 / −15 / −20 / −30 at 1–2 / 3–5 / 6–20 / 21+. |
+| 6 | `travel_speed` had 7 rows (Speed 10–40) and its mph / miles-per-day columns were derived | Player Core p.438 publishes **nine** rows, Speed 10 through 60. All nine now read from the table. |
+| 7 | The treasure party-size rule was treated as linear division | GM Core p.61 explicitly invites giving a small party **more** than its linear share. `treasure_for` now returns three readings and refuses to pick. |
+| 8 | Immunity → doubling/halving → **resistance → weakness** | Player Core p.408, under Resistance: *"After any weaknesses, apply resistances."* Weakness comes **first**. The order changes the answer whenever resistance would take the total below zero: 5 damage against weakness 5 and resistance 10 is 0, not 5. |
+
+#### Errors found in the `system/` docs
+
+| # | Where | What was wrong | What the book says |
+|---|---|---|---|
+| 9 | `12-rules-quick-reference.md` | Persistent damage: assisted flat check **DC 11** | **DC 10** — Player Core p.445, Assisted Recovery: *"Reduce the DC of the flat check to 10 for a particularly appropriate type of help."* |
+| 10 | `10-downtime-travel-and-rest.md` | A night's rest "requires 8 hours, **of which at least 6 must be sleep**" | The 6-hour figure is **invented**. Player Core p.439: *"Once every 24 hours, you can take a period of rest (typically 8 hours)."* The published penalties are sleeping in armour and going 16 hours without rest. |
+| 11 | `09-loot-and-economy.md` | Transferring a rune costs **half** the rune's Price | **10%** of the rune's Price, and it takes **1 day** rather than the usual 4. Free from a runestone. GM Core p.225. |
+| 12 | `09-loot-and-economy.md` | Selling is at half Price, full stop | Player Core p.267: *"coins, gems, art objects, and raw materials ... can be exchanged for their full Price."* |
+| 13 | `10-downtime-travel-and-rest.md` | Treat Wounds, missing the toolkit requirement and the 1-hour option | A healer's toolkit is required, and spending **1 hour** instead of 10 minutes **doubles** the healing. Critical success also removes **wounded**. |
+| 14 | `11-leveling-up.md` | Skill-increase and class-feat levels stated as universal | Player Core p.225: *"Your class lists the levels at which you gain each of these improvements."* The common pattern holds for the Player Core classes, but the class advancement table is the authority. |
+
+Errors 1, 2, 3 and 7 are all specific to a small table, and 2 and 3 are the two that would have
+been felt first: the first would have stalled advancement, the second would have made every "low"
+encounter unbuildable.
+
+### What is still only verified against Foundry
+
+AoN does not present these as tables, so the Foundry source remains the check. Each is labelled as
+such in `pf2e.py sources`.
 
 | Table | Verified against |
 |---|---|
-| DCs by level (−1 to 25) | `src/module/dc.ts` `dcByLevel` |
-| Simple DCs by proficiency, and the Proficiency-Without-Level column | `src/module/dc.ts` `simpleDCs`, `simpleDCsWithoutLevel` |
-| DC adjustments (−10 to +10) and the rarity adjustments | `src/module/dc.ts` `dcAdjustments`, `rarityToDCAdjustment` |
-| Encounter XP budgets and the per-character adjustment | `src/scripts/macros/xp/index.ts` `generateEncounterBudgets` |
-| Creature XP by relative level, and the PWoL column | same file, `xpCreatureDifferences`, `xpVariantCreatureDifferences` |
-| Simple and complex hazard XP | same file, `xpSimpleHazardDifferences`, `getHazardXp` |
 | Degrees of success, and the natural-20/1 one-step shift | `src/module/system/degree-of-success.ts` |
+| Multiple attack penalty −5/−10, agile −4/−8 | `src/module/actor/helpers.ts` `calculateMAPs` |
+| Item-bonus expectations by level (from Automatic Bonus Progression) | `src/module/actor/character/automatic-bonus-progression.ts` |
 | Dying maximum of 4, recovery DC of 10 + dying value | `src/module/actor/creature/document.ts` |
 | All 43 conditions, verbatim | `packs/pf2e/conditions/*.json` |
-| Multiple attack penalty −5/−10, agile −4/−8 | `src/module/actor/helpers.ts` `calculateMAPs` |
-| Bulk limits: encumbered after 5 + Str, maximum 10 + Str | `src/module/actor/inventory/bulk.ts` |
-| Item-bonus expectations by level (from Automatic Bonus Progression) | `src/module/actor/character/automatic-bonus-progression.ts` |
 | Earn Income by level and proficiency, including the failure row | `src/scripts/macros/earn-income.ts` `REWARDS_BY_LEVEL` |
 | Treat Wounds healing: 2d8 / 4d8, +0/+0/+10/+30/+50 by rank | `src/module/system/action-macros/medicine/` |
-| The 8-hour travel day | `src/scripts/macros/travel/travel-speed.ts` |
 | Initiative cross-side tie-break: the adversary acts first | `src/module/encounter/document.ts` `_sortCombatants` |
 | Golarion month names and lengths, and the weekday names | `static/lang/en.json` `PF2E.WorldClock.AR`, `src/module/apps/world-clock/app.ts` |
+| The Proficiency Without Level columns (creature XP, simple DCs) | `src/module/dc.ts`, `src/scripts/macros/xp/index.ts` |
+| The level −1 DC row (13), which the published table does not include | `src/module/dc.ts` `dcByLevel` |
+
+`python3 tools/pf2e.py sources` prints the provenance of all 23 tables.
 
 ---
 
 ## To verify before first play
 
-Every value here is marked in place with `⚠ UNVERIFIED` and is still used, because omitting a
-table would be worse than flagging it. **None of it is silently guessed.** Check the ones you will
-actually lean on.
+**This list is now empty of published tables.** Every table in `tools/pf2e.py` has been read from
+Archives of Nethys or is labelled as this framework's own convention, and the inline values in
+`system/` have been checked too.
 
-### In `tools/pf2e.py` — 5 of its 17 tables
+What remains is not unverified so much as **not published**, and each says so in place:
 
-| Table | Why unverified | What to do |
+| Where | What | Status |
 |---|---|---|
-| `treasure_by_level` | GM Core's Party Treasure by Level. The Foundry system does not implement it, so these twenty values come from the model's reading of GM Core and from nowhere checkable. | **Check every row against GM Core before using it to pace an economy.** This is the most consequential unverified table in the framework, because `logs/loot.md` compares real awards against it. |
-| `treasure_mix` | The ~50% permanent / 25% consumable / 25% currency split. | Treat as a rule of thumb; confirm the shape in GM Core. |
-| `settlement_item_levels` | Village 2 / town 6 / city 10 / metropolis 14 / capital 20. | These are usable defaults, not quoted values. **Set them explicitly per campaign in `WORLD.md`.** |
-| `travel_speed` | The 8-hour day is verified and feet-per-minute is Speed × 10. The miles-per-hour and miles-per-day columns are derived (Speed ÷ 10 mph × 8 h), which reproduces the familiar rows, but the published table was not seen. | Check the table in GM Core. The derivation is almost certainly right. |
-| `creature_adjustments` | Elite/Weak is ±2 to numbers — well established. The **HP column by level band** (10 / 15 / 20 / 30) was not checkable. | Confirm the HP steps before relying on them; `08-npc-and-bestiary-protocol.md` says so too. |
-
-### In `system/` — values stated inline
-
-| Where | What |
-|---|---|
-| `09-loot-and-economy.md` | Rune prices and the half-price rune-transfer cost |
-| `09-loot-and-economy.md` | The half-price default for selling |
-| `09-loot-and-economy.md` | Crafting: the 4-day setup and half-price materials |
-| `10-downtime-travel-and-rest.md` | The exploration-activity list and each activity's speed effect (the half-speed rule itself is verified) |
-| `10-downtime-travel-and-rest.md` | Terrain multipliers for travel (half / one third) |
-| `10-downtime-travel-and-rest.md` | Hit points restored by a night's rest (Con modifier × level) |
-| `10-downtime-travel-and-rest.md` | Treat Wounds: once per hour per patient, 10 minutes |
-| `11-leveling-up.md` | The exact levels for attribute boosts (5/10/15/20), skill increases, skill feats, general feats and ancestry feats. Well known, and worth confirming against the class table at the first level-up. |
-| `12-rules-quick-reference.md` | Cover bonuses (+1 / +2 / +4). Off-guard's −2 and the flanking definition are verified from the condition text. |
-| `12-rules-quick-reference.md` | Immunity → doubling/halving → resistance → weakness ordering |
-| `12-rules-quick-reference.md` | Grapple / Shove / Trip / Disarm target DCs, and the Aid DC of 15 |
-| `12-rules-quick-reference.md` | The flat-check DC of 11 for persistent damage when you take steps to help, and the deafened flat-check DC |
+| `tools/pf2e.py` `settlement_item_levels` | Village 2 / town 6 / city 10 / metropolis 14 / capital 20 | This framework's convention for picking a settlement **level**. The published rule (GM Core p.168) is implemented beside it. Set the level per settlement in `WORLD.md`. |
+| `tools/pf2e.py` `level_dcs`, the level −1 row (DC 13) | The published table starts at level 0 | Extrapolated by Foundry for level −1 creatures. Marked `⚠ UNVERIFIED` in place. |
+| `tools/pf2e.py` `encounter_budgets(smoothed=True)` | 20 XP per character at every threat | A deliberate house alternative to the published adjustment, offered because the published Low collapses to 0 at a party of one. Never the default. |
+| `10-downtime-travel-and-rest.md` | "Hot or cold climate without protection → fewer travel hours per day" | This framework's note, not a published multiplier. |
+| `system/03-difficulty-and-solo-levers.md` | Every solo preset and lever | All of it is this framework's design, built **on** verified tables. Labelled throughout. |
 
 ### Not modelled at all
 
@@ -113,8 +131,12 @@ where a choice would change the architecture; instead of asking, each of these p
   That would have been literal compliance and worse in practice: it would put the verified tables
   (DCs, XP budgets, conditions, MAP, degrees of success) on the same footing as the genuinely
   unchecked ones, and the whole point of the marker is to distinguish them.
-- **Cost:** a secondary source can carry an error that Foundry and this framework would share.
-  Anything load-bearing should still be checked against the book once.
+- **Cost, as it turned out:** a secondary source can carry an error that Foundry and this
+  framework would share — and more to the point, the tables Foundry does *not* implement were the
+  dangerous ones. **When AoN became reachable, re-verification found eight errors in `pf2e.py`**,
+  and six of the eight were in tables Foundry had no opinion about. The decision was right for the
+  constraint it was made under; the lesson is that "unverified but almost certainly right" was
+  wrong roughly half the time.
 
 ### 2. A roll with no `--campaign` is not logged, and says so
 
@@ -200,6 +222,13 @@ Each of these is stated inline as the framework's own design rather than a publi
 - **Everything in `03-difficulty-and-solo-levers.md`** beyond the official variant table: bonus
   reactions, per-scene Hero Point refresh, Hero-Point-converts-a-critical-failure, auto-stabilise
   at dying 3, enemy-count caps, "no death without consent".
+- **The settlement size → level suggestion** (village 2 / town 6 / city 10 / metropolis 14 /
+  capital 20). The published rule gives a settlement a level and says what that level buys; it
+  does not say what level a village is.
+- **The smoothed encounter budget** (`--smoothed`, 20 XP per character at every threat), offered
+  because the published Low adjustment sends the Low budget to 0 XP at a party of one.
+- **Splitting the difference on treasure for a small party**, which GM Core p.61 invites without
+  quantifying.
 - **Squad batching** — a speed change, not a math change. Each member keeps its own hit points.
 
 ### 11. The acceptance transcript is committed as `ACCEPTANCE.md`
@@ -223,7 +252,7 @@ Each of these is stated inline as the framework's own design rather than a publi
 | Flat checks get no degrees of success | Giving them degrees, which would make a natural 20 on a DC 15 flat check a "critical success" |
 | The dashboard has no JavaScript at all | A small script for collapsing sections; not worth the offline risk |
 | Same-side initiative ties are settled by a logged d20 roll-off | Sorting on the name, which is what Foundry does and is arbitrary |
-| `pf2e.py` scales treasure for party size by dividing the four-character row by four | Leaving it at the four-character figure; stated as a derivation, not a published column |
+| `pf2e.py` offers three readings of a treasure row for a small party and refuses to pick one | Picking the strict subtraction. GM Core p.61 declines to pick too, and at a party of one the two readings are a whole permanent item apart |
 | The chronicle's `secret` visibility is withheld from a normal `as-of` read | Showing everything and trusting the reader |
 
 ---
@@ -319,8 +348,13 @@ These are the GM's own suggestions, from having built it.
 
 ## Two honest caveats
 
-- **The treasure table is the weakest number in the framework.** It is the one unverified table
-  that feeds a tracker the GM is told to act on. Check it before it makes a pacing decision.
+- **The verification the acceptance run signed off on was wrong eight times.** Every table in
+  `pf2e.py` passed its own provenance check in the first build, and `sources` reported honestly
+  which five were unverified. Then AoN became reachable, and re-reading the published text found
+  **eight errors in `pf2e.py` and six more in `system/`** — most of them in tables that had *not*
+  been flagged. The marker did its job; the confidence around the unmarked values did not. Read
+  the table in "Pass 2" above before trusting any number here that a session has not yet used in
+  anger.
 - **A sixth defect was found after the run, not by it** (commit `26d52eb`): `world.py as-of`
   printed the title of every entry the date gate withheld, so the gate leaked the thing it
   existed to hide. The acceptance checks confirmed the gate *filtered* correctly and never asked

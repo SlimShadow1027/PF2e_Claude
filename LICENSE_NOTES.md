@@ -29,7 +29,8 @@ needed for the tooling to compute anything:
 | Item-bonus expectations by level (from Automatic Bonus Progression) | a numeric table, in `tools/pf2e.py` |
 | Earn Income by level and proficiency | a numeric table, in `tools/pf2e.py` |
 | Multiple attack penalty; Bulk limits; coin ratios; the dying/recovery loop | rule statements |
-| Treasure by level; travel speeds; settlement item levels | numeric tables, **marked `⚠ UNVERIFIED`** |
+| Party treasure by level, with item counts and item levels; treasure per encounter; travel speeds | numeric tables, in `tools/pf2e.py` |
+| Fundamental rune upgrade prices and levels | two numeric tables, in `system/09-loot-and-economy.md` |
 | The 43 condition entries, quoted in `system/12-rules-quick-reference.md` | **condition text, quoted** |
 
 The condition entries are the only substantial block of **quoted text** in this repository. They
@@ -38,15 +39,21 @@ them would reintroduce precisely the "recalled from memory" error this framework
 
 ### Provenance
 
-Archives of Nethys (`2e.aonprd.com`) was unreachable from the machine that built this framework, so
-the numeric tables and the condition text were checked against the **Foundry VTT Pathfinder 2e
-system** source — an open-source, ORC-licensed implementation that cites Archives of Nethys rule
-IDs inline — at version 8.5.1, commit `06b904d6ced9795c4c07af085e6f61a56f845c60`:
+The numeric tables were read from **Archives of Nethys** (`2e.aonprd.com`), which publishes the
+ORC-licensed rules text, and each carries the page ID it came from.
+
+Where Archives of Nethys does not present a value as a table — the degrees-of-success thresholds,
+the multiple attack penalty, the item-bonus curve, the dying numbers, the Earn Income rates, the
+Golarion calendar and the condition text — the value was additionally or solely checked against the
+**Foundry VTT Pathfinder 2e system** source, an open-source, ORC-licensed implementation that cites
+Archives of Nethys rule IDs inline, at version 8.5.1, commit
+`06b904d6ced9795c4c07af085e6f61a56f845c60`:
 
 <https://github.com/foundryvtt/pf2e>
 
-`python3 tools/pf2e.py sources` prints the provenance of every table, and which are unverified.
-`DESIGN_NOTES.md` lists what still needs checking against the books.
+`python3 tools/pf2e.py sources` prints the provenance of every table. `DESIGN_NOTES.md` records
+what the re-verification against Archives of Nethys found, including the fourteen values it
+corrected.
 
 ## ORC
 

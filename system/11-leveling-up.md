@@ -11,7 +11,11 @@ level 11.
 At 1000 XP, or at the milestone if the campaign uses milestone advancement.
 `python3 tools/state.py --campaign X xp add N` warns at 1000.
 
-XP does not carry over as a running total across levels: at 1000, level up and subtract 1000.
+At 1,000 XP, level up and **subtract 1,000 — the remainder carries over.** Player Core: *"If you
+have any Experience Points left after this, record them—they count toward your next level."* So a
+character who banks 1,080 XP levels and starts the next level on 80.
+
+**Source:** Player Core p.29, Leveling Up — <https://2e.aonprd.com/Rules.aspx?ID=2065>.
 
 ---
 
@@ -38,11 +42,27 @@ rather than skipping them silently — a skipped row is how a missing feat happe
 | 14 | **Spells known / prepared list** | Add what the level grants; retrain if the class allows. |
 | 15 | **Item expectations** | Compare against the curve — see below. |
 
-⚠ The exact levels for attribute boosts (5/10/15/20), skill increases, skill feats, general
-feats and ancestry feats are `⚠ UNVERIFIED` against a source reachable from the machine that
-built this framework. They are the well-known Player Core progression and are almost certainly
-right, but check the class table at the first level-up and say you did. Listed in
-`DESIGN_NOTES.md`.
+**Sources for the progression rows above**, all read from the published text:
+
+| Row | Levels | Source |
+|---|---|---|
+| Attribute boosts | 5, 10, 15, 20 | Player Core p.29, Leveling Up — *"all characters gain four attribute boosts at 5th level and every 5 levels thereafter"* (<https://2e.aonprd.com/Rules.aspx?ID=2065>) |
+| General feats | 3, 7, 11, 15, 19 | Player Core p.249, Chapter 5: Feats — *"a general feat when you reach 3rd level and every 4 levels thereafter"* (<https://2e.aonprd.com/Rules.aspx?ID=2142>) |
+| Skill feats | every even level | Player Core p.249 — *"skill feats at 2nd level and every 2 levels thereafter"* |
+| Ancestry feats | 1, 5, 9, 13, 17 | Player Core, Chapter 2: Ancestries — *"an ancestry feat at 1st level, and you gain another at 5th level, 9th level, 13th level, and 17th level"* (<https://2e.aonprd.com/Rules.aspx?ID=2074>) |
+| Skill increase ranks | expert any level, master at 7+, legendary at 15+ | Player Core p.225, Improving Skills (<https://2e.aonprd.com/Rules.aspx?ID=2134>) |
+
+One caveat worth being exact about: the **levels at which skill increases and class feats arrive
+are per class**, not universal. Player Core says *"Your class lists the levels at which you gain
+each of these improvements."* The 3/5/7/9/11/13/15/17/19 pattern for skill increases and the
+even-level pattern for class feats hold for the classes in Player Core, but **the class
+advancement table is the authority** — read it at the level-up and say you did.
+
+Also from the same page, two knock-on effects that are easy to skip:
+
+- An **Intelligence** boost makes the character trained in an **additional skill and language**.
+- A **Constitution** boost means recomputing maximum hit points — typically **+1 HP per level**,
+  which at level 10 is 10 HP, not 1.
 
 ---
 

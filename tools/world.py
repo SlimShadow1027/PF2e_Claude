@@ -316,8 +316,10 @@ because that is the number play actually needs.
 |---|---|---|---|---|
 | | | | | |
 
-Settlement item levels are a campaign-agnostic default in `tools/pf2e.py`
-(`ITEM_LEVEL_BY_SETTLEMENT`, marked UNVERIFIED) — set them explicitly here per world.
+A settlement's **level** is what governs what can be bought there (GM Core p.168,
+Marketplaces). The size names in `tools/pf2e.py` are only a suggestion for picking one —
+set the level explicitly here per settlement, then `python3 tools/pf2e.py settlement
+--level N` reads off what is available.
 """,
     "FACTIONS.md": """# Factions
 
