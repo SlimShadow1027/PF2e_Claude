@@ -25,6 +25,10 @@ contradicted but also are not treated as something the character has heard.
 | 11 | 1 Abadius 4725 AR | **Dorrow Half-Coin** is the syndicate's tallyman on the platform. He tells the "Roderic bought the Cove" version of the name. | Session 1, scene 1 | known |
 | 12 | 1 Abadius 4725 AR | Vessa Tarn has refused to take the descent line since she reported the door, and says so publicly. | Session 1, scene 1 | known |
 | 13 | — | The dredging has brought up **three human skeletons** in thirty years, none of them identified. | Session 1, scene 1 | known |
+| 14 | 1 Abadius 4725 AR | Dorrow Half-Coin is **not lying** about the two hundred years. He is repeating something he was told and has never checked. (Sense Motive, 19 vs DC 14.) | Session 1, scene 1 | known |
+| 15 | 1 Abadius 4725 AR | Karsa can recall **nothing** about a mercenary officer named Roderic from two centuries ago — no campaign, no company, no name in any account Karsa has read. (Recall Knowledge, secret, failed.) | Session 1, scene 1 | known |
+| 16 | 1 Abadius 4725 AR | **Detect Magic registers a magical aura from the platform at the surface and continuously throughout the descent to the door, roughly forty feet down.** The spell reports presence only — no rank, no direction, no pinpoint. | Session 1, scene 1 | known |
+| 17 | 1 Abadius 4725 AR | Karsa did **not** see the hinges Dorrow sells. Forty seconds, weed, silt, and a lintel-shaped shadow. (Seek, 15 vs DC 17.) | Session 1, scene 1 | known |
 | 8 | — | **Roderic is alive.** He is a serving mercenary officer, not a historical figure. | Carried from the player's other campaign, 2026-09-30 | **GM-side truth** |
 | 9 | — | Every account of Roderic circulating in the Cove is wrong in some specific way. Four are recorded in `worlds/varisia/LEGENDS.md`. | GM | **GM-side truth** |
 

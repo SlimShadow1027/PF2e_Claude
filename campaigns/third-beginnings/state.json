@@ -3,7 +3,7 @@
   "campaign": "third-beginnings",
   "title": "Third Beginnings",
   "created_at": "2026-09-30T12:41:19Z",
-  "updated_at": "2026-09-30T19:58:24Z",
+  "updated_at": "2026-09-30T20:05:52Z",
   "transparency": "standard",
   "difficulty_preset": "Standard",
   "session_in_progress": true,
@@ -21,8 +21,8 @@
     "year": 4725,
     "month": 1,
     "day": 1,
-    "minute_of_day": 480,
-    "elapsed_minutes": 0
+    "minute_of_day": 515,
+    "elapsed_minutes": 35
   },
   "location": "Roderic's Cove — the windlass platform on the shingle, beneath the cliff",
   "party": {
@@ -351,8 +351,8 @@
   "quests": {},
   "encounter": null,
   "notes": {
-    "situation": "Session 1, scene 1. Karsa has bought a place in the viewing queue. Vessa has just refused to take the descent line. Dorrow wants the platform cleared.",
-    "next_beats": "",
+    "situation": "Session 1, scene 1 end. Karsa has been down and come back up. Detect Magic positive at every depth including the surface — the aura is not door-sized. Karsa never saw the hinges. Dorrow is sincere and ignorant. Vessa signalled 'don't' and went back to her line.",
+    "next_beats": "Karsa's move: press Vessa (she has now signalled twice), ask Dorrow who told him the 200-year story, or go up the cliff road to find the clerk/archivist who has already looked and given up.",
     "present": "Karsa, Vessa Tarn, Dorrow Half-Coin (syndicate tallyman), a queue of eleven paying gawkers"
   }
 }
