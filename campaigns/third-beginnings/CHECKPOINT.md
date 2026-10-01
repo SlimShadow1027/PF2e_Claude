@@ -4,17 +4,17 @@
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
 - Checkpoint: **004** Vessa Tarn built; Roderic legends written; Cove and Sump Door in the gazetteer
-- Rendered at: 2026-09-30T20:05:52Z
+- Rendered at: 2026-10-01T16:51:16Z
 - Session: 1 (in progress)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Standard**
 
 ## Scene
 
-- **Where:** Roderic's Cove — the windlass platform on the shingle, beneath the cliff
+- **Where:** Roderic's Cove — the lee of an upturned dory, up the shingle away from the windlass queue
 - **When:** 1 Abadius 4725 AR, 08:35
 
-Session 1, scene 1 end. Karsa has been down and come back up. Detect Magic positive at every depth including the surface — the aura is not door-sized. Karsa never saw the hinges. Dorrow is sincere and ignorant. Vessa signalled 'don't' and went back to her line.
+Session 1, scene 2. Behind the dory with Vessa. She has given Karsa the whole account: the collapse beside the door, two chambers, a stair, and a flat waterline twenty feet down with dry dusty stone below it. She thinks it is dropping and admits she cannot prove it. Karsa has not yet told her about the detect magic result.
 
 ## Party
 
@@ -35,9 +35,13 @@ Session 1, scene 1 end. Karsa has been down and come back up. Detect Magic posit
   - Karsa: Breastplate (worn), Steel shield, Healer's toolkit, Rope (50 ft) ×3, Climbing kit, Grappling hook, Lantern (hooded), Oil (pint) ×6, Torch ×5, Flint and steel, Chalk (10 pieces), Piton ×10, Crowbar, Rations (1 week) ×2, Waterskin, Bedroll, Sack ×2, Backpack, Diving line and lead weights, Repair kit
   - Vessa Tarn: Leather armour (worn), Shortbow, Shortsword, Lantern (hooded), Salvage tools, Arrows (bundle of 10) ×4, Backpack
 
+## Clocks
+
+- **The waterline falls** `▰▱▱▱▱▱▱` 1/7 — ticks 1 per week · The flat waterline across the stairwell behind the Sump Door is dropping. Vessa Tarn has seen it twice and cannot prove it. At full, the last of the lower levels is dry stone. Player-visible: she told Karsa on 1 Abadius 4725 AR. Telegraphed, per the encounter-objective duty.
+
 ## Next likely beats
 
-Karsa's move: press Vessa (she has now signalled twice), ask Dorrow who told him the 200-year story, or go up the cliff road to find the clerk/archivist who has already looked and given up.
+Karsa may: share the aura finding, Sense Motive the waterline claim, ask about the collapse, or ask why she reported it at all. The clock is now visible to the player.
 
 ---
 

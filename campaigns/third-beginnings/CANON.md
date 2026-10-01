@@ -29,6 +29,13 @@ contradicted but also are not treated as something the character has heard.
 | 15 | 1 Abadius 4725 AR | Karsa can recall **nothing** about a mercenary officer named Roderic from two centuries ago — no campaign, no company, no name in any account Karsa has read. (Recall Knowledge, secret, failed.) | Session 1, scene 1 | known |
 | 16 | 1 Abadius 4725 AR | **Detect Magic registers a magical aura from the platform at the surface and continuously throughout the descent to the door, roughly forty feet down.** The spell reports presence only — no rank, no direction, no pinpoint. | Session 1, scene 1 | known |
 | 17 | 1 Abadius 4725 AR | Karsa did **not** see the hinges Dorrow sells. Forty seconds, weed, silt, and a lintel-shaped shadow. (Seek, 15 vs DC 17.) | Session 1, scene 1 | known |
+| 18 | Kuthona 4724 AR | Vessa found the door by following dressed stone from the wreck-field: fifteen feet of course, then a **lintel**. A door-frame, with the door shut in it. | Session 1, scene 2 — Vessa, to Karsa | known |
+| 19 | — | Vessa's framing, which she has told four people: **"A wall keeps water out. A door lets something through."** | Session 1, scene 2 | known |
+| 20 | ~Kuthona 4724 AR, 8 days after reporting | Vessa went **through**, alone, with no line and no bounty — not via the door but via a **collapse to its left**, passable if you are thin and reckless. | Session 1, scene 2 | known |
+| 21 | — | Behind it: **two chambers.** The first is flooded to the ceiling, worked stone, carvings she cannot read, and a **stair going down**. | Session 1, scene 2 | known |
+| 22 | — | **Twenty feet down that stair the water stops at a flat waterline.** Below it the steps are **dry stone with dust on them**. She put her arm through to the shoulder and withdrew it dry. She descended four steps and came back. | Session 1, scene 2 | known |
+| 23 | — | Vessa has been down twice since and believes the **waterline is lower each time**. She cannot prove it, never marked it, and said so unprompted. | Session 1, scene 2 | known |
+| 24 | — | **The waterline is genuinely falling.** Clock `The waterline falls`, 1/7, ticking 1 per week. | GM | **GM-side truth** |
 | 8 | — | **Roderic is alive.** He is a serving mercenary officer, not a historical figure. | Carried from the player's other campaign, 2026-09-30 | **GM-side truth** |
 | 9 | — | Every account of Roderic circulating in the Cove is wrong in some specific way. Four are recorded in `worlds/varisia/LEGENDS.md`. | GM | **GM-side truth** |
 
