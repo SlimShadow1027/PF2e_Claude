@@ -4,7 +4,7 @@
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
 - Checkpoint: **002** mid-fight, round 1 — the hobgoblin has swung
-- Rendered at: 2026-10-02T18:19:42Z
+- Rendered at: 2026-10-02T18:20:02Z
 - Session: 0 (not in session)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Standard**
