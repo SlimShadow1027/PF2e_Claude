@@ -69,6 +69,11 @@ for _sid, _meta in SYSTEMS.items():
     _ALIASES[_sid] = _sid
     for _a in _meta["aliases"]:
         _ALIASES[_a] = _sid
+    # The display names resolve too, because the Markdown layer writes those: a legacy
+    # record's `System:` line and a world README's column hold "D&D 5.5e" or
+    # "Pathfinder Second Edition (Remaster)", and those have to read back.
+    _ALIASES[re.sub(r"[\s_]+", "", _meta["name"].lower())] = _sid
+    _ALIASES[re.sub(r"[\s_]+", "", _meta["short"].lower())] = _sid
 
 
 class RulesError(Exception):
@@ -233,6 +238,24 @@ def declared_in_state(slug: str) -> str | None:
         return None
 
 
+def world_of_campaign(slug: str) -> str | None:
+    """The world slug a campaign is set in, or None for a standalone campaign.
+
+    `CAMPAIGN.md` may write the field as `varisia` or as `worlds/varisia`; both are read
+    the same way, because requiring one spelling would make the field a trap.
+    """
+    p = campaign_dir(slug) / "CAMPAIGN.md"
+    if not p.exists():
+        return None
+    value = read_field(p.read_text(encoding="utf-8"), "World")
+    if value is None:
+        return None
+    value = value.strip().strip("`").rstrip("/")
+    if value.lower() in ("none", "—", "-", ""):
+        return None
+    return value.split("/")[-1]
+
+
 def for_world(slug: str) -> list[str]:
     """Every ruleset that has a campaign in this world, in registry order.
 
@@ -241,12 +264,12 @@ def for_world(slug: str) -> list[str]:
     """
     found: set[str] = set()
     campaigns = repo_root() / "campaigns"
+    want = str(slug).strip().rstrip("/").split("/")[-1].lower()
     if campaigns.exists():
         for d in sorted(campaigns.iterdir()):
-            cm = d / "CAMPAIGN.md"
-            if not d.is_dir() or not cm.exists():
+            if not d.is_dir() or not (d / "CAMPAIGN.md").exists():
                 continue
-            if (read_field(cm.read_text(encoding="utf-8"), "World") or "").strip().lower() == slug.lower():
+            if (world_of_campaign(d.name) or "").lower() == want:
                 found.add(for_campaign(d.name))
     return [s for s in SYSTEMS if s in found]
 

@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from roll import campaign_dir, list_campaigns, repo_root, world_dir  # noqa: E402
 import pf2e  # noqa: E402
+import rules  # noqa: E402
 import state as st  # noqa: E402
 import world as wd  # noqa: E402
 
@@ -379,6 +380,15 @@ def check_world(wslug: str, r: Report) -> None:
     keys = [e.date.key() for e in entries]
     if keys != sorted(keys):
         r.error("CHRONICLE.md entries are not in date order — it is append-only and read in order")
+
+    # Which rulesets actually read this world. A world hosting both has a higher bar: its
+    # entries have to say which game wrote them and how far the event reached, because a
+    # reader in the other game has no way to recover either from the prose.
+    systems = rules.for_world(wslug)
+    cross = len(systems) > 1
+    if cross:
+        r.ok(f"cross-system world: {', '.join(rules.short_of(x) for x in systems)}")
+
     for e in entries:
         if not e.campaign:
             r.error(f"chronicle entry {e.title!r} has no **Campaign:** tag")
@@ -387,6 +397,54 @@ def check_world(wslug: str, r: Report) -> None:
                     f"it must be one of {', '.join(wd.VISIBILITIES)}")
         if not e.happened.strip():
             r.error(f"chronicle entry {e.title!r} says nothing under **What happened:**")
+        if e.system and not rules.is_known(e.system):
+            r.error(f"chronicle entry {e.title!r} names system {e.system!r}, which is not a "
+                    f"ruleset this framework knows ({', '.join(sorted(rules.SYSTEMS))})")
+        elif not e.system:
+            if cross:
+                r.error(f"chronicle entry {e.title!r} has no **System:** line, and this world is "
+                        f"read by {', '.join(rules.short_of(x) for x in systems)} — a reader in "
+                        f"the other game cannot tell which rules produced it")
+            else:
+                r.warn(f"chronicle entry {e.title!r} has no **System:** line (written before the "
+                       f"field existed; harmless while only one ruleset reads this world)")
+        if e.scope and e.scope not in rules.SCOPE_NAMES:
+            r.error(f"chronicle entry {e.title!r} has scope {e.scope!r}; it must be one of "
+                    f"{', '.join(rules.SCOPE_NAMES)}")
+        elif not e.scope and cross:
+            r.warn(f"chronicle entry {e.title!r} has no **Scope:** line — scope is the one field "
+                   f"that means anything to the other ruleset in this world")
+
+    # A cross-system world needs one calendar, or its two campaigns cannot share a timeline.
+    if cross:
+        try:
+            declared = rules.load_world_calendar(wslug)
+        except rules.RulesError as exc:
+            r.error(f"worlds/{wslug}/CALENDAR.md: {exc}")
+            declared = None
+        cals = {e.date.era for e in entries if e.date.era}
+        if len(cals) > 1:
+            r.warn(f"worlds/{wslug}/CHRONICLE.md mixes eras ({', '.join(sorted(cals))}) — a shared "
+                   f"world should keep one calendar so both campaigns read one timeline")
+        if not declared and not cals:
+            r.warn(f"worlds/{wslug}/CALENDAR.md declares no calendar block, and this world is read "
+                   f"by more than one ruleset — declare one so both read its dates identically")
+
+    # The forbidden crossing: a ruleset's own numbers in the shared layer.
+    for e in entries:
+        blob = f"{e.happened} {e.changed}"
+        for pat, what in (
+            (r"\bDC\s*\d+", "a DC"),
+            (r"\bAC\s*\d+", "an AC"),
+            (r"\bCR\s*\d+", "a Challenge Rating"),
+            (r"\blevel[- ]\d+\b", "a level"),
+            (r"\b\d+d\d+\b", "a dice expression"),
+        ):
+            if re.search(pat, blob, re.IGNORECASE):
+                r.warn(f"chronicle entry {e.title!r} mentions {what} — the shared layer records "
+                       f"what happened, not anyone's numbers, because the other ruleset's reader "
+                       f"cannot use them (`python3 tools/world.py crossing`)")
+                break
 
     # No live state anywhere under worlds/.
     for p in sorted(root.rglob("*")):
@@ -428,6 +486,24 @@ def check_world(wslug: str, r: Report) -> None:
             elif cname.strip() not in known:
                 r.warn(f"{p.relative_to(repo_root())} names campaign {cname.strip()!r}, which is not "
                        "in campaigns/ (fine if that campaign has been archived elsewhere)")
+            sysname = pf2e.read_field(text, "System")
+            if sysname and not rules.is_known(sysname):
+                # The field holds a display name, so try the campaign's own answer before failing.
+                by_campaign = (rules.for_campaign(cname.strip())
+                               if cname and cname.strip() in known else None)
+                if not by_campaign or rules.short_of(by_campaign) not in sysname:
+                    r.warn(f"{p.relative_to(repo_root())} names system {sysname!r}, which does not "
+                           f"resolve to a known ruleset")
+            elif not sysname and len(rules.for_world(wslug)) > 1:
+                r.error(f"{p.relative_to(repo_root())} has no **System:** field, and this world is "
+                        f"read by more than one ruleset — the level on this page means nothing "
+                        f"without it")
+            scope = pf2e.read_field(text, "Scope reached")
+            if scope:
+                band = scope.split("—")[0].strip().lower()
+                if band and band not in rules.SCOPE_NAMES and not band.startswith("_("):
+                    r.warn(f"{p.relative_to(repo_root())} has scope {band!r}; it must be one of "
+                           f"{', '.join(rules.SCOPE_NAMES)}")
 
 
 # --------------------------------------------------------------------------------------
