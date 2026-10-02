@@ -1262,12 +1262,13 @@ def status_lines(pc: dict[str, Any]) -> list[str]:
 
 def tracked_condition_flags(pc: dict[str, Any]) -> list[str]:
     """The flags that belong in the conditions column but live in their own fields."""
-    out = []
+    out = ["**DEAD**"] if pc.get("dead") else []
     if int(pc.get("exhaustion", 0)):
         out.append(f"**exhaustion {pc['exhaustion']}**")
     hp = pc.get("hp") or {}
     ds = pc.get("death_saves") or {}
-    if int(hp.get("current", 1)) == 0:
+    # A dead character is not still saving; the table already shows DEAD.
+    if int(hp.get("current", 1)) == 0 and not pc.get("dead"):
         if ds.get("stable"):
             out.append("**stable at 0 HP**")
         else:
@@ -1585,3 +1586,131 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# --------------------------------------------------------------------------------------
+# The action economy, for the encounter tracker
+# --------------------------------------------------------------------------------------
+
+ACTION_ECONOMY = {
+    "kind": "slots",
+    "actions_per_turn": 1,
+    "has_map": False,
+    "has_bonus_action": True,
+    "tracks_movement_separately": True,
+    "summary": "One action a turn, plus a Bonus Action only when something grants one, plus one "
+               "Reaction, plus movement up to your Speed and one free object interaction. There "
+               "is no multiple attack penalty: extra attacks come from the Attack action itself.",
+}
+_src(
+    "action_economy",
+    SRD + ", 'Playing the Game' -> 'Combat' -> 'Your Turn': \"On your turn, you can move a "
+    "distance up to your Speed and take one action.\" Movement is its own allowance in feet rather "
+    "than costing the action, which is the structural difference from Pathfinder's three-action "
+    "turn. \"You can interact with one object or feature of the environment for free, during "
+    "either your move or action\"; a second interaction takes the Utilize action. Bonus Actions "
+    "are from 'Rules Glossary' -> 'Bonus Action': \"A Bonus Action is a special action that you "
+    "can take on the same turn that you take an action\", and you only have one when a feature "
+    "grants it. Reactions are one per round, from 'Rules Glossary' -> 'Reaction'. There is no "
+    "multiple attack penalty anywhere in the rules: the Extra Attack feature and the Attack "
+    "action's own text govern how many attacks a turn allows.",
+)
+
+ENCOUNTER_COLUMNS = (("act", 4), ("bns", 4), ("move", 7), ("rxn", 4))
+
+
+def blank_combatant_fields(**kw: Any) -> dict[str, Any]:
+    return {
+        "actions_remaining": 1,
+        "actions_spent": 0,
+        # A Bonus Action exists only where a feature grants one, so the tracker starts at
+        # zero and `--bonus-action` on `encounter add` turns it on for that combatant.
+        "bonus_action_max": int(kw.get("bonus_action", 0) or 0),
+        "bonus_action_remaining": int(kw.get("bonus_action", 0) or 0),
+        "speed": int(kw.get("speed", 30) or 30),
+        "movement_used": 0,
+        "object_interaction_used": False,
+        "reaction_available": True,
+        "reaction_used_for": None,
+        "concentrating_on": None,
+    }
+
+
+def reset_turn(c: dict[str, Any]) -> str:
+    """Reset a combatant's per-turn resources and describe what they now have."""
+    c["actions_remaining"] = 1
+    c["actions_spent"] = 0
+    c["bonus_action_remaining"] = int(c.get("bonus_action_max", 0) or 0)
+    c["movement_used"] = 0
+    c["object_interaction_used"] = False
+    c["reaction_available"] = True
+    c["reaction_used_for"] = None
+    speed = int(c.get("speed", 30) or 30)
+    bits = ["1 action"]
+    if int(c.get("bonus_action_max", 0) or 0):
+        bits.append("1 bonus action")
+    bits += [f"{speed} ft of movement", "reaction available"]
+    return ", ".join(bits)
+
+
+def combatant_action_cells(c: dict[str, Any]) -> list[str]:
+    act = "◆" if int(c.get("actions_remaining", 1)) else "◇"
+    bmax = int(c.get("bonus_action_max", 0) or 0)
+    if not bmax:
+        bns = "—"
+    else:
+        bns = "◆" if int(c.get("bonus_action_remaining", 0)) else "◇"
+    speed = int(c.get("speed", 30) or 30)
+    used = int(c.get("movement_used", 0))
+    move = f"{max(0, speed - used)}/{speed}ft"
+    return [act, bns, move, "yes" if c.get("reaction_available") else "used"]
+
+
+def spend_action(c: dict[str, Any], kind: str, n: int = 1) -> str:
+    """Spend an action, a Bonus Action, or feet of movement."""
+    k = str(kind).lower().replace("_", "-")
+    if k in ("action", "any"):
+        left = int(c.get("actions_remaining", 1)) - n
+        if left < 0:
+            raise ValueError(
+                f"{c['name']} has {c.get('actions_remaining', 1)} action this turn and cannot "
+                f"spend {n} — a second action needs a feature that grants one"
+            )
+        c["actions_remaining"] = left
+        c["actions_spent"] = int(c.get("actions_spent", 0)) + n
+        return f"action spent ({left} left)"
+    if k in ("bonus", "bonus-action"):
+        if not int(c.get("bonus_action_max", 0) or 0):
+            raise ValueError(
+                f"{c['name']} has no Bonus Action this turn. One exists only where a feature "
+                f"grants it — add the combatant with --bonus-action if theirs does."
+            )
+        left = int(c.get("bonus_action_remaining", 0)) - n
+        if left < 0:
+            raise ValueError(f"{c['name']} has already used their Bonus Action this turn")
+        c["bonus_action_remaining"] = left
+        return f"bonus action spent ({left} left)"
+    if k in ("move", "movement"):
+        speed = int(c.get("speed", 30) or 30)
+        used = int(c.get("movement_used", 0)) + n
+        if used > speed:
+            raise ValueError(
+                f"{c['name']} has {speed - int(c.get('movement_used', 0))} ft of movement left "
+                f"and cannot move {n} ft — take the Dash action for more"
+            )
+        c["movement_used"] = used
+        return f"moved {n} ft ({speed - used} ft left of {speed})"
+    if k in ("dash",):
+        speed = int(c.get("speed", 30) or 30)
+        left = int(c.get("actions_remaining", 1)) - 1
+        if left < 0:
+            raise ValueError(f"{c['name']} has no action left to Dash with")
+        c["actions_remaining"] = left
+        c["actions_spent"] = int(c.get("actions_spent", 0)) + 1
+        c["speed"] = speed + int(c.get("base_speed", speed) or speed)
+        return (f"Dash: action spent for {int(c.get('base_speed', speed) or speed)} ft more "
+                f"movement this turn ({c['speed']} ft total)")
+    raise ValueError(
+        f"{kind!r} is not something a D&D turn spends "
+        f"(action, bonus-action, move, dash)"
+    )

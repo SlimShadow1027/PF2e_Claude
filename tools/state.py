@@ -38,8 +38,46 @@ from roll import (  # noqa: E402
 )
 import pf2e  # noqa: E402
 
-SCHEMA_VERSION = 2
+import rules  # noqa: E402
 
+
+class StateError(Exception):
+    """A refused mutation. The message says what was asked and why it cannot happen."""
+
+
+# Schema 3 adds a `system` key naming the campaign's ruleset. A schema 2 state has no
+# such key and reads as Pathfinder, which is what every state written before the second
+# ruleset existed is; `migrate` stamps the field in on first write.
+SCHEMA_VERSION = 3
+LEGACY_SCHEMA_SYSTEM = "pf2e"
+
+
+def system_of(data: dict[str, Any]) -> str:
+    """The ruleset a loaded state belongs to."""
+    return rules.canonical(data.get("system") or LEGACY_SCHEMA_SYSTEM)
+
+
+def rs(data: dict[str, Any]):
+    """The rules module for a loaded state. Every per-game difference goes through this."""
+    return rules.load(system_of(data))
+
+
+def _hint(data: dict[str, Any], what: str) -> str:
+    """The other ruleset's name for a resource this one does not have, if it has one."""
+    hints = getattr(rs(data), "RESOURCE_HINTS", {})
+    return hints.get(what, "")
+
+
+def _wrong_game(data: dict[str, Any], what: str, needs: str) -> StateError:
+    sid = system_of(data)
+    msg = f"{what} is a {rules.short_of(needs)} concept and this is a {rules.short_of(sid)} campaign."
+    hint = _hint(data, what.split()[0].lower())
+    return StateError(msg + (f" {hint}" if hint else ""))
+
+
+# The names below stay at module scope because callers import them, and they hold
+# Pathfinder's sets so that behaviour is unchanged for anything that reads them directly.
+# Everything inside this file asks the campaign's ruleset instead — see `rs()`.
 VALUED_CONDITIONS = {
     "clumsy",
     "cursebound",
@@ -101,10 +139,6 @@ COIN_IN_CP = {"pp": 1000, "gp": 100, "sp": 10, "cp": 1}
 # Source: Player Core, "Coins" — 1 pp = 10 gp, 1 gp = 10 sp, 1 sp = 10 cp.
 
 
-class StateError(Exception):
-    """A refused mutation. The message says what was asked and why it cannot happen."""
-
-
 # --------------------------------------------------------------------------------------
 # Load / save
 # --------------------------------------------------------------------------------------
@@ -124,6 +158,25 @@ def load(slug: str) -> dict[str, Any]:
         raise StateError(f"{p} is not valid JSON: {exc}") from exc
     if not isinstance(data, dict):
         raise StateError(f"{p} does not hold a JSON object")
+    return migrate(slug, data)
+
+
+def migrate(slug: str, data: dict[str, Any]) -> dict[str, Any]:
+    """Bring an older state forward in memory. The file updates on the next save.
+
+    Schema 2 -> 3 is one field: a campaign written before the second ruleset existed
+    declares no `system`, and is Pathfinder. Where `CAMPAIGN.md` says otherwise that is
+    used instead, so a campaign whose Markdown was updated first is not mislabelled.
+    Nothing else about an older state changes, and no numbers are touched.
+    """
+    version = int(data.get("schema_version", 2))
+    if not data.get("system"):
+        declared = rules.declared_in_campaign_md(slug) if slug else None
+        data["system"] = declared or LEGACY_SCHEMA_SYSTEM
+    data["system"] = rules.canonical(data["system"])
+    if version < 3:
+        data["schema_version"] = SCHEMA_VERSION
+        data.setdefault("migrated_from_schema", version)
     return data
 
 
@@ -132,9 +185,13 @@ def save(slug: str, data: dict[str, Any]) -> None:
     atomic_write(state_path(slug), json.dumps(data, indent=2, ensure_ascii=False, sort_keys=False) + "\n")
 
 
-def blank_state(slug: str, title: str = "", transparency: str = "standard") -> dict[str, Any]:
+def blank_state(slug: str, title: str = "", transparency: str = "standard",
+                system: str | None = None) -> dict[str, Any]:
+    sid = rules.canonical(system)
+    mod = rules.load(sid)
     return {
         "schema_version": SCHEMA_VERSION,
+        "system": sid,
         "campaign": slug,
         "title": title or slug,
         "created_at": utc_now(),
@@ -146,12 +203,13 @@ def blank_state(slug: str, title: str = "", transparency: str = "standard") -> d
         "scene_count": 0,
         "checkpoint_counter": 0,
         "last_checkpoint": None,
-        "time": pf2e.blank_time(),
+        "time": (pf2e.blank_time() if sid == "pf2e"
+                 else rules.blank_time(calendar=mod.DEFAULT_CALENDAR)),
         "location": "unset",
         "party": {
             "level": 1,
             "xp": 0,
-            "gold": {"pp": 0, "gp": 0, "sp": 0, "cp": 0},
+            "gold": {c: 0 for c in mod.COIN_ORDER},
             "stash": [],
         },
         "pcs": {},
@@ -220,30 +278,26 @@ def slugify(name: str) -> str:
     return s or "unnamed"
 
 
-def blank_character(name: str, kind: str = "pc", level: int = 1) -> dict[str, Any]:
+def blank_character(name: str, kind: str = "pc", level: int = 1,
+                    system: str | None = None) -> dict[str, Any]:
+    """A fresh sheet. The shared half is here; the ruleset supplies its own half.
+
+    Pathfinder contributes Hero Points, Focus, saves by name and the dying track. D&D
+    contributes death saves, Hit Dice, Exhaustion, Heroic Inspiration, Concentration and
+    attunement. Neither game's fields appear on the other game's sheet, so nothing on a
+    character implies a rule that does not exist in their campaign.
+    """
+    mod = rules.load(system)
     return {
         "name": name,
         "kind": kind,  # pc | ally | sidekick | companion | familiar | eidolon
         "level": level,
         "hp": {"current": 0, "max": 0, "temp": 0},
-        "ac": 0,
-        "saves": {"fortitude": 0, "reflex": 0, "will": 0},
-        "perception": 0,
-        "speed": 25,
-        "str_mod": 0,
-        "hero_points": 0,
-        "hero_points_max": 3,
-        "focus": {"current": 0, "max": 0, "refocus_available": True},
-        "spell_slots": {},
         "conditions": [],
-        "dying": 0,
-        "wounded": 0,
-        "doomed": 0,
-        "dying_max": 4,
-        "persistent": [],
         "items": [],
         "sheet": None,
         "notes": "",
+        **mod.blank_character_fields(level),
     }
 
 
@@ -289,17 +343,33 @@ def apply_damage(data: dict[str, Any], who: str, amount: int, *, from_crit: bool
         left -= absorbed
         notes.append(f"{absorbed} absorbed by temporary HP ({hp['temp']} temp left)")
     was_down = hp["current"] <= 0
+    overflow = max(0, left - hp["current"])
     hp["current"] = max(0, hp["current"] - left)
     notes.append(f"{pc['name']} HP {hp['current']}/{hp['max']}")
 
-    if pc.get("dying", 0) > 0:
-        step = 2 if from_crit else 1
-        notes += set_dying(data, key, pc["dying"] + step, reason="took damage while dying")
-    elif hp["current"] == 0 and not was_down:
-        start = 2 if from_crit else 1
-        start += int(pc.get("wounded", 0))
-        notes.append("reduced to 0 HP — unconscious")
-        notes += set_dying(data, key, start, reason="reduced to 0 HP")
+    if not was_down and hp["current"] > 0:
+        return notes
+
+    # What 0 HP means is the single biggest difference between the two games, so the
+    # ruleset decides and this function only carries the instruction out.
+    #   PF2e  dying 1 (or 2 from a crit), plus the wounded value; dying 4 is death.
+    #   D&D   unconscious and making Death Saves; massive damage kills outright.
+    instruction = rs(data).on_zero_hp(
+        pc, from_crit=from_crit, overflow=overflow, already_down=was_down)
+    notes += instruction.get("notes", [])
+    action = instruction.get("action")
+
+    if action == "dying":
+        notes += set_dying(data, key, int(instruction["value"]),
+                           reason=instruction.get("reason", ""))
+    elif action == "down":
+        pc.setdefault("death_saves", {"successes": 0, "failures": 0, "stable": False})
+        pc["death_saves"]["stable"] = False
+    elif action == "death-save-failures":
+        notes += death_save_record(data, key, failures=int(instruction["value"]),
+                                   reason=instruction.get("reason", ""))
+    elif action == "dead":
+        notes += mark_dead(data, key, reason=instruction.get("reason", ""))
     return notes
 
 
@@ -318,8 +388,15 @@ def apply_healing(data: dict[str, Any], who: str, amount: int) -> list[str]:
         notes = []
     hp["current"] = new
     notes.append(f"{pc['name']} HP {hp['current']}/{hp['max']}")
-    if hp["current"] >= 1 and pc.get("dying", 0) > 0:
-        notes += set_dying(data, key, 0, reason="back to 1 HP or more")
+    if hp["current"] >= 1:
+        instruction = rs(data).on_healed_from_zero(pc)
+        if instruction.get("action") == "dying":
+            notes += set_dying(data, key, int(instruction["value"]),
+                               reason=instruction.get("reason", ""))
+        elif instruction.get("action") == "reset-death-saves":
+            pc["death_saves"] = {"successes": 0, "failures": 0, "stable": False}
+            notes.append(f"{pc['name']}: Death Save counters reset "
+                         f"({instruction.get('reason', 'regained Hit Points')})")
     return notes
 
 
@@ -342,6 +419,8 @@ def set_hp(data: dict[str, Any], who: str, current: int | None, maximum: int | N
 
 
 def set_dying(data: dict[str, Any], who: str, value: int, *, reason: str = "") -> list[str]:
+    if system_of(data) != "pf2e":
+        raise _wrong_game(data, "dying", "pf2e")
     key, pc = find_character(data, who)
     if value < 0:
         raise StateError("dying cannot be negative")
@@ -361,6 +440,185 @@ def set_dying(data: dict[str, Any], who: str, value: int, *, reason: str = "") -
                 + f") — {pc['name']} dies unless something intervenes"
             )
     return notes
+
+
+def death_save_record(data: dict[str, Any], who: str, *, successes: int = 0,
+                      failures: int = 0, reason: str = "") -> list[str]:
+    """Record Death Saving Throw results, and resolve the third of either.
+
+    Source: see `python3 tools/dnd5e.py sources` (death_saves). Three successes make the
+    character Stable; three failures kill them; a natural 20 on the save itself heals them
+    to 1 HP, which `roll.py death-save` reports and `heal` then applies.
+    """
+    if system_of(data) != "dnd5e":
+        raise _wrong_game(data, "death saves", "dnd5e")
+    key, pc = find_character(data, who)
+    import dnd5e
+
+    if successes < 0 or failures < 0:
+        raise StateError("death save counts do not go down; `heal` resets them instead")
+    ds = pc.setdefault("death_saves", {"successes": 0, "failures": 0, "stable": False})
+    if int((pc.get("hp") or {}).get("current", 1)) > 0:
+        raise StateError(
+            f"{pc['name']} is on {pc['hp']['current']} HP and does not make Death Saves — "
+            f"they are only made while at 0 HP"
+        )
+    if ds.get("stable") and failures:
+        ds["stable"] = False
+        note_stable = [f"{pc['name']} stops being Stable and resumes Death Saves"]
+    else:
+        note_stable = []
+    ds["successes"] = int(ds.get("successes", 0)) + int(successes)
+    ds["failures"] = int(ds.get("failures", 0)) + int(failures)
+    notes = note_stable + [
+        f"{pc['name']}: Death Saves {ds['successes']}/3 successes, {ds['failures']}/3 failures"
+        + (f" ({reason})" if reason else "")
+    ]
+    if ds["failures"] >= dnd5e.DEATH_SAVES_TO_RESOLVE:
+        notes += mark_dead(data, key, reason="third Death Saving Throw failure")
+    elif ds["successes"] >= dnd5e.DEATH_SAVES_TO_RESOLVE:
+        ds["stable"] = True
+        notes.append(
+            f"⚠ {pc['name']} is STABLE — no more Death Saves, still Unconscious at 0 HP, "
+            f"and regains 1 HP after 1d4 hours if nobody heals them"
+        )
+    return notes
+
+
+def death_save_stabilise(data: dict[str, Any], who: str) -> list[str]:
+    """A successful DC 10 Wisdom (Medicine) check stabilises a creature at 0 HP."""
+    if system_of(data) != "dnd5e":
+        raise _wrong_game(data, "death saves", "dnd5e")
+    _, pc = find_character(data, who)
+    if int((pc.get("hp") or {}).get("current", 1)) > 0:
+        raise StateError(f"{pc['name']} is not at 0 HP and does not need stabilising")
+    ds = pc.setdefault("death_saves", {"successes": 0, "failures": 0, "stable": False})
+    if ds.get("dead"):
+        raise StateError(f"{pc['name']} is dead; stabilising is past the point")
+    ds["stable"] = True
+    return [f"{pc['name']} is Stable — Death Saves stop, still Unconscious at 0 HP, "
+            f"and regains 1 HP after 1d4 hours if unhealed"]
+
+
+def mark_dead(data: dict[str, Any], who: str, *, reason: str = "") -> list[str]:
+    """Record a death. The tool does not decide one — it writes down one that happened."""
+    _, pc = find_character(data, who)
+    pc["dead"] = True
+    pc["dead_reason"] = reason
+    ds = pc.get("death_saves")
+    if isinstance(ds, dict):
+        ds["stable"] = False
+    return [f"☠ {pc['name']} is DEAD" + (f" — {reason}" if reason else "")]
+
+
+def exhaustion_set(data: dict[str, Any], who: str, value: int) -> list[str]:
+    """Set an Exhaustion level. Six is death; this records it rather than clamping."""
+    if system_of(data) != "dnd5e":
+        raise _wrong_game(data, "exhaustion", "dnd5e")
+    key, pc = find_character(data, who)
+    import dnd5e
+
+    if value < 0:
+        raise StateError("Exhaustion does not go below 0; the condition just ends")
+    if value > dnd5e.EXHAUSTION_MAX:
+        raise StateError(
+            f"Exhaustion {value} is past {dnd5e.EXHAUSTION_MAX}, which is death — "
+            f"set it to {dnd5e.EXHAUSTION_MAX} and the death is recorded"
+        )
+    pc["exhaustion"] = int(value)
+    e = dnd5e.exhaustion_effect(value)
+    notes = [f"{pc['name']}: Exhaustion {value}"
+             + (f" — {e['d20_penalty']} to every D20 Test, {e['speed_penalty_feet']} ft Speed"
+                if value else " — the condition ends")]
+    if e["dead"]:
+        notes += mark_dead(data, key, reason=f"Exhaustion level {dnd5e.EXHAUSTION_MAX}")
+    return notes
+
+
+def inspiration_set(data: dict[str, Any], who: str, held: bool) -> list[str]:
+    """Heroic Inspiration is binary: you have it or you do not.
+
+    Source: see `python3 tools/dnd5e.py sources`. "You can never have more than one
+    instance of Heroic Inspiration. If something gives you Heroic Inspiration and you
+    already have it, you can give it to a player character in your group who lacks it."
+    """
+    if system_of(data) != "dnd5e":
+        raise _wrong_game(data, "inspiration", "dnd5e")
+    _, pc = find_character(data, who)
+    had = bool(pc.get("heroic_inspiration"))
+    if held and had:
+        raise StateError(
+            f"{pc['name']} already holds Heroic Inspiration, and it does not stack — "
+            f"give it to a character who lacks it instead"
+        )
+    if not held and not had:
+        raise StateError(f"{pc['name']} does not hold Heroic Inspiration to spend")
+    pc["heroic_inspiration"] = bool(held)
+    return [f"{pc['name']} {'gains' if held else 'spends'} Heroic Inspiration"]
+
+
+def hit_dice_spend(data: dict[str, Any], who: str, n: int = 1) -> list[str]:
+    """Spend Hit Dice on a Short Rest. The HP they restore is a real roll, so `heal` applies it."""
+    if system_of(data) != "dnd5e":
+        raise _wrong_game(data, "hit-dice", "dnd5e")
+    _, pc = find_character(data, who)
+    hd = pc.setdefault("hit_dice", {"die": 8, "max": int(pc.get("level", 1)), "used": 0})
+    left = int(hd.get("max", 0)) - int(hd.get("used", 0))
+    if n > left:
+        raise StateError(f"{pc['name']} has {left} Hit Dice left and cannot spend {n}")
+    hd["used"] = int(hd.get("used", 0)) + int(n)
+    return [
+        f"{pc['name']} spends {n}d{hd.get('die', 8)} Hit Dice "
+        f"→ {int(hd['max']) - int(hd['used'])}/{hd['max']} left",
+        f"Roll it: `roll.py expr \"{n}d{hd.get('die', 8)}+<Con mod x {n}>\" --campaign "
+        f"{data.get('campaign', '<slug>')}` then apply the total with `heal`.",
+    ]
+
+
+def concentration_set(data: dict[str, Any], who: str, on: str | None) -> list[str]:
+    """Start or drop Concentration. Starting a second effect ends the first."""
+    if system_of(data) != "dnd5e":
+        raise _wrong_game(data, "concentration", "dnd5e")
+    _, pc = find_character(data, who)
+    before = pc.get("concentration")
+    before_name = (before or {}).get("on") if isinstance(before, dict) else before
+    if on is None:
+        if not before:
+            raise StateError(f"{pc['name']} is not concentrating on anything")
+        pc["concentration"] = None
+        return [f"{pc['name']} stops concentrating on {before_name}"]
+    pc["concentration"] = {"on": on}
+    if before_name:
+        return [f"{pc['name']} concentrates on {on} — which ends Concentration on {before_name}"]
+    return [f"{pc['name']} concentrates on {on}"]
+
+
+def attune(data: dict[str, Any], who: str, item: str, *, remove: bool = False) -> list[str]:
+    """Attune to or release a magic item, against the character's own limit."""
+    if system_of(data) != "dnd5e":
+        raise _wrong_game(data, "attunement", "dnd5e")
+    _, pc = find_character(data, who)
+    import dnd5e
+
+    att = pc.setdefault("attunement", {"max": dnd5e.ATTUNEMENT_LIMIT, "items": []})
+    items = att.setdefault("items", [])
+    cap = int(att.get("max", dnd5e.ATTUNEMENT_LIMIT))
+    lowered = {i.lower() for i in items}
+    if remove:
+        if item.lower() not in lowered:
+            raise StateError(f"{pc['name']} is not attuned to {item!r} (attuned: "
+                             f"{', '.join(items) or 'nothing'})")
+        att["items"] = [i for i in items if i.lower() != item.lower()]
+        return [f"{pc['name']} ends Attunement with {item} → {len(att['items'])}/{cap}"]
+    if item.lower() in lowered:
+        raise StateError(f"{pc['name']} is already attuned to {item!r}")
+    if len(items) >= cap:
+        raise StateError(
+            f"{pc['name']} is attuned to {len(items)} items, which is the limit of {cap} "
+            f"({', '.join(items)}) — end one first"
+        )
+    items.append(item)
+    return [f"{pc['name']} attunes to {item} → {len(items)}/{cap}"]
 
 
 def parse_duration(spec: str | None) -> dict[str, Any]:
@@ -391,17 +649,24 @@ def condition_add(
     source: str | None,
 ) -> list[str]:
     key, pc = find_character(data, who)
+    mod = rs(data)
+    tracked, known, valued = mod.TRACKED_SEPARATELY, mod.KNOWN_CONDITIONS, mod.VALUED_CONDITIONS
     slug = slugify(name)
-    if slug in TRACKED_SEPARATELY:
+    if slug in tracked:
         raise StateError(
             f"{slug} is tracked as its own field, not as a condition entry — "
             f"use `{slug} set <who> <value>` so there is only one copy of the number"
         )
-    if slug not in KNOWN_CONDITIONS:
+    if slug not in known:
+        other = [sid for sid in rules.SYSTEMS if sid != system_of(data)
+                 and slug in rules.load(sid).KNOWN_CONDITIONS]
+        extra = (f" It is a {rules.short_of(other[0])} condition, and this is a "
+                 f"{rules.short_of(system_of(data))} campaign." if other else "")
         raise StateError(
-            f"{name!r} is not a PF2e condition. Known: " + ", ".join(sorted(KNOWN_CONDITIONS))
+            f"{name!r} is not a {mod.SYSTEM_SHORT} condition.{extra} Known: "
+            + ", ".join(sorted(known))
         )
-    if slug in VALUED_CONDITIONS:
+    if slug in valued:
         if value is None:
             raise StateError(f"{slug} always carries a value — say how much")
         if value < 1:
@@ -412,8 +677,9 @@ def condition_add(
     conds = pc.setdefault("conditions", [])
     for c in conds:
         if c["name"] == slug:
-            if slug in VALUED_CONDITIONS:
-                # The stronger value wins; PF2e conditions of the same name do not stack.
+            if slug in valued:
+                # The stronger value wins; a condition does not stack with itself in
+                # either ruleset (PF2e condition entries; SRD 5.2 "Condition").
                 if value is not None and value > int(c.get("value") or 0):
                     c["value"] = value
                     c["duration"] = dur
@@ -482,6 +748,8 @@ def condition_tick(data: dict[str, Any], who: str) -> list[str]:
 
 
 def hero_spend(data: dict[str, Any], who: str, n: int = 1) -> list[str]:
+    if system_of(data) != "pf2e":
+        raise _wrong_game(data, "hero", "pf2e")
     _, pc = find_character(data, who)
     have = int(pc.get("hero_points", 0))
     if have < n:
@@ -491,6 +759,8 @@ def hero_spend(data: dict[str, Any], who: str, n: int = 1) -> list[str]:
 
 
 def hero_gain(data: dict[str, Any], who: str, n: int = 1) -> list[str]:
+    if system_of(data) != "pf2e":
+        raise _wrong_game(data, "hero", "pf2e")
     _, pc = find_character(data, who)
     cap = int(pc.get("hero_points_max", 3))
     new = int(pc.get("hero_points", 0)) + n
@@ -501,6 +771,8 @@ def hero_gain(data: dict[str, Any], who: str, n: int = 1) -> list[str]:
 
 
 def focus_spend(data: dict[str, Any], who: str, n: int = 1) -> list[str]:
+    if system_of(data) != "pf2e":
+        raise _wrong_game(data, "focus", "pf2e")
     _, pc = find_character(data, who)
     f = pc.setdefault("focus", {"current": 0, "max": 0, "refocus_available": True})
     if int(f.get("current", 0)) < n:
@@ -511,6 +783,8 @@ def focus_spend(data: dict[str, Any], who: str, n: int = 1) -> list[str]:
 
 def focus_refocus(data: dict[str, Any], who: str, n: int = 1) -> list[str]:
     """Refocus recovers 1 Focus Point (more only with a specific ability that says so)."""
+    if system_of(data) != "pf2e":
+        raise _wrong_game(data, "refocus", "pf2e")
     _, pc = find_character(data, who)
     f = pc.setdefault("focus", {"current": 0, "max": 0, "refocus_available": True})
     if not f.get("refocus_available", True):
@@ -523,78 +797,88 @@ def focus_refocus(data: dict[str, Any], who: str, n: int = 1) -> list[str]:
     return [f"{pc['name']} Refocuses → {f['current']}/{cap}"]
 
 
+#: Pathfinder calls a spell's tier its rank; D&D calls it its level. Same slot, same
+#: storage, different word at the table — so the word follows the campaign.
+SLOT_WORD = {"pf2e": "rank", "dnd5e": "level"}
+
+
+def slot_word(data: dict[str, Any]) -> str:
+    return SLOT_WORD.get(system_of(data), "rank")
+
+
 def slots_use(data: dict[str, Any], who: str, rank: str, n: int = 1) -> list[str]:
     _, pc = find_character(data, who)
+    word = slot_word(data)
     slots = pc.setdefault("spell_slots", {})
     key = str(rank)
     if key not in slots:
-        raise StateError(f"{pc['name']} has no rank-{key} slots recorded")
+        have = ", ".join(sorted(slots, key=lambda r: int(r))) or "none"
+        raise StateError(f"{pc['name']} has no {word}-{key} slots recorded (has: {have})")
     entry = slots[key]
     used = int(entry.get("used", 0)) + n
     if used > int(entry.get("max", 0)):
         raise StateError(
-            f"{pc['name']} has {entry.get('max', 0)} rank-{key} slot(s) and {entry.get('used', 0)} already used"
+            f"{pc['name']} has {entry.get('max', 0)} {word}-{key} slot(s) and "
+            f"{entry.get('used', 0)} already used"
         )
     entry["used"] = used
-    return [f"{pc['name']} rank {key}: {used}/{entry['max']} used"]
-
-
-def daily_prep(data: dict[str, Any]) -> list[str]:
-    """Reset what a night's rest and daily preparations restore."""
-    notes = []
-    for _, pc in data.get("pcs", {}).items():
-        for key, entry in pc.get("spell_slots", {}).items():
-            entry["used"] = 0
-        f = pc.setdefault("focus", {"current": 0, "max": 0, "refocus_available": True})
-        f["current"] = int(f.get("max", 0))
-        f["refocus_available"] = True
-        if int(pc.get("wounded", 0)) > 0:
-            pc["wounded"] = max(0, int(pc["wounded"]) - 1)
-        if int(pc.get("doomed", 0)) > 0:
-            pc["doomed"] = max(0, int(pc["doomed"]) - 1)
-        notes.append(f"{pc['name']}: slots and focus restored, wounded {pc.get('wounded', 0)}, doomed {pc.get('doomed', 0)}")
-    notes.append("Drained decreases by 1 per night's rest but does not restore the lost HP — adjust by hand.")
-    # Source: Player Core Drained, Doomed and Wounded entries (wounded is removed by a
-    # successful Treat Wounds or 24 hours; doomed and drained step down by 1 per full rest).
-    return notes
+    return [f"{pc['name']} {word} {key}: {used}/{entry['max']} used"]
 
 
 # --------------------------------------------------------------------------------------
 # Money and items
 # --------------------------------------------------------------------------------------
 
-_COIN_RE = re.compile(r"^(\d+)\s*(pp|gp|sp|cp)$", re.IGNORECASE)
+# Both rulesets' denominations, so a purse parses whichever game wrote it. Which coins a
+# campaign may actually hold is enforced against its own ruleset below.
+_COIN_RE = re.compile(r"^(\d+)\s*(pp|gp|ep|sp|cp)$", re.IGNORECASE)
 
 
-def parse_coins(tokens: Iterable[str]) -> dict[str, int]:
-    out = {c: 0 for c in COIN_ORDER}
+def coin_order(data: dict[str, Any] | None = None) -> tuple[str, ...]:
+    return COIN_ORDER if data is None else tuple(rs(data).COIN_ORDER)
+
+
+def coin_in_cp(data: dict[str, Any] | None = None) -> dict[str, int]:
+    return dict(COIN_IN_CP) if data is None else dict(rs(data).COIN_IN_CP)
+
+
+def parse_coins(tokens: Iterable[str], order: Sequence[str] = COIN_ORDER) -> dict[str, int]:
+    out = {c: 0 for c in order}
     seen = False
     for tok in tokens:
-        for piece in re.findall(r"\d+\s*(?:pp|gp|sp|cp)", str(tok), re.IGNORECASE):
+        for piece in re.findall(r"\d+\s*(?:pp|gp|ep|sp|cp)", str(tok), re.IGNORECASE):
             m = _COIN_RE.match(piece.replace(" ", ""))
             if not m:
                 continue
-            out[m.group(2).lower()] += int(m.group(1))
+            coin = m.group(2).lower()
+            if coin not in out:
+                raise StateError(
+                    f"{coin} is not a coin in this campaign's ruleset "
+                    f"(it uses {', '.join(order)}). Electrum is a D&D denomination; "
+                    f"Pathfinder has no equivalent."
+                )
+            out[coin] += int(m.group(1))
             seen = True
     if not seen:
         raise StateError("no coins found — write amounts like '42gp 3sp'")
     return out
 
 
-def coins_to_cp(coins: dict[str, int]) -> int:
-    return sum(int(coins.get(c, 0)) * COIN_IN_CP[c] for c in COIN_ORDER)
+def coins_to_cp(coins: dict[str, int], rates: dict[str, int] = COIN_IN_CP) -> int:
+    return sum(int(coins.get(c, 0)) * rates[c] for c in rates)
 
 
-def cp_to_coins(total: int) -> dict[str, int]:
+def cp_to_coins(total: int, rates: dict[str, int] = COIN_IN_CP) -> dict[str, int]:
+    """Break a copper total into the largest coins first, per the ruleset's own set."""
     out = {}
     left = total
-    for c in COIN_ORDER:
-        out[c], left = divmod(left, COIN_IN_CP[c])
+    for c in sorted(rates, key=lambda k: -rates[k]):
+        out[c], left = divmod(left, rates[c])
     return out
 
 
-def format_coins(coins: dict[str, int]) -> str:
-    parts = [f"{coins[c]} {c}" for c in COIN_ORDER if coins.get(c)]
+def format_coins(coins: dict[str, int], order: Sequence[str] = COIN_ORDER) -> str:
+    parts = [f"{coins[c]} {c}" for c in order if coins.get(c)]
     return ", ".join(parts) if parts else "0 cp"
 
 
@@ -606,46 +890,49 @@ def gold_change(data: dict[str, Any], tokens: Sequence[str], sign: int) -> list[
     matching denominations first and only breaks larger coins when it has to, which is what
     happens at a table.
     """
-    amount = parse_coins(tokens)
-    purse = data.setdefault("party", {}).setdefault("gold", {c: 0 for c in COIN_ORDER})
-    for c in COIN_ORDER:
+    order = coin_order(data)
+    rates = coin_in_cp(data)
+    amount = parse_coins(tokens, order)
+    purse = data.setdefault("party", {}).setdefault("gold", {c: 0 for c in order})
+    for c in order:
         purse.setdefault(c, 0)
     if sign > 0:
-        for c in COIN_ORDER:
+        for c in order:
             purse[c] = int(purse[c]) + int(amount.get(c, 0))
-        return [f"party gains {format_coins(amount)} → {format_coins(purse)}"]
+        return [f"party gains {format_coins(amount, order)} → {format_coins(purse, order)}"]
 
-    have = coins_to_cp(purse)
-    cost = coins_to_cp(amount)
+    have = coins_to_cp(purse, rates)
+    cost = coins_to_cp(amount, rates)
     if cost > have:
         raise StateError(
-            f"the party holds {format_coins(purse)} (worth {have} cp) and cannot part with "
-            f"{format_coins(amount)} (worth {cost} cp) — refusing to go negative"
+            f"the party holds {format_coins(purse, order)} (worth {have} cp) and cannot part "
+            f"with {format_coins(amount, order)} (worth {cost} cp) — refusing to go negative"
         )
     owed = cost
     broke = False
-    for c in COIN_ORDER:  # pay from the largest matching denomination down
+    for c in order:  # pay from the largest matching denomination down
         want = min(int(amount.get(c, 0)), int(purse[c]))
         if want:
             purse[c] -= want
-            owed -= want * COIN_IN_CP[c]
+            owed -= want * rates[c]
     if owed > 0:
         # Break the largest coins available until the rest is covered, then give change.
-        pool = coins_to_cp(purse)
-        purse.update(cp_to_coins(pool - owed))
+        pool = coins_to_cp(purse, rates)
+        purse.update(cp_to_coins(pool - owed, rates))
         broke = True
-    out = [f"party spends {format_coins(amount)} → {format_coins(purse)}"]
+    out = [f"party spends {format_coins(amount, order)} → {format_coins(purse, order)}"]
     if broke:
         out.append("(larger coins were broken to make the payment)")
     return out
 
 
 def gold_set(data: dict[str, Any], tokens: Sequence[str]) -> list[str]:
-    coins = parse_coins(tokens)
+    order = coin_order(data)
+    coins = parse_coins(tokens, order)
     if any(v < 0 for v in coins.values()):
         raise StateError("coin counts cannot be negative")
-    data.setdefault("party", {})["gold"] = {c: int(coins.get(c, 0)) for c in COIN_ORDER}
-    return [f"purse set to {format_coins(data['party']['gold'])}"]
+    data.setdefault("party", {})["gold"] = {c: int(coins.get(c, 0)) for c in order}
+    return [f"purse set to {format_coins(data['party']['gold'], order)}"]
 
 
 def item_container(data: dict[str, Any], owner: str | None) -> tuple[str, list[dict[str, Any]]]:
@@ -653,6 +940,10 @@ def item_container(data: dict[str, Any], owner: str | None) -> tuple[str, list[d
         return "party stash", data.setdefault("party", {}).setdefault("stash", [])
     key, pc = find_character(data, owner)
     return pc["name"], pc.setdefault("items", [])
+
+
+#: How each ruleset measures what an item weighs, and which field holds it.
+ENCUMBRANCE_FIELD = {"pf2e": ("bulk", "--bulk", "Bulk"), "dnd5e": ("weight", "--weight", "pounds")}
 
 
 def item_add(
@@ -664,9 +955,26 @@ def item_add(
     kind: str | None,
     charges: int | None,
     level: int | None,
+    weight: str | None = None,
 ) -> list[str]:
+    """Add an item, recording its weight in whichever unit the campaign's game uses.
+
+    Pathfinder measures Bulk; D&D measures pounds. Writing the wrong one would produce a
+    carried total that silently means nothing, so the wrong flag is refused by name
+    rather than stored.
+    """
     if qty < 1:
         raise StateError(f"cannot add {qty} of an item")
+    sid = system_of(data)
+    field, flag, unit = ENCUMBRANCE_FIELD[sid]
+    other = [v for k, v in ENCUMBRANCE_FIELD.items() if k != sid][0]
+    given = {"bulk": bulk, "weight": weight}
+    if given[other[0]] is not None:
+        raise StateError(
+            f"{other[1]} measures {other[2]}, which is the other ruleset's unit — this is a "
+            f"{rules.short_of(sid)} campaign, so use {flag} ({unit})"
+        )
+    value = given[field]
     where, items = item_container(data, owner)
     for it in items:
         if it["name"].lower() == name.lower() and charges is None:
@@ -676,7 +984,7 @@ def item_add(
         {
             "name": name,
             "qty": qty,
-            "bulk": bulk if bulk is not None else "-",
+            field: value if value is not None else ("-" if sid == "pf2e" else 0),
             "kind": kind or "gear",  # gear | permanent | consumable | ammunition | container
             "charges": charges,
             "level": level,
@@ -714,58 +1022,26 @@ def item_use(data: dict[str, Any], name: str, owner: str | None, n: int = 1) -> 
     raise StateError(f"{where} has no item called {name!r}")
 
 
-def bulk_report(data: dict[str, Any]) -> list[dict[str, Any]]:
-    """Bulk carried against the encumbered and maximum limits, per carrier.
+def carry_report(data: dict[str, Any]) -> list[dict[str, Any]]:
+    """What each carrier is carrying, against this ruleset's own limits.
 
-    Source: Player Core p.269, "Bulk" — read from https://2e.aonprd.com/Rules.aspx?ID=2153
-    and ?ID=2154: "You can carry an amount of Bulk equal to 5 plus your Strength modifier
-    without penalty; if you carry more, you gain the encumbered condition. You can't hold
-    or carry more Bulk than 10 plus your Strength modifier." Ten light items make 1 Bulk
-    and fractions round down (?ID=2155); negligible items do not count. A thousand coins
-    are 1 Bulk (?ID=2157).
-
-    Two optional per-character fields, because feats and containers change the answer and
-    reporting a limit that is wrong is worse than reporting none:
-
-      bulk_bonus  raises BOTH limits. Hefty Hauler (Player Core, trained in Athletics)
-                  reads "Increase your maximum and encumbered Bulk limits by 2", so it
-                  is bulk_bonus: 2.
-      bulk_free   Bulk that does not count against the limits. A backpack "holds up to
-                  4 Bulk of items, and the first 2 Bulk of these items don't count
-                  against your Bulk limits" (Player Core p.287), so it is bulk_free: 2.
-
-    Both default to 0, so a character with neither field behaves exactly as before.
-    Nothing here reduces worn armour's Bulk: no such rule was found in Player Core's Bulk
-    section, and worn armour counts in full.
+    Pathfinder measures Bulk against an encumbered threshold and a hard maximum; D&D
+    measures pounds against a single capacity and has no intermediate encumbered band.
+    Both return rows with `name`, `carried`, `counted`, `max`, `unit`, `over_max`,
+    `encumbered` and a ready-made `line`, so the renderers do not need to know which.
+    The per-game reasoning and sources live in `pf2e.carry_report` / `dnd5e.carry_report`.
     """
-    rows = []
-    for key, pc in data.get("pcs", {}).items():
-        tenths = 0
-        for it in pc.get("items", []):
-            tenths += pf2e.bulk_tenths(it.get("bulk", "-")) * int(it.get("qty", 1))
-        str_mod = int(pc.get("str_mod", 0))
-        bonus = int(pc.get("bulk_bonus", 0))
-        free_tenths = max(0, int(pc.get("bulk_free", 0))) * 10
-        counted = max(0, tenths - free_tenths)
-        encumbered_after = 5 + str_mod + bonus
-        maximum = 10 + str_mod + bonus
-        rows.append(
-            {
-                "id": key,
-                "name": pc.get("name", key),
-                "bulk_tenths": tenths,
-                "bulk": tenths / 10.0,
-                "counted_tenths": counted,
-                "counted": counted / 10.0,
-                "bulk_free": free_tenths / 10.0,
-                "bulk_bonus": bonus,
-                "encumbered_after": encumbered_after,
-                "max": maximum,
-                "encumbered": counted > encumbered_after * 10,
-                "over_max": counted > maximum * 10,
-            }
-        )
-    return rows
+    return rs(data).carry_report(data)
+
+
+def bulk_report(data: dict[str, Any]) -> list[dict[str, Any]]:
+    """Pathfinder's name for `carry_report`, kept for callers that already use it."""
+    return carry_report(data)
+
+
+def daily_prep(data: dict[str, Any]) -> list[str]:
+    """What a night's rest restores: daily preparations in PF2e, a Long Rest in D&D."""
+    return rs(data).daily_reset(data)
 
 
 # --------------------------------------------------------------------------------------
@@ -834,7 +1110,15 @@ def quest_set(data: dict[str, Any], name: str, status: str, lead: str | None) ->
 # --------------------------------------------------------------------------------------
 
 
-def blank_combatant(name: str, side: str, **kw: Any) -> dict[str, Any]:
+def blank_combatant(name: str, side: str, system: str | None = None, **kw: Any) -> dict[str, Any]:
+    """A combatant in the tracker. The action economy half comes from the ruleset.
+
+    Pathfinder gives three actions, a reaction and a multiple attack penalty step.
+    D&D gives one action, a Bonus Action where a feature grants one, a movement
+    allowance in feet and a reaction. Neither shape appears in the other's tracker, so
+    a column can never imply a resource the game does not have.
+    """
+    mod = rules.load(system)
     c = {
         "id": kw.get("id") or slugify(name),
         "name": name,
@@ -844,20 +1128,20 @@ def blank_combatant(name: str, side: str, **kw: Any) -> dict[str, Any]:
         "initiative_natural": kw.get("initiative_natural"),
         "hp": None if kw.get("ref") else {"current": kw.get("hp", 0), "max": kw.get("hp", 0), "temp": 0},
         "conditions": [] if not kw.get("ref") else None,
-        "dying": 0 if not kw.get("ref") else None,
-        "actions_remaining": 3,
-        "actions_spent": 0,
-        "map_step": 0,
-        "reaction_available": True,
-        "reaction_used_for": None,
         "position": kw.get("position"),
         "squad": kw.get("squad"),
-        "persistent": [],
-        "sustained": [],
         "level": kw.get("level"),
+        "cr": kw.get("cr"),
         "notes": kw.get("notes", ""),
         "defeated": False,
+        **mod.blank_combatant_fields(**kw),
     }
+    if mod.SYSTEM_ID == "pf2e":
+        c["dying"] = 0 if not kw.get("ref") else None
+    else:
+        c["base_speed"] = c.get("speed", 30)
+        c["death_saves"] = (None if kw.get("ref")
+                            else {"successes": 0, "failures": 0, "stable": False})
     return c
 
 
@@ -915,7 +1199,7 @@ def encounter_add(data: dict[str, Any], name: str, side: str, **kw: Any) -> list
         raise StateError("side must be party, adversary or neutral")
     if kw.get("ref"):
         find_character(data, kw["ref"])  # raises if absent
-    c = blank_combatant(name, side, **kw)
+    c = blank_combatant(name, side, system=system_of(data), **kw)
     if any(x["id"] == c["id"] for x in e["combatants"]):
         raise StateError(f"a combatant with id {c['id']!r} is already in this encounter")
     e["combatants"].append(c)
@@ -952,27 +1236,49 @@ def encounter_next(data: dict[str, Any]) -> list[str]:
         notes.append(f"— round {e['round']} —")
     e["turn_index"] = idx
     nxt = live[idx]
-    nxt["actions_remaining"] = 3
-    nxt["actions_spent"] = 0
-    nxt["map_step"] = 0
-    nxt["reaction_available"] = True
-    nxt["reaction_used_for"] = None
-    notes.append(f"{nxt['name']}'s turn (round {e['round']}), ◆◆◆, reaction available")
+    mod = rs(data)
+    if mod.SYSTEM_ID == "dnd5e":
+        # Dash raised the Speed for one turn only; put it back before the reset.
+        if nxt.get("base_speed") is not None:
+            nxt["speed"] = nxt["base_speed"]
+    have = mod.reset_turn(nxt)
+    notes.append(f"{nxt['name']}'s turn (round {e['round']}), {have}")
+    if mod.SYSTEM_ID == "dnd5e" and int((combatant_hp(data, nxt) or {}).get("current", 1)) == 0:
+        ref = nxt.get("ref")
+        target = None
+        if ref:
+            try:
+                _, target = find_character(data, ref)
+            except StateError:
+                target = None
+        else:
+            target = nxt
+        if target is not None and not target.get("dead") and not (
+                target.get("death_saves") or {}).get("stable"):
+            notes.append(
+                f"⚠ {nxt['name']} starts their turn at 0 HP — roll a Death Saving Throw now: "
+                f"`state.py --campaign {data.get('campaign', '<slug>')} death-save roll "
+                f"{ref or nxt['id']}`"
+            )
     return notes
 
 
-def encounter_action(data: dict[str, Any], who: str, n: int) -> list[str]:
+def encounter_action(data: dict[str, Any], who: str, n: int, kind: str = "action") -> list[str]:
     c = find_combatant(data, who)
-    left = int(c["actions_remaining"]) - n
-    if left < 0:
-        raise StateError(f"{c['name']} has {c['actions_remaining']} action(s) left and cannot spend {n}")
-    c["actions_remaining"] = left
-    c["actions_spent"] = int(c["actions_spent"]) + n
-    pips = "◆" * left + "◇" * (3 - left) if left <= 3 else f"{left} actions"
-    return [f"{c['name']}: {pips} ({left} left)"]
+    try:
+        note = rs(data).spend_action(c, kind, n)
+    except ValueError as exc:
+        raise StateError(str(exc)) from exc
+    return [f"{c['name']}: {note}"]
 
 
 def encounter_map_step(data: dict[str, Any], who: str, step: int | None) -> list[str]:
+    if system_of(data) != "pf2e":
+        raise StateError(
+            "the multiple attack penalty is a Pathfinder rule and this is a "
+            f"{rules.short_of(system_of(data))} campaign. D&D 2024 has no such penalty: extra "
+            "attacks come from the Attack action and the Extra Attack feature, at no penalty."
+        )
     c = find_combatant(data, who)
     new = int(c["map_step"]) + 1 if step is None else step
     if new < 0 or new > 2:
@@ -1040,12 +1346,16 @@ def encounter_status(data: dict[str, Any]) -> list[str]:
     if e.get("map"):
         out.append(f"map: maps/{e['map']}.md")
     out.append("")
-    out.append(f"{'':2} {'combatant':<22} {'init':>4} {'HP':>12} {'act':<4} {'MAP':>4} {'rxn':<4} {'pos':<5} conditions")
+    mod = rs(data)
+    cols = mod.ENCOUNTER_COLUMNS
+    head = "".join(f"{name:<{width}} " for name, width in cols)
+    out.append(f"{'':2} {'combatant':<22} {'init':>4} {'HP':>12} {head}{'pos':<5} conditions")
     for i, c in enumerate(e["combatants"]):
         hp = combatant_hp(data, c)
         hp_s = f"{hp['current']}/{hp['max']}" if hp else "?"
         conds: list[dict[str, Any]] = []
         dying = 0
+        flags: list[str] = []
         if c.get("ref"):
             try:
                 _, pc = find_character(data, c["ref"])
@@ -1055,19 +1365,23 @@ def encounter_status(data: dict[str, Any]) -> list[str]:
             else:
                 conds = pc.get("conditions", [])
                 dying = int(pc.get("dying", 0))
+                flags = mod.tracked_condition_flags(pc)
         else:
             conds = c.get("conditions") or []
             dying = int(c.get("dying") or 0)
+            flags = mod.tracked_condition_flags(c)
         cs = ", ".join(f"{x['name']}{' ' + str(x['value']) if x.get('value') else ''}" for x in conds)
         if dying:
             cs = f"dying {dying}" + (f", {cs}" if cs else "")
+        cs = ", ".join(flags + ([cs] if cs else []))
         mark = "→" if i == int(e.get("turn_index", 0)) else " "
-        pips = "◆" * int(c["actions_remaining"]) + "◇" * (3 - int(c["actions_remaining"]))
-        rxn = "yes" if c["reaction_available"] else "used"
+        cells = "".join(f"{v:<{w}} " for v, (_, w) in zip(mod.combatant_action_cells(c), cols))
         out.append(
             f"{mark:2} {c['name']:<22} {str(c.get('initiative') or '-'):>4} {hp_s:>12} "
-            f"{pips:<4} {c['map_step']:>4} {rxn:<4} {str(c.get('position') or '-'):<5} {cs}"
+            f"{cells}{str(c.get('position') or '-'):<5} {cs}"
         )
+    out.append("")
+    out.append(mod.ACTION_ECONOMY["summary"])
     return out
 
 
@@ -1095,6 +1409,7 @@ def render_checkpoint(slug: str, data: dict[str, Any]) -> str:
       f"{data.get('party', {}).get('xp', 0)} XP")
     a(f"- Transparency mode: `{data.get('transparency', 'standard')}` — "
       f"difficulty preset: **{data.get('difficulty_preset', 'Standard')}**")
+    a(f"- Ruleset: **{rs(data).SYSTEM_NAME}**")
     a("")
     a("## Scene")
     a("")
@@ -1105,47 +1420,40 @@ def render_checkpoint(slug: str, data: dict[str, Any]) -> str:
     a(sit)
     a("")
 
+    mod = rs(data)
     a("## Party")
     a("")
-    a("| Character | HP | AC | Fort | Ref | Will | Perc | Hero | Focus | Conditions |")
-    a("|---|---|---|---|---|---|---|---|---|---|")
+    a("| Character | " + " | ".join(mod.SHEET_COLUMNS) + " |")
+    a("|---" * (len(mod.SHEET_COLUMNS) + 1) + "|")
     for key, pc in data.get("pcs", {}).items():
-        hp = pc.get("hp", {})
-        temp = f" +{hp.get('temp')}t" if hp.get("temp") else ""
-        s = pc.get("saves", {})
-        f = pc.get("focus", {})
-        focus = f"{f.get('current', 0)}/{f.get('max', 0)}" + ("" if f.get("refocus_available", True) else " (refocused)")
         conds = []
         for c in pc.get("conditions", []):
             conds.append(f"{c['name']}" + (f" {c['value']}" if c.get("value") else "") +
                          (f" [{describe_duration(c.get('duration') or {})}]" if (c.get("duration") or {}).get("kind") != "until-removed" else ""))
-        for name in ("dying", "wounded", "doomed"):
-            if int(pc.get(name, 0)):
-                conds.insert(0, f"**{name} {pc[name]}**")
-        a(f"| {pc.get('name', key)} | {hp.get('current', 0)}/{hp.get('max', 0)}{temp} | {pc.get('ac', 0)} | "
-          f"{s.get('fortitude', 0):+d} | {s.get('reflex', 0):+d} | {s.get('will', 0):+d} | "
-          f"{pc.get('perception', 0):+d} | {pc.get('hero_points', 0)} | {focus} | {', '.join(conds) or '—'} |")
+        conds = mod.tracked_condition_flags(pc) + conds
+        cells = mod.sheet_lines(pc, conditions=", ".join(conds) or "—")
+        a(f"| {pc.get('name', key)} | " + " | ".join(cells) + " |")
     a("")
 
     slotted = [(k, pc) for k, pc in data.get("pcs", {}).items() if pc.get("spell_slots")]
     if slotted:
+        word = slot_word(data)
         a("### Spell slots")
         a("")
         for key, pc in slotted:
             bits = []
             for rank in sorted(pc["spell_slots"], key=lambda r: int(r)):
                 e = pc["spell_slots"][rank]
-                bits.append(f"rank {rank}: {int(e.get('max', 0)) - int(e.get('used', 0))}/{e.get('max', 0)}")
+                bits.append(f"{word} {rank}: {int(e.get('max', 0)) - int(e.get('used', 0))}/{e.get('max', 0)}")
             a(f"- **{pc.get('name', key)}** — " + "; ".join(bits))
         a("")
 
     a("## Money and carried items")
     a("")
-    a(f"- **Purse:** {format_coins(data.get('party', {}).get('gold', {}))}")
-    for row in bulk_report(data):
+    a(f"- **Purse:** {format_coins(data.get('party', {}).get('gold', {}), coin_order(data))}")
+    for row in carry_report(data):
         flag = " — **OVER THE LIMIT**" if row["over_max"] else (" — **encumbered**" if row["encumbered"] else "")
-        a(f"- **{row['name']}** Bulk {row['bulk']:.1f} "
-          f"(encumbered after {row['encumbered_after']}, max {row['max']}){flag}")
+        a(f"- **{row['name']}** {row['line']}{flag}")
     for key, pc in data.get("pcs", {}).items():
         items = pc.get("items", [])
         if not items:
@@ -1469,7 +1777,11 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("init", help="create a blank state.json")
     p.add_argument("--title", default="")
     p.add_argument("--transparency", default="standard")
+    p.add_argument("--system", default=None,
+                   help="ruleset: pf2e or dnd5e (also '5.5e'). Required for a new campaign.")
     p.add_argument("--force", action="store_true")
+
+    sub.add_parser("migrate", help="bring state.json forward to the current schema and re-render")
 
     p = sub.add_parser("add-character", help="add a PC, ally, sidekick or companion")
     p.add_argument("name")
@@ -1477,14 +1789,24 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--level", type=int, default=1)
     p.add_argument("--hp", type=int, default=0)
     p.add_argument("--ac", type=int, default=0)
-    p.add_argument("--fort", type=int, default=0)
-    p.add_argument("--ref", type=int, default=0)
-    p.add_argument("--will", type=int, default=0)
-    p.add_argument("--perception", type=int, default=0)
-    p.add_argument("--speed", type=int, default=25)
-    p.add_argument("--str-mod", type=int, default=0)
-    p.add_argument("--hero-points", type=int, default=1)
+    p.add_argument("--speed", type=int, default=None)
     p.add_argument("--sheet", default=None)
+    g = p.add_argument_group("Pathfinder")
+    g.add_argument("--fort", type=int, default=0)
+    g.add_argument("--ref", type=int, default=0)
+    g.add_argument("--will", type=int, default=0)
+    g.add_argument("--perception", type=int, default=0)
+    g.add_argument("--str-mod", type=int, default=0)
+    g.add_argument("--hero-points", type=int, default=1)
+    g = p.add_argument_group("D&D 2024")
+    for ab in ("str", "dex", "con", "int", "wis", "cha"):
+        g.add_argument(f"--{ab}", type=int, default=None, help=f"{ab.upper()} score")
+    g.add_argument("--save", action="append", default=[], metavar="ABIL:MOD",
+                   help="a saving throw modifier, e.g. --save dex:+5; repeatable")
+    g.add_argument("--passive-perception", type=int, default=None)
+    g.add_argument("--initiative", type=int, default=None, help="initiative modifier")
+    g.add_argument("--hit-die", type=int, default=None, choices=[6, 8, 10, 12])
+    g.add_argument("--size", default=None)
 
     p = sub.add_parser("damage")
     p.add_argument("who")
@@ -1560,7 +1882,74 @@ def build_parser() -> argparse.ArgumentParser:
     r = q.add_parser("reset")
     r.add_argument("who")
 
-    sub.add_parser("daily-prep", help="a night's rest: slots, focus, wounded/doomed step-down")
+    p = sub.add_parser("death-save", help="D&D: record Death Saving Throw results")
+    q = p.add_subparsers(dest="sub", required=True)
+    r = q.add_parser("record", help="add successes and/or failures from rolled saves")
+    r.add_argument("who")
+    r.add_argument("--successes", type=int, default=0)
+    r.add_argument("--failures", type=int, default=0)
+    r.add_argument("--reason", default="")
+    r = q.add_parser("roll", help="roll a real Death Saving Throw and apply it")
+    r.add_argument("who")
+    r = q.add_parser("stabilise", help="a successful DC 10 Wisdom (Medicine) check")
+    r.add_argument("who")
+    r = q.add_parser("reset", help="clear the counters (healing does this automatically)")
+    r.add_argument("who")
+
+    p = sub.add_parser("exhaustion", help="D&D: set an Exhaustion level (6 is death)")
+    q = p.add_subparsers(dest="sub", required=True)
+    r = q.add_parser("set")
+    r.add_argument("who")
+    r.add_argument("value", type=int)
+    r = q.add_parser("add")
+    r.add_argument("who")
+    r.add_argument("n", type=int, nargs="?", default=1)
+
+    p = sub.add_parser("inspiration", help="D&D: Heroic Inspiration, which does not stack")
+    q = p.add_subparsers(dest="sub", required=True)
+    for verb in ("give", "spend"):
+        r = q.add_parser(verb)
+        r.add_argument("who")
+
+    p = sub.add_parser("hit-dice", help="D&D: spend Hit Dice on a Short Rest")
+    q = p.add_subparsers(dest="sub", required=True)
+    r = q.add_parser("spend")
+    r.add_argument("who")
+    r.add_argument("n", type=int, nargs="?", default=1)
+    r = q.add_parser("set")
+    r.add_argument("who")
+    r.add_argument("--max", type=int, required=True)
+    r.add_argument("--die", type=int, default=8, choices=[6, 8, 10, 12])
+    r.add_argument("--used", type=int, default=0)
+
+    p = sub.add_parser("concentration", help="D&D: start or drop Concentration")
+    q = p.add_subparsers(dest="sub", required=True)
+    r = q.add_parser("start")
+    r.add_argument("who")
+    r.add_argument("on")
+    r = q.add_parser("drop")
+    r.add_argument("who")
+    r = q.add_parser("check", help="the Constitution save DC after taking damage")
+    r.add_argument("who")
+    r.add_argument("damage", type=int)
+
+    p = sub.add_parser("attune", help="D&D: attune to or release a magic item")
+    q = p.add_subparsers(dest="sub", required=True)
+    r = q.add_parser("add")
+    r.add_argument("who")
+    r.add_argument("item")
+    r = q.add_parser("remove")
+    r.add_argument("who")
+    r.add_argument("item")
+    r = q.add_parser("list")
+    r.add_argument("who")
+
+    p = sub.add_parser("short-rest", help="D&D: a one-hour Short Rest")
+    p.add_argument("--who", default=None, help="limit the rest to one character")
+
+    sub.add_parser("daily-prep",
+                   help="a night's rest: PF2e daily preparations, or a D&D Long Rest")
+    sub.add_parser("long-rest", help="D&D's name for daily-prep")
 
     p = sub.add_parser("gold")
     q = p.add_subparsers(dest="sub", required=True)
@@ -1574,7 +1963,10 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("name")
     r.add_argument("qty", nargs="?", type=int, default=1)
     r.add_argument("--owner", default=None, help="character id, or omit for the party stash")
-    r.add_argument("--bulk", default="-", help="'1', '2', 'L' for light, '-' for negligible")
+    r.add_argument("--bulk", default=None,
+                   help="PF2e: '1', '2', 'L' for light, '-' for negligible")
+    r.add_argument("--weight", default=None,
+                   help="D&D: weight in pounds, e.g. 55 or '1/2'")
     r.add_argument("--kind", default="gear", choices=["gear", "permanent", "consumable", "ammunition", "container"])
     r.add_argument("--charges", type=int, default=None)
     r.add_argument("--level", type=int, default=None)
@@ -1659,7 +2051,11 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--hp", type=int, default=0)
     r.add_argument("--position", default=None)
     r.add_argument("--squad", default=None)
-    r.add_argument("--level", type=int, default=None)
+    r.add_argument("--level", type=int, default=None, help="PF2e: creature level")
+    r.add_argument("--cr", default=None, help="D&D: Challenge Rating, e.g. 1/4")
+    r.add_argument("--speed", type=int, default=None, help="D&D: movement allowance in feet")
+    r.add_argument("--bonus-action", action="store_true",
+                   help="D&D: this combatant has a feature granting a Bonus Action")
     r.add_argument("--id", default=None)
     r.add_argument("--notes", default="")
     q.add_parser("next")
@@ -1668,6 +2064,8 @@ def build_parser() -> argparse.ArgumentParser:
     r = q.add_parser("action")
     r.add_argument("who")
     r.add_argument("n", nargs="?", type=int, default=1)
+    r.add_argument("--kind", default="action",
+                   help="PF2e: actions. D&D: action, bonus-action, move (n is feet), dash")
     r = q.add_parser("map-step")
     r.add_argument("who")
     r.add_argument("step", nargs="?", type=int, default=None)
@@ -1715,12 +2113,28 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
         p = state_path(slug)
         if p.exists() and not args.force:
             raise StateError(f"{p} already exists; pass --force to overwrite (this discards live state)")
-        data = blank_state(slug, args.title, args.transparency)
+        system = args.system or rules.declared_in_campaign_md(slug)
+        if not system:
+            raise StateError(
+                "a new campaign must say which game it runs: pass --system pf2e or "
+                "--system 5.5e (or put a `System:` line in CAMPAIGN.md first). Nothing "
+                "defaults here, because a state written under the wrong ruleset carries "
+                "the wrong fields from its first line."
+            )
+        data = blank_state(slug, args.title, args.transparency, system=system)
         save(slug, data)
         write_render(slug, data)
-        return [f"wrote {p.relative_to(repo_root())} and CHECKPOINT.md"], False, None
+        return [f"wrote {p.relative_to(repo_root())} and CHECKPOINT.md "
+                f"for a {rules.short_of(system)} campaign"], False, None
 
     data = load(slug)
+
+    if cmd == "migrate":
+        was = data.get("migrated_from_schema")
+        write_render(slug, data)
+        note = (f"schema {was} → {SCHEMA_VERSION}" if was else
+                f"already at schema {SCHEMA_VERSION}")
+        return [f"{slug}: {note}, ruleset {rs(data).SYSTEM_SHORT}", "re-rendered CHECKPOINT.md"], True, data
 
     if cmd == "show":
         return [json.dumps(data, indent=2, ensure_ascii=False)], False, data
@@ -1735,21 +2149,62 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
         key = slugify(args.name)
         if key in data.get("pcs", {}):
             raise StateError(f"{key} already exists")
-        pc = blank_character(args.name, args.kind, args.level)
-        pc.update(
-            {
-                "hp": {"current": args.hp, "max": args.hp, "temp": 0},
-                "ac": args.ac,
+        sid = system_of(data)
+        pc = blank_character(args.name, args.kind, args.level, system=sid)
+        pc["hp"] = {"current": args.hp, "max": args.hp, "temp": 0}
+        pc["ac"] = args.ac
+        pc["sheet"] = args.sheet or f"characters/{key}.md"
+        wrong: list[str] = []
+        if sid == "pf2e":
+            pc.update({
                 "saves": {"fortitude": args.fort, "reflex": args.ref, "will": args.will},
                 "perception": args.perception,
-                "speed": args.speed,
+                "speed": args.speed if args.speed is not None else 25,
                 "str_mod": args.str_mod,
                 "hero_points": args.hero_points,
-                "sheet": args.sheet or f"characters/{key}.md",
-            }
-        )
+            })
+            wrong = [f"--{a}" for a in ("str", "dex", "con", "int", "wis", "cha")
+                     if getattr(args, a, None) is not None]
+            wrong += [n for n, v in (("--save", args.save), ("--passive-perception", args.passive_perception),
+                                     ("--initiative", args.initiative), ("--hit-die", args.hit_die),
+                                     ("--size", args.size)) if v]
+        else:
+            import dnd5e
+            abil = {a: getattr(args, a) for a in dnd5e.ABILITIES}
+            scores = {a: (v if v is not None else 10) for a, v in abil.items()}
+            saves = dict(pc["saves"])
+            for spec in args.save:
+                if ":" not in spec:
+                    raise StateError(f"--save wants ABIL:MOD, e.g. dex:+5 (got {spec!r})")
+                ab, mod = spec.split(":", 1)
+                ab = ab.strip().lower()[:3]
+                if ab not in dnd5e.ABILITIES:
+                    raise StateError(f"{ab!r} is not an ability ({', '.join(dnd5e.ABILITIES)})")
+                saves[ab] = int(mod)
+            die = args.hit_die or 8
+            pc.update({
+                "abilities": scores,
+                "strength": scores["str"],
+                "saves": saves,
+                "proficiency_bonus": dnd5e.proficiency_bonus(args.level),
+                "passive_perception": (args.passive_perception if args.passive_perception is not None
+                                       else 10 + dnd5e.ability_modifier(scores["wis"])),
+                "initiative_mod": (args.initiative if args.initiative is not None
+                                   else dnd5e.ability_modifier(scores["dex"])),
+                "speed": args.speed if args.speed is not None else 30,
+                "size": args.size or "Medium",
+                "hit_dice": {"die": die, "max": int(args.level), "used": 0},
+            })
+            wrong = [n for n, v in (("--fort", args.fort), ("--ref", args.ref), ("--will", args.will),
+                                    ("--perception", args.perception), ("--str-mod", args.str_mod))
+                     if v]
         data.setdefault("pcs", {})[key] = pc
-        return [f"added {args.name} ({args.kind}, level {args.level}, {args.hp} HP) as `{key}`"], True, data
+        out = [f"added {args.name} ({args.kind}, level {args.level}, {args.hp} HP) as `{key}` "
+               f"— {rs(data).SYSTEM_SHORT} sheet"]
+        if wrong:
+            out.append(f"⚠ ignored {', '.join(sorted(set(wrong)))}: "
+                       f"not {rs(data).SYSTEM_SHORT} fields")
+        return out, True, data
 
     if cmd == "damage":
         return apply_damage(data, args.who, args.amount, from_crit=args.from_crit), True, data
@@ -1849,8 +2304,126 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
             e["used"] = 0
         return [f"{pc['name']}: all slots restored"], True, data
 
-    if cmd == "daily-prep":
+    if cmd in ("daily-prep", "long-rest"):
+        if cmd == "long-rest" and system_of(data) != "dnd5e":
+            raise _wrong_game(data, "long rest", "dnd5e")
         return daily_prep(data), True, data
+
+    if cmd == "short-rest":
+        if system_of(data) != "dnd5e":
+            raise _wrong_game(data, "short rest", "dnd5e")
+        import dnd5e
+        who = getattr(args, "who", None)
+        targets = ([find_character(data, who)] if who
+                   else list((data.get("pcs") or {}).items()))
+        out = [f"Short Rest ({dnd5e.SHORT_REST_HOURS} hour). What it restores and what it does not:"]
+        for _, pc in targets:
+            hd = pc.get("hit_dice") or {}
+            left = int(hd.get("max", 0)) - int(hd.get("used", 0))
+            pc["concentration"] = None
+            out.append(
+                f"  {pc['name']}: {left}d{hd.get('die', 8)} Hit Dice available to spend "
+                f"(`hit-dice spend`), Concentration dropped"
+            )
+        out += [
+            "Spell slots do NOT come back on a Short Rest — only features whose own text says so.",
+            "Hit Dice restore HP only when spent: roll them, then apply the total with `heal`.",
+            "An interrupted Short Rest confers no benefits (SRD 5.2, 'Short Rest').",
+        ]
+        return out, True, data
+
+    if cmd == "death-save":
+        if sub == "record":
+            return death_save_record(data, args.who, successes=args.successes,
+                                     failures=args.failures, reason=args.reason), True, data
+        if sub == "stabilise":
+            return death_save_stabilise(data, args.who), True, data
+        if sub == "reset":
+            if system_of(data) != "dnd5e":
+                raise _wrong_game(data, "death saves", "dnd5e")
+            _, pc = find_character(data, args.who)
+            pc["death_saves"] = {"successes": 0, "failures": 0, "stable": False}
+            return [f"{pc['name']}: Death Save counters reset"], True, data
+        if sub == "roll":
+            if system_of(data) != "dnd5e":
+                raise _wrong_game(data, "death saves", "dnd5e")
+            key, pc = find_character(data, args.who)
+            ds = pc.get("death_saves") or {}
+            # The save is a real roll from roll.py, logged like every other roll, and the
+            # result is then written down here. Nothing is decided before it is rolled.
+            res = subprocess.run(
+                [sys.executable, str(Path(__file__).resolve().parent / "roll.py"), "death-save",
+                 "--campaign", slug, "--system", "dnd5e",
+                 "--actor", pc.get("name", key),
+                 "--successes", str(int(ds.get("successes", 0))),
+                 "--failures", str(int(ds.get("failures", 0))),
+                 "--json", "--quiet"],
+                capture_output=True, text=True,
+            )
+            if res.returncode != 0:
+                raise StateError(f"the death save could not be rolled: {res.stderr.strip()}")
+            rolled = json.loads(res.stdout)[0]
+            out = [rolled["line"]]
+            if rolled.get("natural") == 20:
+                out += apply_healing(data, key, 1)
+            else:
+                succ = 1 if rolled["degree"] == "success" else 0
+                fail = 2 if rolled.get("natural") == 1 else (0 if succ else 1)
+                out += death_save_record(data, key, successes=succ, failures=fail,
+                                         reason="rolled Death Saving Throw")
+            return out, True, data
+
+    if cmd == "exhaustion":
+        if sub == "set":
+            return exhaustion_set(data, args.who, args.value), True, data
+        _, pc = find_character(data, args.who)
+        return exhaustion_set(data, args.who, int(pc.get("exhaustion", 0)) + args.n), True, data
+
+    if cmd == "inspiration":
+        return inspiration_set(data, args.who, held=sub == "give"), True, data
+
+    if cmd == "hit-dice":
+        if sub == "spend":
+            return hit_dice_spend(data, args.who, args.n), True, data
+        if system_of(data) != "dnd5e":
+            raise _wrong_game(data, "hit-dice", "dnd5e")
+        _, pc = find_character(data, args.who)
+        if args.used > args.max:
+            raise StateError(f"{args.used} spent of {args.max} Hit Dice is impossible")
+        pc["hit_dice"] = {"die": args.die, "max": args.max, "used": args.used}
+        return [f"{pc['name']}: {args.max - args.used}/{args.max}d{args.die} Hit Dice"], True, data
+
+    if cmd == "concentration":
+        if sub == "start":
+            return concentration_set(data, args.who, args.on), True, data
+        if sub == "drop":
+            return concentration_set(data, args.who, None), True, data
+        if system_of(data) != "dnd5e":
+            raise _wrong_game(data, "concentration", "dnd5e")
+        import dnd5e
+        _, pc = find_character(data, args.who)
+        conc = pc.get("concentration")
+        if not conc:
+            raise StateError(f"{pc['name']} is not concentrating on anything")
+        name = conc.get("on") if isinstance(conc, dict) else conc
+        dc = dnd5e.concentration_dc(args.damage)
+        return [
+            f"{pc['name']} took {args.damage} damage while concentrating on {name}",
+            f"Constitution save DC {dc} to keep it (10 or half the damage, whichever is higher, max 30)",
+            f"Roll it: `roll.py save \"1d20+<Con save>\" --dc {dc} --campaign {slug} "
+            f"--label \"Concentration ({name})\"`",
+        ], False, data
+
+    if cmd == "attune":
+        if sub == "list":
+            if system_of(data) != "dnd5e":
+                raise _wrong_game(data, "attunement", "dnd5e")
+            _, pc = find_character(data, args.who)
+            att = pc.get("attunement") or {}
+            items = att.get("items") or []
+            return [f"{pc['name']}: attuned to {len(items)}/{att.get('max', 3)} — "
+                    f"{', '.join(items) or 'nothing'}"], False, data
+        return attune(data, args.who, args.item, remove=sub == "remove"), True, data
 
     if cmd == "gold":
         if sub == "add":
@@ -1861,7 +2434,8 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
 
     if cmd == "item":
         if sub == "add":
-            return item_add(data, args.name, args.qty, args.owner, args.bulk, args.kind, args.charges, args.level), True, data
+            return item_add(data, args.name, args.qty, args.owner, args.bulk, args.kind,
+                            args.charges, args.level, weight=args.weight), True, data
         if sub == "remove":
             return item_remove(data, args.name, args.qty, args.owner), True, data
         if sub == "use":
@@ -1870,7 +2444,9 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
         for key, pc in data.get("pcs", {}).items():
             out.append(f"{pc.get('name', key)}:")
             for it in pc.get("items", []) or [None]:
-                out.append("  " + (f"{it['name']} ×{it.get('qty', 1)} [bulk {it.get('bulk', '-')}, {it.get('kind')}]"
+                field, _, unit = ENCUMBRANCE_FIELD[system_of(data)]
+                out.append("  " + (f"{it['name']} ×{it.get('qty', 1)} "
+                                   f"[{unit.lower()} {it.get(field, '-')}, {it.get('kind')}]"
                                    + (f", {it['charges']} charges" if it.get("charges") is not None else "")
                                    if it else "(nothing carried)"))
         stash = data.get("party", {}).get("stash", [])
@@ -1960,9 +2536,30 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
         if sub == "start":
             return encounter_start(data, args.name, args.objective, args.map_slug), True, data
         if sub == "add":
+            extra: dict[str, Any] = {}
+            if system_of(data) == "dnd5e":
+                extra = {
+                    "speed": args.speed if args.speed is not None else 30,
+                    "bonus_action": 1 if args.bonus_action else 0,
+                    "cr": args.cr,
+                }
+                if args.level is not None:
+                    raise StateError(
+                        "--level is Pathfinder's creature scale; a D&D creature has a Challenge "
+                        "Rating. Pass --cr instead (e.g. --cr 1/4)."
+                    )
+            elif args.cr is not None or args.bonus_action or args.speed is not None:
+                bad = [f for f, v in (("--cr", args.cr), ("--bonus-action", args.bonus_action),
+                                      ("--speed", args.speed)) if v]
+                raise StateError(
+                    f"{', '.join(bad)} {'are' if len(bad) > 1 else 'is'} D&D 2024 concepts and "
+                    f"this is a Pathfinder campaign — use --level for a creature's level, and "
+                    f"Stride costs an action rather than drawing on a movement allowance"
+                )
             return encounter_add(
                 data, args.name, args.side, ref=args.ref, initiative=args.initiative, hp=args.hp,
-                position=args.position, squad=args.squad, level=args.level, id=args.id, notes=args.notes,
+                position=args.position, squad=args.squad, level=args.level, id=args.id,
+                notes=args.notes, **extra,
             ), True, data
         if sub == "next":
             return encounter_next(data), True, data
@@ -1971,7 +2568,7 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
         if sub == "end":
             return encounter_end(data), True, data
         if sub == "action":
-            return encounter_action(data, args.who, args.n), True, data
+            return encounter_action(data, args.who, args.n, args.kind), True, data
         if sub == "map-step":
             return encounter_map_step(data, args.who, args.step), True, data
         if sub == "reaction":

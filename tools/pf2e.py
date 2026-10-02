@@ -1099,8 +1099,9 @@ def status_lines(pc: dict[str, Any]) -> list[str]:
 
 
 def tracked_condition_flags(pc: dict[str, Any]) -> list[str]:
-    """dying/wounded/doomed rendered for the conditions column."""
-    return [f"**{n} {pc[n]}**" for n in ("dying", "wounded", "doomed") if int(pc.get(n, 0))]
+    """dying/wounded/doomed rendered for the conditions column, and a recorded death."""
+    out = ["**DEAD**"] if pc.get("dead") else []
+    return out + [f"**{n} {pc[n]}**" for n in ("dying", "wounded", "doomed") if int(pc.get(n, 0))]
 
 
 # --------------------------------------------------------------------------------------
@@ -1435,3 +1436,71 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# --------------------------------------------------------------------------------------
+# The action economy, for the encounter tracker
+# --------------------------------------------------------------------------------------
+
+ACTION_ECONOMY = {
+    "kind": "pips",
+    "actions_per_turn": 3,
+    "has_map": True,
+    "has_bonus_action": False,
+    "tracks_movement_separately": False,
+    "summary": "Three actions a turn, spent in any combination, plus one reaction. Movement "
+               "costs an action (Stride). The multiple attack penalty rises with each attack "
+               "after the first in the same turn.",
+}
+_src(
+    "action_economy",
+    "Player Core, 'Actions' and 'Turns' — read from https://2e.aonprd.com/Rules.aspx?ID=2385: each "
+    "creature gets 3 actions on its turn plus 1 reaction and any number of free actions. There is "
+    "no separate movement allowance: Stride is an action. The multiple attack penalty is a "
+    "separate table (see `sources` -> map).",
+)
+
+ENCOUNTER_COLUMNS = (("act", 4), ("MAP", 4), ("rxn", 4))
+
+
+def blank_combatant_fields(**kw: Any) -> dict[str, Any]:
+    return {
+        "actions_remaining": 3,
+        "actions_spent": 0,
+        "map_step": 0,
+        "reaction_available": True,
+        "reaction_used_for": None,
+        "persistent": [],
+        "sustained": [],
+    }
+
+
+def reset_turn(c: dict[str, Any]) -> str:
+    """Reset a combatant's per-turn resources and describe what they now have."""
+    c["actions_remaining"] = 3
+    c["actions_spent"] = 0
+    c["map_step"] = 0
+    c["reaction_available"] = True
+    c["reaction_used_for"] = None
+    return "◆◆◆, reaction available"
+
+
+def combatant_action_cells(c: dict[str, Any]) -> list[str]:
+    left = int(c.get("actions_remaining", 3))
+    pips = "◆" * max(0, left) + "◇" * max(0, 3 - left)
+    return [pips, str(c.get("map_step", 0)), "yes" if c.get("reaction_available") else "used"]
+
+
+def spend_action(c: dict[str, Any], kind: str, n: int = 1) -> str:
+    """Spend n actions. `kind` is accepted for interface parity; Pathfinder has one pool."""
+    if kind not in ("action", "any"):
+        raise ValueError(
+            f"Pathfinder has one pool of three actions, not a {kind!r} — spend actions instead"
+        )
+    left = int(c["actions_remaining"]) - n
+    if left < 0:
+        raise ValueError(f"{c['name']} has {c['actions_remaining']} action(s) left and cannot spend {n}")
+    c["actions_remaining"] = left
+    c["actions_spent"] = int(c.get("actions_spent", 0)) + n
+    pips = "◆" * left + "◇" * (3 - left) if left <= 3 else f"{left} actions"
+    return f"{pips} ({left} left)"

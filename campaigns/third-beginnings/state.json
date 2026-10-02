@@ -1,9 +1,9 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "campaign": "third-beginnings",
   "title": "Third Beginnings",
   "created_at": "2026-09-30T12:41:19Z",
-  "updated_at": "2026-10-01T16:51:16Z",
+  "updated_at": "2026-10-02T17:48:08Z",
   "transparency": "standard",
   "difficulty_preset": "Standard",
   "session_in_progress": true,
@@ -363,5 +363,7 @@
     "situation": "Session 1, scene 2. Behind the dory with Vessa. She has given Karsa the whole account: the collapse beside the door, two chambers, a stair, and a flat waterline twenty feet down with dry dusty stone below it. She thinks it is dropping and admits she cannot prove it. Karsa has not yet told her about the detect magic result.",
     "next_beats": "Karsa may: share the aura finding, Sense Motive the waterline claim, ask about the collapse, or ask why she reported it at all. The clock is now visible to the player.",
     "present": "Karsa, Vessa Tarn. The queue and Dorrow are 60-odd feet downslope and out of earshot."
-  }
+  },
+  "system": "pf2e",
+  "migrated_from_schema": 2
 }
