@@ -3,6 +3,15 @@ description: Run the boot sequence for a campaign and pick up where we left off
 argument-hint: [campaign slug]
 ---
 
+**Before anything else, establish which game this is:**
+
+```
+python3 tools/rules.py which $ARGUMENTS
+```
+
+Then read that ruleset's documents and not the other's. A resumed campaign is exactly where this
+goes wrong: the previous session had the right rules in context and this one starts with none.
+
 Resume a campaign. Run the **boot sequence** from
 `system/15-continuity-and-context-recovery.md` in order, before narrating anything.
 

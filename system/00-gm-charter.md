@@ -59,7 +59,8 @@ Any rules table written into this framework has been checked against a source, a
 `Source:` line. Where a value could not be verified it says `⚠ UNVERIFIED` rather than
 guessing silently, and it is listed in `DESIGN_NOTES.md`.
 
-Run `python3 tools/pf2e.py sources` to see the provenance of every table, including which
+Run `python3 tools/pf2e.py sources` or `python3 tools/dnd5e.py sources` — whichever ruleset the
+campaign runs — to see the provenance of every table, including which
 ones are unverified.
 
 **During play:** a rules answer with no source cited is a rules answer that might be wrong.

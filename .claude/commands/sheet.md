@@ -11,7 +11,9 @@ Two sources, and say which each number came from:
   background, class, key ability, feats taken, proficiency ranks, spells known, reactions,
   backstory, ties.
 - **The volatile numbers** — `state.json`: current HP and temp HP, conditions with durations,
-  dying/wounded/doomed, Hero Points, Focus Points, slots used, items with charges.
+  slots used, items with charges — plus whichever of these the ruleset has:
+  **Pathfinder** dying/wounded/doomed, Hero Points, Focus Points;
+  **D&D 2024** death saves, Hit Dice, Exhaustion, Heroic Inspiration, Concentration, attunement.
 
 ```
 python3 tools/state.py --campaign <slug> get pcs.<key>

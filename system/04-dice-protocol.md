@@ -37,15 +37,25 @@ Nothing in this framework can reproduce a past roll, which is the point.
 | `4d6kh3` | keep the best three |
 | `1d20r1` | reroll a 1 once, keep the second result |
 
-Exploding dice are not supported. PF2e does not use them.
+Exploding dice are not supported. Neither ruleset uses them.
 
-### Degrees of success are computed by the tool, never by the GM
+---
+
+## The outcome is computed by the tool, never by the GM
+
+**This section is the one place in this document where the two rulesets differ, and they differ
+a lot.** `roll.py` reads the campaign's `System:` and applies that game's rule; pass `--system`
+to override it for one roll. The arithmetic lives in `pf2e.resolve` and `dnd5e.resolve`, each
+with its own `Source:` note, so neither game's answer is recalled from memory.
+
+### Pathfinder: four degrees, and the natural-20 shift on everything
 
 - **Critical success** at total ≥ DC + 10
 - **Success** at total ≥ DC
 - **Failure** below DC
 - **Critical failure** at total ≤ DC − 10
-- A **natural 20** improves the degree by one step; a **natural 1** worsens it by one step.
+- A **natural 20** improves the degree by one step; a **natural 1** worsens it by one step — on
+  **every** check and save, not only attacks.
 
 The natural die face is printed separately so the shift is visible:
 
@@ -57,10 +67,32 @@ The shift applies **after** the base degree, and is clamped: a natural 20 on an 
 success stays a critical success, and a natural 1 on an already-critical failure stays one.
 
 > Source: Player Core / GM Core, Degrees of Success. Verified against the Foundry VTT PF2e
-> implementation — `python3 tools/pf2e.py sources` (`degrees`).
+> implementation — `python3 tools/pf2e.py sources` (`degrees_of_success`).
 
 **Flat checks have no degrees.** A DC 15 flat check to end persistent damage succeeds or fails;
 a natural 20 does not make it a critical success. `roll.py flat` reflects this.
+
+### D&D 2024: pass or fail, and the natural-20 rules on attacks only
+
+- **Meet or beat the target number** and it succeeds. Otherwise it fails. There is no ladder.
+- A **natural 20 on an attack roll** hits regardless of AC and is a Critical Hit. A **natural 1**
+  misses regardless of AC.
+- **On an ability check or a saving throw, a 20 is just a 20.** No automatic success, no critical
+  anything. The published rule is scoped to attack rolls and this framework scopes it the same way.
+
+```
+🎲 Thorne — Longsword: 1d20+7 → [20] +7 = 27 vs AC 15 → CRITICAL HIT  [natural 20: hits regardless of AC, and is a Critical Hit]
+🎲 Thorne — Wisdom save: 1d20+4 → [20] +4 = 24 vs DC 14 → SUCCESS
+```
+
+Note the second line: a natural 20, a margin of ten, and still just `SUCCESS`.
+
+**This is why `attack` is a separate command from `check` and `save`.** Rolling an attack with
+`check` on a D&D campaign suppresses the crit; rolling a save with `attack` invents one. The
+command names the kind of test, and the kind of test decides the rule.
+
+> Source: SRD 5.2, "D20 Tests" → "Attack Rolls" → "Rolling 20 or 1" —
+> `python3 tools/dnd5e.py sources` (`crit_rule`).
 
 ---
 
@@ -74,10 +106,18 @@ One compact line per public roll, always the same shape:
 🎲 Kaelen — Longsword crit: (1d8+4) x2 → [6] +4 = 10 x2 = 20 slashing (critical)
 ```
 
-A critical damage roll shows the undoubled total and the doubling, because
-"`[6] +4 = 20`" looks like an error.
+A critical damage roll shows its working, because `[6] +4 = 20` looks like an error. **How it
+works differs by ruleset, and the line says which was applied:**
 
-> PF2e criticals double the **whole** damage roll, modifiers included — not just the dice.
+| | |
+|---|---|
+| **Pathfinder** | the **whole roll** doubles, modifiers included. `(1d8+4) x2 → [6] +4 = 10 x2 = 20` |
+| **D&D 2024** | the **dice** double and the modifier is added once. `2d8+4 → [6,3] +4 = 13 (critical) — dice doubled from 1d8+4` |
+
+The D&D case rewrites the expression and **rolls the extra die for real** rather than multiplying
+a number that was already rolled — *"roll the attack's damage dice twice"* is an instruction to
+roll, and the audit log shows both faces. A term that keeps highest or lowest dice is refused
+rather than guessed at.
 
 Private and secret rolls print the full detail to the log and a redacted line to chat:
 
@@ -164,35 +204,72 @@ python3 tools/roll.py flat 11 --label "Persistent bleed recovery" --campaign X
 # initiative for the whole room
 python3 tools/roll.py init --actors "kaelen:+7,ghoul-a:+5,ghoul-b:+5" --party kaelen --campaign X
 
-# a recovery check while dying
+# PF2e: a recovery check while dying
 python3 tools/roll.py recovery --dying 2 --actor Kaelen --campaign X
 # or, to roll it AND apply the result to state in one step:
 python3 tools/state.py --campaign X recovery kaelen
 
-# a Hero Point reroll (fortune)
+# PF2e: a Hero Point reroll (fortune)
 python3 tools/roll.py fortune "1d20+13" --dc 21 --label "Hero Point reroll" --actor Kaelen --campaign X
+
+# D&D: an attack roll, which is the only kind that can crit
+python3 tools/roll.py attack "1d20+7" --ac 15 --actor Thorne --campaign X --label "Longsword"
+
+# D&D: a check with Advantage
+python3 tools/roll.py check "1d20+5" --dc 15 --advantage --label "Stealth" --campaign X
+
+# D&D: a Death Saving Throw at 0 HP
+python3 tools/roll.py death-save --failures 1 --actor Thorne --campaign X
+# or, to roll it AND apply the result to state in one step:
+python3 tools/state.py --campaign X death-save roll thorne
 
 # a random table
 python3 tools/roll.py table system/16-random-tables.md "Urban Rumors" --campaign X
 ```
 
+`recovery` and `death-save` each refuse to run on the other game's campaign, and name the command
+that was wanted.
+
 ### Initiative tie-breaks
 
-Higher total acts first. **On a tie between a party member and an adversary, the adversary acts
-first.** `roll.py init` applies that automatically and says so.
+Higher total acts first. What happens on a tie differs, and `roll.py init` prints the rule it
+applied:
 
-Ties within one side are broken by a real d20 roll-off, logged like any other roll, rather than
-by sorting on a name.
+- **Pathfinder:** on a tie between a party member and an adversary, **the adversary acts first**.
+  Ties within one side are broken by a real d20 roll-off, logged like any other roll, rather than
+  by sorting on a name.
+  > Source: Player Core, Roll Initiative. Verified against the Foundry VTT PF2e implementation —
+  > `python3 tools/pf2e.py sources`.
+- **D&D 2024:** the published rule is that **the GM decides** — among tied monsters, and in a
+  monster-versus-character tie; the players decide among tied characters. An automated GM deciding
+  that silently is exactly the unlogged choice this document exists to prevent, so **this framework
+  rolls every tie off with real dice instead** and prints the published rule beside the result.
+  That substitution is this framework's convention, not the published rule, and the player may
+  override the order.
+  > Source: SRD 5.2, "Combat" → "Initiative" → "Ties".
 
-> Source: Player Core, Roll Initiative. Verified against the Foundry VTT PF2e implementation —
-> `python3 tools/pf2e.py sources`.
+### The two dice, under two names
 
-### Fortune and misfortune
+`2d20kh1` and `2d20kl1` are the same operation in both games:
 
-A Hero Point reroll, and any effect with the fortune trait, is `2d20kh1` — both dice are
-rolled and both are logged, and the kept one is the natural die for degree purposes.
-Misfortune is `2d20kl1`. **A roll cannot be both**; if a fortune and a misfortune effect would
-apply, neither does, and `roll.py` refuses the combination rather than silently picking one.
+| Pathfinder | D&D 2024 |
+|---|---|
+| a **fortune** effect — a Hero Point reroll, and anything with the fortune trait | **Advantage** |
+| a **misfortune** effect | **Disadvantage** |
+
+Both dice are rolled and both are logged, and the kept one is the natural die for outcome purposes.
+The chat line prints whichever word the campaign's ruleset uses, so a D&D roll never reports
+`[fortune]`.
+
+**What happens when both apply differs, and this is a real rules difference rather than a
+presentation one:**
+
+- **Pathfinder:** a roll cannot be both. `roll.py fortune` / `misfortune` refuse the combination
+  rather than silently picking one.
+- **D&D 2024:** *"If circumstances cause a roll to have both Advantage and Disadvantage, the roll
+  has neither of them, and you roll one d20"* — true even if several things impose Disadvantage and
+  only one grants Advantage. `--advantage --disadvantage` therefore **cancels** to a single d20,
+  which is the published rule, and the log records that it cancelled.
 
 ---
 

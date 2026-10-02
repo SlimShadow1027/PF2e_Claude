@@ -12,8 +12,10 @@ install. Every tool runs as `python3 tools/<name>.py`.
 |---|---|
 | `roll.py` | The dice engine and the append-only audit log. The only source of random numbers. |
 | `state.py` | The only writer of `campaigns/<slug>/state.json`. Also renders `CHECKPOINT.md`, takes checkpoints, makes the git commit, and restores. |
-| `pf2e.py` | The rules tables as data, each with a `Source:` line. Encounter budgets, treasure, DCs, the calendar. |
-| `new_campaign.py` | Scaffolds `campaigns/<slug>/` from `templates/`. |
+| **`rules.py`** | **Which game a campaign runs.** The ruleset registry, the Markdown field helpers, the calendar engine, and the cross-system scope translation. |
+| `pf2e.py` | **Pathfinder 2e** rules tables as data, each with a `Source:` line. Encounter budgets, treasure, DCs, the Golarion calendar. |
+| **`dnd5e.py`** | **D&D 2024** rules tables as data, same discipline. XP budgets, CR-to-XP, carrying capacity, travel, magic item rarity. |
+| `new_campaign.py` | Scaffolds `campaigns/<slug>/` from `templates/`. Requires `--system`. |
 | `validate.py` | Catches mechanical drift. Run it when something feels off, and before a long session. |
 | `oracle.py` | Yes/no questions on a published likelihood ladder, scene checks, meaning tables, quantities. |
 | `world.py` | The optional shared-setting layer under `worlds/`: promotion, date-gated reads, legacy records. |
@@ -21,8 +23,30 @@ install. Every tool runs as `python3 tools/<name>.py`.
 | `analyze.py` | Reads the roll log back: fairness (public vs. private) and what the numbers say about play. |
 | `dashboard.py` | One offline, self-contained HTML file per campaign, regenerated at every checkpoint. |
 
-Import graph, so a change stays predictable: `roll.py` depends on nothing; `pf2e.py` imports
-`roll.py` for its path helpers; everything else imports those two.
+**Two rulesets.** A campaign declares one in `CAMPAIGN.md` (`System:`) and in `state.json`
+(`"system"`), and the shared tools dispatch on it:
+
+```
+python3 tools/rules.py list                  # the rulesets, their aliases and their licences
+python3 tools/rules.py which <campaign>      # which one this campaign runs
+python3 tools/rules.py check                 # verify both satisfy the shared contract
+python3 tools/rules.py bands                 # the cross-system scope bands
+python3 tools/rules.py calendars             # every registered calendar
+```
+
+A campaign written before the second ruleset existed declares neither and reads as `pf2e`; that
+is the only reason a default exists. `state.py init` and `new_campaign.py` both **refuse** to
+create a campaign without one.
+
+Import graph, so a change stays predictable: `roll.py` depends on nothing but `rules.py` and
+`pf2e.py` for its outcome scales; `rules.py` imports the ruleset modules lazily, so there is no
+cycle; `pf2e.py` and `dnd5e.py` import `rules.py`; everything else imports those.
+
+**The ruleset contract.** Each ruleset module provides the same set of names — conditions, coins,
+the resolution function, encounter budgets, the blank character and combatant fields, what happens
+at 0 HP, the carry report, the daily reset, the action economy and the render columns.
+`python3 tools/rules.py check` verifies both implement all of it, which is what keeps a
+half-supported ruleset from failing quietly mid-session.
 
 ## `roll.py` — dice
 
@@ -33,11 +57,17 @@ python3 tools/roll.py damage "1d8+4" --crit --type slashing --label "Longsword c
 python3 tools/roll.py save   "1d20+11" --dc 22 --actor "Ghoul B" --private --label "Fortitude vs Fireball"
 python3 tools/roll.py flat   11 --label "Persistent bleed recovery"
 python3 tools/roll.py init   --actors "kaelen:+7,ghoul-a:+5,ghoul-b:+5" --party kaelen
-python3 tools/roll.py recovery --dying 2
+python3 tools/roll.py recovery --dying 2                  # PF2e only
 python3 tools/roll.py table  system/16-random-tables.md "Urban Rumors"
 python3 tools/roll.py fortune "1d20+13" --dc 21 --label "Hero Point reroll"
 python3 tools/roll.py misfortune "1d20+13" --dc 21 --label "Misfortune effect"
 python3 tools/roll.py expr "3d6+2"
+
+# D&D 2024
+python3 tools/roll.py attack "1d20+7" --ac 15 --actor Thorne --label "Longsword"
+python3 tools/roll.py check  "1d20+5" --dc 15 --advantage --label "Stealth"
+python3 tools/roll.py death-save --failures 1 --actor Thorne
+python3 tools/roll.py init   --actors "thorne:+3,goblin:+2" --party thorne --surprised thorne
 ```
 
 Add `--campaign <slug>` to any of them and the roll is appended to that campaign's
@@ -118,7 +148,7 @@ the drift this framework exists to prevent.
 `CHECKPOINT.md`, regenerates the dashboard, and makes the git commit itself so it cannot be
 forgotten. If git is unavailable it says so rather than skipping quietly.
 
-## `pf2e.py` — tables
+## `pf2e.py` — Pathfinder tables
 
 ```
 python3 tools/pf2e.py encounter --party-level 3 --party-size 1 --threat moderate
@@ -135,6 +165,27 @@ python3 tools/pf2e.py time --advance "3 days 4 hours"
 
 `sources` is the important one. It prints where every table came from and which are marked
 `⚠ UNVERIFIED`, so a number is never used on trust.
+
+## `dnd5e.py` — D&D 2024 tables
+
+```
+python3 tools/dnd5e.py encounter --party-level 3 --party-size 1 --threat moderate
+python3 tools/dnd5e.py encounter --party-level 3 --party-size 1 --cr 1 1/4 1/4
+python3 tools/dnd5e.py cr --cr 1/4 5 30        # XP and proficiency bonus by Challenge Rating
+python3 tools/dnd5e.py dc --damage 23          # task DCs, and the Concentration save DC
+python3 tools/dnd5e.py advancement --xp 7000   # cumulative thresholds, proficiency, tiers
+python3 tools/dnd5e.py carry --strength 16     # pounds, not Bulk
+python3 tools/dnd5e.py travel --terrain swamp
+python3 tools/dnd5e.py treasure --level 7      # a framework convention; it says so
+python3 tools/dnd5e.py settlement city
+python3 tools/dnd5e.py tables
+python3 tools/dnd5e.py sources
+```
+
+`sources` here reports two counts, not one: how many tables are **unverified**, and how many are
+**this framework's own convention** rather than a published rule. The second number is not zero,
+because SRD 5.2 publishes no treasure-by-level table, no Earn Income equivalent and no calendar.
+Those gaps are named rather than filled from memory.
 
 ## `oracle.py`
 
@@ -173,7 +224,16 @@ python3 tools/world.py promote --campaign X --date "12 Desnus 4712 AR" --title "
     --happened "..." --changed "..." --visibility public
 python3 tools/world.py legacy --campaign X --character kaelen
 python3 tools/world.py timeline verdant-reach
+
+# a world shared across the two rulesets
+python3 tools/world.py systems verdant-reach            # which games play here, and the calendar
+python3 tools/world.py crossing                         # what crosses between them, and what does not
+python3 tools/world.py convert --level 7 --from pf2e --to dnd5e
 ```
+
+`convert` returns a scope band and a level **range**, never a single number, and prints what it
+refuses to convert: stat blocks, character sheets and treasure. See
+`system/23-cross-system-worlds.md`.
 
 ## The log format
 

@@ -2,6 +2,13 @@
 
 ## Statblock sourcing
 
+> **Both rulesets.** This document is shared, and the procedure is the same in each: cite the
+> source, never freehand, and let the validator fail a file without a `Source:` line. What differs
+> is which books you are citing, whether a creature carries a **level** or a **Challenge Rating**,
+> and the shape of the stat block. A D&D creature's block and `CR` go in the same file format with
+> the same required fields. **Never carry a stat block between the two games** — a CR 5 monster and
+> a level 5 Pathfinder creature are not the same creature; see `23-cross-system-worlds.md`.
+
 Per the charter: **creature and NPC statistics come from published Pathfinder 2e Remaster
 material.** Monster Core, NPC Core, Player Core, Player Core 2, GM Core, and Adventure Path or
 Bestiary entries.
@@ -20,7 +27,7 @@ or
 **Source:** https://2e.aonprd.com/Monsters.aspx?ID=NNN
 ```
 
-…followed by the full stats in a consistent PF2e block format. Copy
+…followed by the full stats in a consistent block format for the campaign's ruleset. Copy
 `templates/bestiary/_CREATURE_TEMPLATE.md`.
 
 `python3 tools/validate.py --campaign <slug>` **fails** a bestiary file with no `Source:` line.
@@ -60,7 +67,8 @@ say so to the player when it matters — "these are the weaker sort" is informat
 on.
 
 ```
-python3 tools/pf2e.py tables adjustments
+python3 tools/pf2e.py tables adjustments        # PF2e: Elite and Weak templates
+python3 tools/dnd5e.py cr --cr 1/4 2 5          # D&D: XP and proficiency by CR
 ```
 
 | | Elite | Weak |

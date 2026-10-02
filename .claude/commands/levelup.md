@@ -18,8 +18,13 @@ adopt the new number.
 Also check the item-bonus curve for the new level:
 
 ```
+# Pathfinder
 python3 tools/pf2e.py tables item-bonuses
 python3 tools/pf2e.py treasure --level <new level> --party-size <N>
+
+# D&D 2024 — XP is cumulative, and treasure is a framework convention rather than a table
+python3 tools/dnd5e.py advancement --xp <total>
+python3 tools/dnd5e.py treasure --level <new level> --party-size <N>
 ```
 
 A character behind that curve is a treasure-pacing problem (`system/09-loot-and-economy.md`), not
@@ -36,3 +41,9 @@ python3 tools/state.py --campaign <slug> checkpoint "level <N>"
 This is a natural pause, so also offer the difficulty check-in from
 `system/03-difficulty-and-solo-levers.md` and, at an arc boundary, the flag report from
 `system/20-player-flags.md`.
+
+Use the checklist for **this campaign's ruleset**: `system/11-leveling-up.md` for Pathfinder,
+`system/dnd5e/11-leveling-up.md` for D&D. The two differ on when a level happens (a flat 1,000
+XP that resets, versus a cumulative threshold that does not) and on what a level moves — in D&D a
+Proficiency Bonus increase at 5, 9, 13 or 17 changes eight or ten numbers at once, which is the
+step most often missed.

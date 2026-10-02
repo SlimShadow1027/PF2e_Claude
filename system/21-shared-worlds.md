@@ -3,6 +3,13 @@
 **Optional, and off unless a campaign asks for it.** A campaign with `World: none` behaves exactly
 as it does otherwise; nothing about this layer becomes mandatory.
 
+> **A world is system-neutral.** Campaigns running either ruleset can be set in the same world, and
+> the shared layer records what happened rather than anyone's numbers. Everything in this document
+> applies to both. **If a world has campaigns in both games, read
+> `23-cross-system-worlds.md` as well** — it covers the one thing this document does not: what
+> crosses between the rulesets and what must not. In short: events, people, places, debts and
+> reputations cross; levels, DCs, stat blocks and treasure do not.
+
 A shared world lets a second campaign happen in the aftermath of the first: the same continent,
 the same factions, and your previous character remembered as a name people invoke. **Campaign
 files stay fully separate** — the shared layer is setting material plus a record of what has
@@ -20,7 +27,7 @@ worlds/<world-slug>/
     <name>.md        # one legacy record per character who has played in this world
   GAZETTEER.md       # places, regions, settlements, and their item levels
   FACTIONS.md        # long-lived organisations, their current standing and leadership
-  PANTHEON.md        # gods and cosmology (a pointer to Golarion, for a published setting)
+  PANTHEON.md        # gods and cosmology (a pointer, for a published setting)
   CALENDAR.md        # calendar, eras, and the current "present day" of the world
   canon.md           # world-level established facts, append-only
   LEGENDS.md         # how past events are now *remembered* in-world, distortions included

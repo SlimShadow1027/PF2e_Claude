@@ -37,7 +37,8 @@ it is a trailer that cannot be trusted for numbers. Keep them apart.
 >
 > ---
 >
-> **Where we actually are.** Kaelen: 4 / 22 HP, frightened 2 (2 rounds), 0 Hero Points, one
+> **Where we actually are.** (A Pathfinder example; a D&D one would read "2 Hit Dice left, no
+> Heroic Inspiration".) Kaelen: 4 / 22 HP, frightened 2 (2 rounds), 0 Hero Points, one
 > lesser healing potion. Round 3 of the crypt landing fight, your turn, one action remaining,
 > reaction available. 1 Abadius 4725 AR, 16:00. You were about to decide between the lever and
 > the potion.

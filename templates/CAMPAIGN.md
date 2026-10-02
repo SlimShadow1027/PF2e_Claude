@@ -2,6 +2,7 @@
 
 - **Slug:** {{CAMPAIGN_SLUG}}
 - **Created:** {{CREATED_DATE}}
+- **System:** {{SYSTEM}}
 - **World:** none
 - **Era:** {{ERA}}
 - **Start date:** {{START_DATE}}
@@ -13,9 +14,15 @@
 - **Lethality:** {{LETHALITY}}
 - **Setting:** {{SETTING}}
 
+> `System:` is **{{SYSTEM_NAME}}** and decides which rules documents and which tables apply.
+> It must match `"system"` in `state.json`; `tools/validate.py` fails the campaign if they
+> disagree, and `state.json` wins. Changing it means rebuilding the characters.
+> `python3 tools/rules.py which {{CAMPAIGN_SLUG}}`.
+>
 > `World:` names a folder under `worlds/`, or `none` for a standalone campaign. A campaign
 > with `World: none` behaves exactly as it does today — nothing about the shared layer
-> becomes mandatory. See `system/21-shared-worlds.md`.
+> becomes mandatory. See `system/21-shared-worlds.md`. A world may hold campaigns of **both**
+> rulesets; see `system/23-cross-system-worlds.md`.
 
 ## The pitch
 
@@ -47,7 +54,8 @@ See `system/03-difficulty-and-solo-levers.md` for what each party shape does to 
 |---|---|
 | Gods and religion | {{ASSUMPTION_GODS}} |
 | Planes and afterlife | {{ASSUMPTION_PLANES}} |
-| Ancestries present | {{ASSUMPTION_ANCESTRIES}} |
+| Ancestries / species present | {{ASSUMPTION_ANCESTRIES}} |
+| Calendar | {{CALENDAR}} |
 | Magic prevalence | {{ASSUMPTION_MAGIC}} |
 | Technology level | {{ASSUMPTION_TECH}} |
 

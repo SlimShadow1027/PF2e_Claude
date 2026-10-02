@@ -57,7 +57,8 @@ into `npcs/ROSTER.md` and the NPC's own file.
 - Consequences the player will notice next session.
 - **Three concrete hooks** that could open the next scene.
 - **Two or three encounter options** built for the current level, **with objectives attached** —
-  `python3 tools/pf2e.py encounter --party-level N --party-size M`.
+  `python3 tools/pf2e.py encounter --party-level N --party-size M`, or
+  `python3 tools/dnd5e.py encounter --party-level N --party-size M` for a 5.5e campaign.
 - Any NPC who is now in a different place or mood.
 - **Pending consequences**, held rather than applied.
 - **Proposals** needing the player's approval at the top of next session.
@@ -192,7 +193,7 @@ previous conversation.
 ### The Routine prompt — copy and paste this
 
 ```
-Run one off-screen world-prep turn for the Pathfinder 2e campaign `<CAMPAIGN-SLUG>` in this
+Run one off-screen world-prep turn for the campaign `<CAMPAIGN-SLUG>` in this
 repository. You are the GM. Do not narrate to a player; nobody is reading this live.
 
 FIRST, the concurrency guard. Run both of these:

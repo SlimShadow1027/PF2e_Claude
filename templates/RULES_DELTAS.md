@@ -4,10 +4,14 @@ Every variant rule, house rule and difficulty lever in force, with its effect. N
 is assumed; each line was chosen explicitly. Changing a line changes play from that point
 forward and is never applied retroactively.
 
+- **System:** {{SYSTEM_NAME}}
 - **Difficulty preset in force:** {{DIFFICULTY_PRESET}}
 - **Last changed:** {{CREATED_DATE}}
 
-## Official PF2e variant rules
+> **Delete the section below that does not apply to this campaign's ruleset.** Leaving the other
+> game's variant menu in place is how a houserule from the wrong game ends up in force.
+
+## Official PF2e variant rules — *for a `System: pf2e` campaign*
 
 Each of these is a published GM Core variant. `off` unless the player said yes.
 
@@ -22,6 +26,38 @@ Each of these is a published GM Core variant. `off` unless the player said yes.
 | Stamina | off | A stamina pool with easy between-encounter recovery | much easier attrition |
 | Mythic / Mythic Callings | off | Mythic destinies and mythic points | large power spike |
 | Elite / Weak adjustments | {{ADJUSTMENT_DEFAULT}} | ±2 to most numbers, ±HP by level | direct difficulty dial |
+
+## Official D&D 2024 variant rules — *for a `System: dnd5e` campaign*
+
+SRD 5.2 publishes far fewer dials than Pathfinder does, and several things a 2014 table will
+reach for are **not open content**. Each row says which it is.
+
+| Lever | Setting | Effect | Published? |
+|---|---|---|---|
+| Fixed HP on level-up | **on** | Take the class's fixed value instead of rolling | **published** — the player's choice each level |
+| Rolled HP on level-up | off | Roll the Hit Die instead | **published** |
+| Massive damage | **on** | Damage past 0 meeting the HP maximum kills outright, no save | **published** — turning it *off* is the houserule |
+| Death saves in public | **on** | The player sees the counters climb | a transparency choice, not a rule |
+| Feats at every even level | off | More feats than the class table gives | **houserule** |
+| Critical hit on 19–20 | off | Widens the crit range | **houserule** |
+| Flanking / facing | off | Not in SRD 5.2 at all | **houserule** |
+| Gritty realism rests | off | Short rest 8 hours, long rest 7 days | **not SRD content** — houserule |
+| Milestone levelling | off | Level at arc ends instead of tracking XP | a pacing choice |
+| Generous Heroic Inspiration | — | How freely it is awarded | **published** resource, GM-set cadence |
+
+### What this ruleset has no published answer for
+
+Write the campaign's answer here when one is needed, and name it as this campaign's own:
+
+| Gap | This campaign's answer |
+|---|---|
+| Treasure by level | _(see `system/dnd5e/09-loot-and-economy.md` — pace by tier)_ |
+| Downtime income | _(no published rate; invent one and keep it modest)_ |
+| Creature adjustment templates | _(no Elite/Weak equivalent; use a different creature or name homebrew)_ |
+| Calendar | {{CALENDAR}} |
+| Random encounter frequency | _(this framework's convention: one check per travel day and per watch)_ |
+| Morale | _(this framework's convention; see `system/dnd5e/06-encounter-runner.md`)_ |
+
 
 ## Solo and small-table levers
 

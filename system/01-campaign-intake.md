@@ -17,6 +17,42 @@ and a pause.
 
 ---
 
+## Block 0 — which game
+
+**Ask this first, before anything else, and write the answer down.** Everything after it —
+character creation, the difficulty preset, the encounter maths, what treasure means, what happens
+at 0 HP — comes out of a different document depending on the answer.
+
+1. **Pathfinder Second Edition (Remaster)** — four degrees of success, three actions a turn, DCs
+   that climb with level, a deep character build with a lot of dials.
+2. **Dungeons & Dragons 2024 ("5.5e")** — pass or fail, one action a turn, DCs that do not climb,
+   a lighter build and a shorter turn.
+
+If the player has no preference, two questions usually settle it:
+
+- *"Do you want to spend time building the character, or start playing in five minutes?"* The
+  Pathfinder build has more decisions in it; the D&D one can be done in a quick-build pass.
+- *"Do you want the dice to tell you how well, or just whether?"* Degrees of success are the thing
+  Pathfinder players miss most in other games, and the thing new players find heaviest.
+
+And one thing worth saying plainly: **at a table of one character, D&D's encounter budget is
+linear and nothing degenerates, while Pathfinder's published Low budget collapses to zero XP and
+needs a workaround.** That is not a reason to pick one, but it is the kind of thing a player would
+rather hear now than in session four.
+
+> Record in `CAMPAIGN.md`: `System:` — `pf2e` or `dnd5e`. Then
+> `python3 tools/state.py --campaign <slug> init --system <that>`, which **refuses to run without
+> it**, because a state written under the wrong ruleset carries the wrong fields from its first
+> line.
+>
+> **Then read that ruleset's documents and not the other's.** `CLAUDE.md` has the file map. A
+> campaign can be changed over later, but it means rebuilding the characters — say so if asked.
+
+If the campaign is going into a world where a campaign of the *other* ruleset already lives, that
+is supported and good; read `23-cross-system-worlds.md` before Block 4.
+
+---
+
 ## Block 1 — shape and length
 
 **How long is this campaign?**
@@ -58,7 +94,8 @@ post-apocalyptic · comedic
 4. **Grim** — the world does not care, and winning costs something.
 5. **Bleak** — survival is the victory condition.
 
-**Lethality expectation** — say this out loud now rather than discovering it at dying 3:
+**Lethality expectation** — say this out loud now rather than discovering it at dying 3, or on a
+third failed Death Save:
 
 1. No character death; defeat is capture, loss, injury, or a narrative cost.
 2. Death is possible but telegraphed hard and always avoidable.
@@ -72,7 +109,9 @@ post-apocalyptic · comedic
 
 ## Block 3 — setting
 
-**Where?**
+**Where?** The options depend on the game, because the published settings do.
+
+For a **Pathfinder** campaign:
 
 1. **Golarion as published** — and where: Absalom · Ustalav · the Mwangi Expanse · Cheliax ·
    the Mana Wastes · Tian Xia · Varisia · the Shackles · somewhere else.
@@ -80,15 +119,25 @@ post-apocalyptic · comedic
 3. **Fully original** — built in intake and in play.
 4. **A published Adventure Path's setting**, as that path assumes.
 
+For a **D&D 2024** campaign:
+
+1. **A published D&D setting** the player knows and owns material for. Note that **no setting
+   material is in SRD 5.2** — this framework has no gazetteer, no pantheon and not even a calendar
+   for one, so the player supplies the setting facts and the framework records them.
+2. **Generic fantasy**, which is what the SRD's own species, classes and backgrounds assume.
+3. **Fully original** — built in intake and in play. This is the path the framework supports best
+   for D&D, because everything gets written down as it is invented rather than assumed.
+
 **Which setting assumptions stay?** Ask each, briefly:
 
 | Assumption | The question |
 |---|---|
-| Gods and religion | The Golarion pantheon, a smaller one, or none that answer? |
-| Planes and afterlife | The published cosmology, something else, or unsettled? |
-| Ancestries | All published ancestries present, a short list, or humans-plus-a-few? |
+| Gods and religion | A published pantheon, a smaller one, or none that answer? |
+| Planes and afterlife | A published cosmology, something else, or unsettled? |
+| Ancestries / species | All published ones present, a short list, or humans-plus-a-few? |
 | Magic prevalence | Everywhere and regulated · uncommon and feared · nearly gone · returning |
-| Technology level | Standard PF2e · pre-industrial · clockwork and guns · scavenged high tech |
+| Technology level | Standard for the game · pre-industrial · clockwork and guns · scavenged high tech |
+| **Calendar** | Which calendar, and what year it is. Pathfinder has Absalom Reckoning; **SRD 5.2 publishes none**, so a D&D campaign either names its setting's calendar, defines one in its world's `CALENDAR.md`, or uses the framework's placeholder |
 
 > Record in `CAMPAIGN.md` under "Setting assumptions kept". An assumption not asked about
 > becomes an argument later.
@@ -156,8 +205,11 @@ there has to be dragged from scene to scene.
 
 ## Block 7 — party structure
 
-The action economy is the thing that breaks solo PF2e, so this is a mechanical question
-dressed as a narrative one. Cross-reference `03-difficulty-and-solo-levers.md`.
+The action economy is the thing that breaks a solo campaign in either game, so this is a
+mechanical question dressed as a narrative one. Cross-reference
+`03-difficulty-and-solo-levers.md` — **your ruleset's copy**, because the levers differ: in
+Pathfinder a three-action turn absorbs some of the problem, while in D&D a one-action turn does
+not, which makes an ally the primary fix there rather than a secondary one.
 
 1. **One character, alone.** Hardest. Needs the safety-net levers.
 2. **One character plus a GM-run ally built as a full PC.** Closest to a real party of two.

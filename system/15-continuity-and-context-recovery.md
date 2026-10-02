@@ -1,5 +1,10 @@
 # 15 — Continuity and context recovery
 
+> **Step 0, before everything below: which game is this?**
+> `python3 tools/rules.py which <slug>`. Then read that ruleset's documents. A resumed campaign is
+> exactly where this goes wrong — the session before had the right rules in context and this one
+> starts with none, so the first thing to re-establish is which game it is.
+
 Assume a future session starts with **no memory of this one.** Everything below exists so that
 assumption costs nothing.
 
@@ -129,13 +134,19 @@ It catches the **mechanical** classes of drift — the ones that are checkable r
 judgeable:
 
 - HP above maximum, negative HP, negative temporary HP.
-- Negative resources: Hero Points, coins, XP, focus, slots used above the maximum.
-- Hero Points above the cap.
-- Dying above 0 while at 1 HP or more.
+- Negative resources: coins, XP, slots used above the maximum — plus Hero Points and focus in
+  Pathfinder, Hit Dice and death-save counters in D&D.
+- A resource above its cap: Hero Points above the maximum, more than three attunements, more than
+  one Heroic Inspiration.
+- **Pathfinder:** dying above 0 while at 1 HP or more.
+- **D&D:** death-save counters set while above 0 HP; Exhaustion above 6; a character marked dead
+  who still has HP.
 - **Conditions with expired durations still listed.**
 - A valued condition with no value; an unvalued one with a value; a condition name that is not a
-  PF2e condition.
-- Dying, wounded or doomed present both as a field and as a list entry — two copies of the number
+  condition in the campaign's ruleset — the two games' condition lists overlap in name and differ
+  in effect, so a condition from the wrong list is a real error rather than a typo.
+- A tracked-separately value present both as a field and as a list entry — dying, wounded or
+  doomed in Pathfinder, Exhaustion in D&D. Two copies of the number
   that decides a death.
 - **`CHECKPOINT.md` out of sync with `state.json`.**
 - `CHECKPOINT.md` grown past ~400 lines, so reloading it stops being cheap.
@@ -145,7 +156,9 @@ judgeable:
 - A live encounter with no objective, or one whose objective has not been telegraphed.
 - Encounter combatants pointing at a character that is not in `pcs`; duplicate combatant ids; a
   `turn_index` outside the combatant list; a MAP step outside 0–2.
-- A carrier over their Bulk maximum, or encumbered without the condition recorded.
+- A carrier over their limit: Bulk maximum in Pathfinder (or encumbered without the condition
+  recorded), carrying capacity in pounds in D&D. **D&D has no encumbered band**, so do not look
+  for one.
 - Clocks filled past their segment count.
 - **Unreplaced `{{PLACEHOLDER}}`** anywhere in the campaign folder.
 - The shared-world rules: a `World:` field pointing at a folder that does not exist; chronicle

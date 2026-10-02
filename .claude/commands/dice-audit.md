@@ -19,7 +19,9 @@ dice on faith.
 
 Then the **play** section: success rates per character and per check with sample sizes, the
 degree-of-success breakdown, which save is actually the weak one and by how much, damage rolled,
-dying and recovery counts, Hero Point rerolls, and hit rate at each multiple-attack-penalty step —
+the counts that decide deaths (Pathfinder's dying and recovery checks, D&D's death saves),
+reroll counts (Hero Points or Heroic Inspiration), and — in Pathfinder — hit rate at each
+multiple-attack-penalty step —
 the table that tends to show whether a third attack is worth taking.
 
 Filtered views:

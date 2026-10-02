@@ -115,7 +115,8 @@ python3 tools/oracle.py scene --expectation "the meeting goes ahead quietly" --c
 | 3–7 | **Altered** — the scene happens, but one of its assumptions is wrong. Change a detail that matters |
 | 8–20 | **As expected** — it opens the way you thought |
 
-This ladder is **this framework's own design**, not a published PF2e or Mythic table, and is
+This ladder is **this framework's own design**, not a published table from either ruleset nor a
+Mythic one, and is
 stated here so it can be argued with. On an interruption, roll the intrusion on a table.
 
 Use it when the GM has a scene planned and wants the world to get a vote. Do not use it on every

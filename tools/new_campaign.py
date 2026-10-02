@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from roll import atomic_write, campaign_dir, repo_root, utc_now  # noqa: E402
 import pf2e  # noqa: E402
+import rules  # noqa: E402
 import state as st  # noqa: E402
 
 PLACEHOLDER_RE = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
@@ -37,15 +38,35 @@ EMPTY_DIRS = ["characters", "npcs", "bestiary", "encounters", "maps", "sessions"
               "logs", "gm-private/prep"]
 
 
-def defaults(title: str, slug: str) -> dict[str, str]:
+#: Placeholders whose neutral value depends on which game the campaign runs. A Pathfinder
+#: campaign starts on Golarion's calendar in 4725 AR; SRD 5.2 publishes no calendar at all, so
+#: a D&D campaign starts on the framework's placeholder and intake asks for the real one.
+SYSTEM_DEFAULTS: dict[str, dict[str, str]] = {
+    "pf2e": {
+        "SYSTEM": "pf2e",
+        "SYSTEM_NAME": "Pathfinder Second Edition (Remaster)",
+        "START_DATE": "1 Abadius 4725 AR",
+        "CALENDAR": "golarion (Absalom Reckoning)",
+    },
+    "dnd5e": {
+        "SYSTEM": "dnd5e",
+        "SYSTEM_NAME": "Dungeons & Dragons 2024 (5.5e)",
+        "START_DATE": "1 Month 1 1",
+        "CALENDAR": "generic — SRD 5.2 publishes no calendar; name the setting's in intake, "
+                    "or define one in the world's CALENDAR.md",
+    },
+}
+
+
+def defaults(title: str, slug: str, system: str) -> dict[str, str]:
     """Neutral values for every placeholder. Intake replaces these with real answers."""
+    sid = rules.canonical(system)
     return {
         "CAMPAIGN_TITLE": title,
         "CAMPAIGN_SLUG": slug,
         "CREATED_DATE": utc_now()[:10],
-        "START_DATE": "1 Abadius 4725 AR",
         "ERA": "present day",
-        "CALENDAR": "golarion (Absalom Reckoning)",
+        **SYSTEM_DEFAULTS[sid],
         "SHAPE": "not yet decided — see system/01-campaign-intake.md",
         "LEVEL_RANGE": "not yet decided",
         "ADVANCEMENT": "not yet decided",
@@ -147,7 +168,8 @@ def fill(text: str, values: dict[str, str]) -> tuple[str, set[str]]:
     return PLACEHOLDER_RE.sub(sub, text), missing
 
 
-def scaffold(title: str, slug: str, overrides: dict[str, str], force: bool) -> tuple[Path, list[str]]:
+def scaffold(title: str, slug: str, overrides: dict[str, str], force: bool,
+             system: str) -> tuple[Path, list[str]]:
     tdir = repo_root() / "templates"
     if not tdir.is_dir():
         raise SystemExit(f"new_campaign.py: no templates/ directory at {tdir}")
@@ -158,7 +180,7 @@ def scaffold(title: str, slug: str, overrides: dict[str, str], force: bool) -> t
             "overwrite a live campaign's files."
         )
 
-    values = defaults(title, slug)
+    values = defaults(title, slug, system)
     values.update(overrides)
     written: list[str] = []
     missing: set[str] = set()
@@ -208,6 +230,10 @@ def scaffold(title: str, slug: str, overrides: dict[str, str], force: bool) -> t
 def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="new_campaign.py", description="Scaffold a new campaign folder.")
     ap.add_argument("title")
+    ap.add_argument("--system", required=True,
+                    help="which game: pf2e or dnd5e (also '5.5e'). Required — nothing defaults, "
+                         "because a campaign scaffolded under the wrong ruleset carries the wrong "
+                         "calendar, the wrong sheet and the wrong rules docs from its first file")
     ap.add_argument("--slug", default=None)
     ap.add_argument("--transparency", default="standard", choices=["glass", "standard", "mystery"])
     ap.add_argument("--set", action="append", default=[], metavar="KEY=VALUE",
@@ -217,6 +243,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     slug = args.slug or slugify(args.title)
+    try:
+        system = rules.canonical(args.system)
+    except rules.RulesError as exc:
+        ap.error(str(exc))
+        return 2
     overrides: dict[str, str] = {"TRANSPARENCY": args.transparency}
     for item in args.set:
         if "=" not in item:
@@ -224,10 +255,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         k, v = item.split("=", 1)
         overrides[k.strip().upper()] = v
 
-    cdir, written = scaffold(args.title, slug, overrides, args.force)
+    cdir, written = scaffold(args.title, slug, overrides, args.force, system)
 
     rc = st.main(["--campaign", slug, "init", "--title", args.title,
-                  "--transparency", args.transparency, "--force"])
+                  "--transparency", args.transparency, "--system", system, "--force"])
     if rc != 0:
         return rc
 
@@ -247,7 +278,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         if hits:
             leftovers.append(f"{p.relative_to(repo_root())}: {', '.join(hits)}")
 
-    print(f"\ncampaigns/{slug}/ created from templates/ — {len(written)} file(s)")
+    print(f"\ncampaigns/{slug}/ created from templates/ — {len(written)} file(s), "
+          f"running {rules.name_of(system)}")
     for w in written:
         print(f"  + {w}")
     print()
@@ -267,6 +299,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     print()
     print("Next: run the intake interview — system/01-campaign-intake.md. Nothing in this folder is")
     print("decided yet; the defaults exist so the scaffold is valid, not so it is finished.")
+    print()
+    print(f"This campaign runs **{rules.name_of(system)}**. Read that ruleset's documents:")
+    if system == "dnd5e":
+        print("  system/dnd5e/  — character creation, difficulty, combat, loot, downtime,")
+        print("                   levelling and the rules quick reference")
+        print("  the numbered docs at system/ root are the shared ones")
+        print("  NOTE the start date and calendar above are placeholders: SRD 5.2 publishes no")
+        print("  calendar, so intake should ask for the setting's or define one in the world's")
+        print("  CALENDAR.md.")
+    else:
+        print("  the numbered docs at system/ root")
 
     if args.commit:
         subprocess.run(["git", "add", "-A", f"campaigns/{slug}"], cwd=str(repo_root()), check=False)

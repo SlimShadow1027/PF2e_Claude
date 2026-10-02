@@ -1,16 +1,25 @@
 # {{CREATURE_NAME}}
 
-**Source:** _(Monster Core p.NNN — or `https://2e.aonprd.com/Monsters.aspx?ID=NNN`)_
-**Level:** _(N)_
-**Traits:** _(rarity, alignment-ish traits, size, type)_
+**Source:** _(see below — required)_
+**System:** _(pf2e or dnd5e — must match the campaign's)_
+**Level / CR:** _(a **level** in Pathfinder, a **Challenge Rating** in D&D 2024)_
+**Traits:** _(PF2e: rarity, traits, size, type — D&D: size, creature type, alignment)_
 
-Creature statistics come from published Pathfinder 2e Remaster material. This file is not
-written freehand. If this is homebrew, say so on the line above in one of these two shapes:
+Creature statistics come from published material **for this campaign's ruleset**. This file is
+not written freehand.
 
-- `Homebrew — reskin of Ghoul (Monster Core, lvl 1)` — name, description and flavour changed;
-  **numbers unchanged**.
-- `Homebrew — built from the GM Core creature-building benchmarks`, with the benchmark tables
-  cited row by row. Changing numbers makes it a new creature, not a reskin.
+| System | A published `Source:` reads | Homebrew reads |
+|---|---|---|
+| `pf2e` | `Monster Core p.NNN` or `https://2e.aonprd.com/Monsters.aspx?ID=NNN` | `Homebrew — reskin of Ghoul (Monster Core, lvl 1)`, numbers unchanged; or `Homebrew — built from the GM Core creature-building benchmarks`, tables cited row by row |
+| `dnd5e` | `SRD 5.2, Monsters A–Z — <name> (CR N)`, or the book and page | `Homebrew — reskin of Bugbear Warrior (SRD 5.2, CR 1)`, numbers unchanged; or `Homebrew — <base creature> with <the change>`, which makes it a new creature and should say so |
+
+**D&D 2024 publishes no Elite/Weak adjustment templates.** There is no open-content equivalent
+of Pathfinder's, so adjusting a creature there is homebrew and the file must say so, including
+what XP you are counting it as.
+
+**Never carry a stat block between the rulesets.** A CR 5 monster and a level 5 Pathfinder
+creature are not the same creature, and neither set of numbers survives the trip — see
+`system/23-cross-system-worlds.md`.
 
 `tools/validate.py` fails this file if the `Source:` line is missing.
 
