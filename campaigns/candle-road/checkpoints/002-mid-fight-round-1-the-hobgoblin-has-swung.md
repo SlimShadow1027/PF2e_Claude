@@ -1,3 +1,57 @@
+# Checkpoint 002 — mid-fight, round 1 — the hobgoblin has swung
+
+**Immutable.** Never edit a past checkpoint. Restore it with `python3 tools/state.py --campaign candle-road restore 002`.
+
+- Taken: 2026-10-02T18:19:42Z
+- In-world: 1 Month 1 1, 08:00
+- Location: unset
+- Session: 0
+- Mid-combat: yes — The unlit mile, round 1
+
+## Where we are
+
+_(no situation paragraph recorded)_
+
+## Immediate situation
+
+- Who is present: _unrecorded_
+- What is about to happen: _unrecorded_
+
+## Encounter tracker at this moment
+
+```
+The unlit mile — round 1, objective: get the lantern lit before the escort reaches the bend
+
+   combatant              init           HP act  bns  move    rxn  pos   conditions
+   Thorne Ashby             15        28/28 ◆    —    10/30ft yes  -     
+→  Hobgoblin Warrior        13        11/11 ◆    —    30/30ft yes  -     
+   Goblin Warrior            9          7/7 ◆    —    30/30ft yes  -     
+
+One action a turn, plus a Bonus Action only when something grants one, plus one Reaction, plus movement up to your Speed and one free object interaction. There is no multiple attack penalty: extra attacks come from the Attack action itself.
+```
+
+## Active conditions and effects
+
+- none
+
+## Clocks (what the world is doing off-screen)
+
+- none
+
+## Unresolved threads
+
+- see QUESTS.md
+
+## Next likely beats
+
+_(unrecorded)_
+
+## State snapshot
+
+The canonical machine-readable state at this moment. `restore` reads this block.
+
+<!-- STATE-SNAPSHOT-BEGIN -->
+```json
 {
   "schema_version": 3,
   "system": "dnd5e",
@@ -240,3 +294,6 @@
     "next_beats": ""
   }
 }
+```
+<!-- STATE-SNAPSHOT-END -->
+
