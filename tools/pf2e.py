@@ -34,6 +34,8 @@ from typing import Any, Iterable, Sequence
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import rules  # noqa: E402
+
 FOUNDRY = (
     "foundryvtt/pf2e v8.5.1 @06b904d6ced9795c4c07af085e6f61a56f845c60 "
     "(ORC implementation citing Archives of Nethys inline)"
@@ -54,27 +56,12 @@ def _src(key: str, text: str, verified: bool = True) -> str:
 # Markdown front-matter-ish fields
 # --------------------------------------------------------------------------------------
 
-# Matches `World: x`, `- World: x`, `- **World:** x` and `**World**: x` alike, so the
-# three tools that read these fields cannot disagree about the syntax.
-def _field_re(name: str) -> re.Pattern[str]:
-    return re.compile(
-        rf"^(?P<lead>\s*[-*]?\s*\*{{0,2}}{re.escape(name)}\*{{0,2}}\s*:\*{{0,2}}\s*)(?P<value>.*?)\s*$",
-        re.MULTILINE | re.IGNORECASE,
-    )
-
-
-def read_field(text: str, name: str) -> str | None:
-    """The value of a `Name:` field in a Markdown file, or None if it is absent."""
-    m = _field_re(name).search(text)
-    return m.group("value").strip() if m else None
-
-
-def set_field(text: str, name: str, value: str) -> str:
-    """Replace a `Name:` field's value in place, or append the field if it is absent."""
-    pat = _field_re(name)
-    if pat.search(text):
-        return pat.sub(lambda m: m.group("lead") + value, text, count=1)
-    return text.rstrip() + f"\n\n- **{name}:** {value}\n"
+# These moved to rules.py when the second ruleset arrived, because a `World:` or `System:`
+# line is not a Pathfinder fact. Re-exported here so that every caller that imported them
+# from this module keeps working unchanged.
+read_field = rules.read_field
+set_field = rules.set_field
+_field_re = rules._field_re
 
 
 # --------------------------------------------------------------------------------------
@@ -685,6 +672,11 @@ def bulk_tenths(spec: Any) -> int:
 # Calendar and time
 # --------------------------------------------------------------------------------------
 
+# The clock engine moved to rules.py, because a calendar belongs to the WORLD rather than
+# to the ruleset: one shared world keeps one calendar no matter which game is being played
+# in it. Golarion's calendar is a Pathfinder setting fact, so its table and its provenance
+# stay here and get registered with the engine at import.
+
 GOLARION_MONTHS: list[tuple[str, int]] = [
     ("Abadius", 31), ("Calistril", 28), ("Pharast", 31), ("Gozran", 30),
     ("Desnus", 31), ("Sarenith", 30), ("Erastus", 31), ("Arodus", 31),
@@ -700,117 +692,25 @@ _src(
     "Leap years are not modelled; see DESIGN_NOTES.md.",
 )
 
-GENERIC_MONTHS: list[tuple[str, int]] = [(f"Month {i}", 30) for i in range(1, 13)]
-GENERIC_WEEKDAYS = [f"Day {i}" for i in range(1, 8)]
-
-CALENDARS = {
-    "golarion": {"months": GOLARION_MONTHS, "weekdays": GOLARION_WEEKDAYS, "era": "AR"},
-    "generic": {"months": GENERIC_MONTHS, "weekdays": GENERIC_WEEKDAYS, "era": ""},
-}
-
-
-def blank_time(calendar: str = "golarion", year: int = 4725, month: int = 1, day: int = 1, minute: int = 8 * 60) -> dict[str, Any]:
-    return {
-        "calendar": calendar,
-        "year": year,
-        "month": month,
-        "day": day,
-        "minute_of_day": minute,
-        "elapsed_minutes": 0,
-    }
-
-
-def _cal(t: dict[str, Any]) -> dict[str, Any]:
-    return CALENDARS.get(t.get("calendar", "golarion"), CALENDARS["golarion"])
-
-
-def format_time(t: dict[str, Any] | None) -> str:
-    if not t:
-        return "unset"
-    cal = _cal(t)
-    months = cal["months"]
-    mi = max(1, min(len(months), int(t.get("month", 1))))
-    name = months[mi - 1][0]
-    minute = int(t.get("minute_of_day", 0)) % (24 * 60)
-    hh, mm = divmod(minute, 60)
-    era = f" {cal['era']}" if cal.get("era") else ""
-    return f"{int(t.get('day', 1))} {name} {int(t.get('year', 0))}{era}, {hh:02d}:{mm:02d}"
-
-
-def advance_time(t: dict[str, Any], minutes: int) -> dict[str, Any]:
-    """Move the in-world clock forward. Time only ever moves forward during play."""
-    if minutes < 0:
-        raise ValueError("in-world time does not run backwards; restore a checkpoint instead")
-    t = dict(t or blank_time())
-    cal = _cal(t)
-    months = cal["months"]
-    total = int(t.get("minute_of_day", 0)) + minutes
-    days, minute = divmod(total, 24 * 60)
-    t["minute_of_day"] = minute
-    day = int(t.get("day", 1)) + days
-    month = int(t.get("month", 1))
-    year = int(t.get("year", 0))
-    while True:
-        length = months[(month - 1) % len(months)][1]
-        if day <= length:
-            break
-        day -= length
-        month += 1
-        if month > len(months):
-            month = 1
-            year += 1
-    t.update({"day": day, "month": month, "year": year})
-    t["elapsed_minutes"] = int(t.get("elapsed_minutes", 0)) + minutes
-    return t
-
-
-_INTERVAL_RE = re.compile(
-    r"(\d+(?:\.\d+)?)\s*(rounds?|minutes?|mins?|hours?|hrs?|days?|weeks?|months?)", re.IGNORECASE
+rules.register_calendar(
+    "golarion", GOLARION_MONTHS, GOLARION_WEEKDAYS, era="AR",
+    source="Golarion / Absalom Reckoning; see `python3 tools/pf2e.py sources` (calendar).",
 )
-_UNIT_MINUTES = {
-    "round": 1 / 6,  # a round is 6 seconds
-    "minute": 1,
-    "min": 1,
-    "hour": 60,
-    "hr": 60,
-    "day": 60 * 24,
-    "week": 60 * 24 * 7,
-    "month": 60 * 24 * 30,
-}
+
+# Re-exported for the callers that already imported these from this module.
+GENERIC_MONTHS = rules.GENERIC_MONTHS
+GENERIC_WEEKDAYS = rules.GENERIC_WEEKDAYS
+CALENDARS = rules.CALENDARS
+format_time = rules.format_time
+advance_time = rules.advance_time
+parse_interval = rules.parse_interval
+tick_wall_clock_conditions = rules.tick_wall_clock_conditions
 
 
-def parse_interval(text: str) -> tuple[int, str]:
-    """'4 hours' -> (240, '4 hours'). Rounds are 6 seconds, so 10 rounds is a minute."""
-    hits = _INTERVAL_RE.findall(str(text))
-    if not hits:
-        raise ValueError(f"cannot read a span of time out of {text!r} (try '4 hours', '10 minutes', '1 day')")
-    minutes = 0.0
-    for value, unit in hits:
-        u = unit.lower().rstrip("s")
-        minutes += float(value) * _UNIT_MINUTES[u]
-    return int(round(minutes)), str(text).strip()
-
-
-def tick_wall_clock_conditions(data: dict[str, Any], minutes: int) -> list[str]:
-    """Expire minute-, hour- and day-length condition durations when time passes."""
-    notes: list[str] = []
-    for _, pc in (data.get("pcs") or {}).items():
-        keep = []
-        for c in pc.get("conditions", []):
-            dur = c.get("duration") or {}
-            kind = dur.get("kind")
-            per = {"minutes": 1, "hours": 60, "days": 60 * 24}.get(kind or "")
-            if not per or dur.get("remaining") is None:
-                keep.append(c)
-                continue
-            left = int(dur["remaining"]) - minutes / per
-            if left <= 0:
-                notes.append(f"{pc.get('name')}: {c['name']} expired as time passed")
-                continue
-            dur["remaining"] = int(left) if float(left).is_integer() else round(left, 2)
-            keep.append(c)
-        pc["conditions"] = keep
-    return notes
+def blank_time(calendar: str = "golarion", year: int = 4725, month: int = 1, day: int = 1,
+               minute: int = 8 * 60) -> dict[str, Any]:
+    """A fresh Pathfinder clock: Golarion's calendar, 4725 AR, 08:00."""
+    return rules.blank_time(calendar=calendar, year=year, month=month, day=day, minute=minute)
 
 
 # --------------------------------------------------------------------------------------
@@ -842,6 +742,365 @@ _src(
     "greater difficult terrain reduces it to one third. The 8-hour travel day matches "
     + FOUNDRY + " (src/scripts/macros/travel/travel-speed.ts, `hoursPerDay = 8`).",
 )
+
+
+# --------------------------------------------------------------------------------------
+# The ruleset contract
+# --------------------------------------------------------------------------------------
+#
+# Everything below is what `tools/rules.py` asks of a ruleset module, so that the shared
+# tools — roll.py, state.py, validate.py, dashboard.py — can run either game without
+# knowing which one they are running. `python3 tools/rules.py check` verifies the set.
+#
+# None of it is new Pathfinder rules: it is the Pathfinder-shaped half of logic that used
+# to sit inside state.py and roll.py, moved here so that the D&D half can sit beside it
+# instead of being bolted on as a branch.
+
+SYSTEM_ID = "pf2e"
+SYSTEM_NAME = "Pathfinder Second Edition (Remaster)"
+SYSTEM_SHORT = "PF2e"
+
+#: Four degrees of success, so a check can beat a DC well or badly.
+USES_DEGREES = True
+DEGREES = ("critical failure", "failure", "success", "critical success")
+DEGREE_LABELS = ("CRITICAL FAILURE", "FAILURE", "SUCCESS", "CRITICAL SUCCESS")
+
+CRIT_RULE = (
+    "Beat the DC by 10 or more for a critical success; miss it by 10 or more for a critical "
+    "failure. A natural 20 shifts the degree one step up and a natural 1 one step down — on "
+    "EVERY check and save, not only attacks."
+)
+
+DEFAULT_CALENDAR = "golarion"
+
+#: What the degree-of-success ladder is measured in, for anything that reports a scale.
+OUTCOME_SCALES = {
+    "check": (DEGREES, DEGREE_LABELS),
+    "save": (DEGREES, DEGREE_LABELS),
+    "attack": (DEGREES, DEGREE_LABELS),
+    "flat": (DEGREES, DEGREE_LABELS),
+}
+
+# -- conditions ------------------------------------------------------------------------
+
+VALUED_CONDITIONS = {
+    "clumsy", "cursebound", "doomed", "drained", "dying", "enfeebled", "frightened",
+    "sickened", "slowed", "stunned", "stupefied", "wounded",
+}
+# Source: Player Core condition entries; the valued/unvalued split is verified against the
+# Foundry VTT PF2e condition compendium (packs/pf2e/conditions/*.json, v8.5.1).
+UNVALUED_CONDITIONS = {
+    "blinded", "broken", "concealed", "confused", "controlled", "dazzled", "deafened",
+    "encumbered", "fascinated", "fatigued", "fleeing", "friendly", "grabbed", "helpful",
+    "hidden", "hostile", "immobilized", "indifferent", "invisible", "observed", "off-guard",
+    "paralyzed", "persistent-damage", "petrified", "prone", "quickened", "restrained",
+    "unconscious", "undetected", "unfriendly", "unnoticed",
+}
+KNOWN_CONDITIONS = VALUED_CONDITIONS | UNVALUED_CONDITIONS
+#: dying / wounded / doomed are first-class fields rather than list entries, so nothing can
+#: hold two disagreeing copies of the number that decides a death.
+TRACKED_SEPARATELY = {"dying", "wounded", "doomed"}
+
+# -- money -----------------------------------------------------------------------------
+
+COIN_ORDER = ("pp", "gp", "sp", "cp")
+COIN_IN_CP = {"pp": 1000, "gp": 100, "sp": 10, "cp": 1}
+#: The coin every price is quoted in, for cross-ruleset notes in a shared world.
+BASE_COIN = "gp"
+
+# -- resolution ------------------------------------------------------------------------
+
+
+def degree_index(total: int, dc: int, natural: int | None) -> tuple[int, int]:
+    """(adjusted, unadjusted) index into DEGREES.
+
+    Source: GM Core / Player Core "Degrees of Success" — verified against the Foundry VTT
+    PF2e implementation (src/module/system/degree-of-success.ts), which cites
+    https://2e.aonprd.com/Rules.aspx?ID=552 : base degree from total vs DC, then a single
+    step up on a natural 20 and a single step down on a natural 1, clamped to the range.
+    """
+    if total - dc >= 10:
+        base = 3
+    elif dc - total >= 10:
+        base = 0
+    elif total >= dc:
+        base = 2
+    else:
+        base = 1
+    shift = 0
+    if natural == 20:
+        shift = 1
+    elif natural == 1:
+        shift = -1
+    return max(0, min(3, base + shift)), base
+
+
+_src(
+    "degrees_of_success",
+    "Player Core / GM Core, 'Degrees of Success' — read from https://2e.aonprd.com/Rules.aspx?ID=552. "
+    "Beat the DC by 10+ for a critical success, fail by 10+ for a critical failure, otherwise "
+    "success on meeting the DC and failure below it; a natural 20 improves the degree by one step "
+    "and a natural 1 worsens it by one step, after the base degree is found. Cross-checked against "
+    + FOUNDRY + " (src/module/system/degree-of-success.ts).",
+)
+
+
+def resolve(total: int, dc: int, natural: int | None = None, *, kind: str = "check") -> dict[str, Any]:
+    """One roll against one DC, as the shared tools consume it."""
+    idx, base = degree_index(total, dc, natural)
+    scale, labels = OUTCOME_SCALES.get(kind, (DEGREES, DEGREE_LABELS))
+    return {
+        "system": SYSTEM_ID,
+        "kind": kind,
+        "total": int(total),
+        "dc": int(dc),
+        "natural": natural,
+        "margin": int(total) - int(dc),
+        "index": idx,
+        "unadjusted_index": base,
+        "shift": idx - base,
+        "outcome": scale[idx],
+        "label": labels[idx],
+        "unadjusted_outcome": scale[base],
+        "scale": list(scale),
+        "labels": list(labels),
+        "success": idx >= 2,
+        "critical": idx in (0, 3),
+    }
+
+
+# -- advancement -----------------------------------------------------------------------
+
+XP_PER_LEVEL = 1000
+_src(
+    "advancement",
+    "GM Core, 'Experience Points' — read from https://2e.aonprd.com/Rules.aspx?ID=2715: a character "
+    "levels up on reaching 1,000 XP, and the counter resets to 0 rather than accumulating. So the "
+    "threshold is the same 1,000 at every level, which is why this is one number and not a table.",
+)
+
+
+def xp_to_level(level: int) -> int | None:
+    """XP needed to reach `level` from the level below it. Flat 1,000 at every level."""
+    if level < 2 or level > 20:
+        return None
+    return XP_PER_LEVEL
+
+
+def xp_is_cumulative() -> bool:
+    """False: Pathfinder resets the XP counter to 0 on levelling."""
+    return False
+
+
+def tier_of(level: int) -> str:
+    return rules.scope_band(SYSTEM_ID, level)
+
+
+# -- a blank character -----------------------------------------------------------------
+
+
+def blank_character_fields(level: int = 1) -> dict[str, Any]:
+    """The Pathfinder-shaped half of a character in state.json."""
+    return {
+        "ac": 0,
+        "saves": {"fortitude": 0, "reflex": 0, "will": 0},
+        "perception": 0,
+        "speed": 25,
+        "str_mod": 0,
+        "hero_points": 0,
+        "hero_points_max": 3,
+        "focus": {"current": 0, "max": 0, "refocus_available": True},
+        "spell_slots": {},
+        "dying": 0,
+        "wounded": 0,
+        "doomed": 0,
+        "dying_max": 4,
+        "persistent": [],
+    }
+
+
+#: The per-character resources this ruleset tracks, so state.py can refuse the other
+#: game's commands with a message that names the right one.
+RESOURCES = ("hero_points", "focus", "spell_slots")
+RESOURCE_HINTS = {
+    "inspiration": "Pathfinder has Hero Points, not Heroic Inspiration — use `hero gain` / `hero spend`.",
+    "hit-dice": "Pathfinder has no Hit Dice spending — rest and Treat Wounds restore HP.",
+    "death-save": "Pathfinder has the dying condition and recovery checks — use `dying` and `roll.py recovery`.",
+    "exhaustion": "Pathfinder has the fatigued condition, not Exhaustion levels — use `condition add fatigued`.",
+    "concentration": "Pathfinder has sustained spells rather than Concentration — track them as conditions.",
+    "attunement": "Pathfinder has no attunement limit — invested items are capped at 10 instead.",
+}
+
+
+# -- dropping to 0 HP ------------------------------------------------------------------
+
+
+def on_zero_hp(pc: dict[str, Any], *, from_crit: bool = False, overflow: int = 0,
+               already_down: bool = False) -> dict[str, Any]:
+    """What Pathfinder does when a character hits 0 HP: unconscious, and dying starts.
+
+    Returns the instruction for state.py rather than mutating, so that the caller keeps
+    ownership of the dying bookkeeping (which also has to run from `set_dying`).
+
+    Source: Player Core "Hit Points, Healing, and Dying" and the Dying condition — a
+    character reduced to 0 HP falls unconscious and gains dying 1, or dying 2 if the damage
+    came from a critical hit or a critical failure on their save; a character who already
+    has the wounded condition starts that much higher. Verified against the Foundry VTT
+    PF2e condition compendium entry for Dying (v8.5.1).
+    """
+    if already_down:
+        return {"action": "dying", "value": int(pc.get("dying", 0)) + (2 if from_crit else 1),
+                "reason": "took damage while dying", "notes": []}
+    start = (2 if from_crit else 1) + int(pc.get("wounded", 0))
+    return {"action": "dying", "value": start, "reason": "reduced to 0 HP",
+            "notes": ["reduced to 0 HP — unconscious"]}
+
+
+def on_healed_from_zero(pc: dict[str, Any]) -> dict[str, Any]:
+    """Healing above 0 ends dying and leaves the character wounded one step higher."""
+    if int(pc.get("dying", 0)) > 0:
+        return {"action": "dying", "value": 0, "reason": "back to 1 HP or more"}
+    return {"action": "none"}
+
+
+# -- carrying capacity -----------------------------------------------------------------
+
+
+def carry_report(data: dict[str, Any]) -> list[dict[str, Any]]:
+    """Bulk carried against the encumbered and maximum limits, per carrier.
+
+    Source: Player Core p.269, "Bulk" — read from https://2e.aonprd.com/Rules.aspx?ID=2153
+    and ?ID=2154: "You can carry an amount of Bulk equal to 5 plus your Strength modifier
+    without penalty; if you carry more, you gain the encumbered condition. You can't hold
+    or carry more Bulk than 10 plus your Strength modifier." Ten light items make 1 Bulk
+    and fractions round down (?ID=2155); negligible items do not count. A thousand coins
+    are 1 Bulk (?ID=2157).
+
+    Two optional per-character fields, because feats and containers change the answer and
+    reporting a limit that is wrong is worse than reporting none:
+
+      bulk_bonus  raises BOTH limits. Hefty Hauler (Player Core, trained in Athletics)
+                  reads "Increase your maximum and encumbered Bulk limits by 2", so it
+                  is bulk_bonus: 2.
+      bulk_free   Bulk that does not count against the limits. A backpack "holds up to
+                  4 Bulk of items, and the first 2 Bulk of these items don't count
+                  against your Bulk limits" (Player Core p.287), so it is bulk_free: 2.
+
+    Both default to 0, so a character with neither field behaves exactly as before.
+    Nothing here reduces worn armour's Bulk: no such rule was found in Player Core's Bulk
+    section, and worn armour counts in full.
+    """
+    rows = []
+    for key, pc in (data.get("pcs") or {}).items():
+        tenths = 0
+        for it in pc.get("items", []):
+            tenths += bulk_tenths(it.get("bulk", "-")) * int(it.get("qty", 1))
+        str_mod = int(pc.get("str_mod", 0))
+        bonus = int(pc.get("bulk_bonus", 0))
+        free_tenths = max(0, int(pc.get("bulk_free", 0))) * 10
+        counted = max(0, tenths - free_tenths)
+        encumbered_after = 5 + str_mod + bonus
+        maximum = 10 + str_mod + bonus
+        rows.append(
+            {
+                "id": key,
+                "name": pc.get("name", key),
+                "unit": "Bulk",
+                "bulk_tenths": tenths,
+                "bulk": tenths / 10.0,
+                "carried": tenths / 10.0,
+                "counted_tenths": counted,
+                "counted": counted / 10.0,
+                "bulk_free": free_tenths / 10.0,
+                "bulk_bonus": bonus,
+                "encumbered_after": encumbered_after,
+                "max": maximum,
+                "encumbered": counted > encumbered_after * 10,
+                "over_max": counted > maximum * 10,
+                "line": f"Bulk {tenths / 10.0:.1f} (encumbered after {encumbered_after}, max {maximum})",
+            }
+        )
+    return rows
+
+
+# -- the daily reset -------------------------------------------------------------------
+
+
+def daily_reset(data: dict[str, Any]) -> list[str]:
+    """What a night's rest and daily preparations restore.
+
+    Source: Player Core Drained, Doomed and Wounded entries — wounded is removed by a
+    successful Treat Wounds or 24 hours; doomed and drained step down by 1 per full rest.
+    """
+    notes = []
+    for _, pc in (data.get("pcs") or {}).items():
+        for _, entry in pc.get("spell_slots", {}).items():
+            entry["used"] = 0
+        f = pc.setdefault("focus", {"current": 0, "max": 0, "refocus_available": True})
+        f["current"] = int(f.get("max", 0))
+        f["refocus_available"] = True
+        if int(pc.get("wounded", 0)) > 0:
+            pc["wounded"] = max(0, int(pc["wounded"]) - 1)
+        if int(pc.get("doomed", 0)) > 0:
+            pc["doomed"] = max(0, int(pc["doomed"]) - 1)
+        notes.append(
+            f"{pc['name']}: slots and focus restored, wounded {pc.get('wounded', 0)}, "
+            f"doomed {pc.get('doomed', 0)}"
+        )
+    notes.append("Drained decreases by 1 per night's rest but does not restore the lost HP — adjust by hand.")
+    return notes
+
+
+# -- rendering -------------------------------------------------------------------------
+
+#: Column headers for the party table in CHECKPOINT.md and the dashboard.
+SHEET_COLUMNS = ("HP", "AC", "Fort", "Ref", "Will", "Perc", "Hero", "Focus", "Conditions")
+
+
+def sheet_lines(pc: dict[str, Any], *, conditions: str = "—") -> list[str]:
+    """One row of the party table, in SHEET_COLUMNS order."""
+    hp = pc.get("hp", {})
+    temp = f" +{hp.get('temp')}t" if hp.get("temp") else ""
+    s = pc.get("saves", {})
+    f = pc.get("focus", {})
+    focus = f"{f.get('current', 0)}/{f.get('max', 0)}"
+    if not f.get("refocus_available", True):
+        focus += " (refocused)"
+    return [
+        f"{hp.get('current', 0)}/{hp.get('max', 0)}{temp}",
+        str(pc.get("ac", 0)),
+        f"{int(s.get('fortitude', 0)):+d}",
+        f"{int(s.get('reflex', 0)):+d}",
+        f"{int(s.get('will', 0)):+d}",
+        f"{int(pc.get('perception', 0)):+d}",
+        str(pc.get("hero_points", 0)),
+        focus,
+        conditions,
+    ]
+
+
+def status_lines(pc: dict[str, Any]) -> list[str]:
+    """The ruleset-specific resource lines for `status`, below HP and conditions."""
+    out: list[str] = []
+    f = pc.get("focus") or {}
+    if int(f.get("max", 0)):
+        out.append(f"Focus {f.get('current', 0)}/{f.get('max', 0)}"
+                   + ("" if f.get("refocus_available", True) else " — already Refocused"))
+    out.append(f"Hero Points {pc.get('hero_points', 0)}/{pc.get('hero_points_max', 3)}")
+    for name in ("dying", "wounded", "doomed"):
+        if int(pc.get(name, 0)):
+            out.append(f"{name} {pc[name]}")
+    slots = pc.get("spell_slots") or {}
+    if slots:
+        bits = [f"rank {r}: {int(e.get('max', 0)) - int(e.get('used', 0))}/{e.get('max', 0)}"
+                for r, e in sorted(slots.items(), key=lambda kv: int(kv[0]))]
+        out.append("Slots — " + "; ".join(bits))
+    return out
+
+
+def tracked_condition_flags(pc: dict[str, Any]) -> list[str]:
+    """dying/wounded/doomed rendered for the conditions column."""
+    return [f"**{n} {pc[n]}**" for n in ("dying", "wounded", "doomed") if int(pc.get(n, 0))]
 
 
 # --------------------------------------------------------------------------------------
