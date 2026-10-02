@@ -43,12 +43,19 @@ FOUNDRY = (
 
 SOURCES: dict[str, str] = {}
 UNVERIFIED_TABLES: list[str] = []
+#: Tables that are this framework's own convention rather than a published rule. Counted
+#: separately from UNVERIFIED_TABLES: these are not unchecked, they are *ours*. The same
+#: list exists in dnd5e.py, where it is longer, because that ruleset's open content has
+#: more gaps.
+CONVENTION_TABLES: list[str] = []
 
 
-def _src(key: str, text: str, verified: bool = True) -> str:
+def _src(key: str, text: str, verified: bool = True, convention: bool = False) -> str:
     SOURCES[key] = text
     if not verified:
         UNVERIFIED_TABLES.append(key)
+    if convention:
+        CONVENTION_TABLES.append(key)
     return text
 
 
@@ -479,6 +486,7 @@ _src(
     "settlement's as a guide to how many. Selling works the same way. A character of higher level "
     "than the settlement can leverage influence for special orders, which takes time. Give each "
     "settlement a level in WORLD.md; the size names above are only a starting suggestion.",
+    convention=True,
 )
 
 
@@ -929,6 +937,13 @@ RESOURCE_HINTS = {
     "exhaustion": "Pathfinder has the fatigued condition, not Exhaustion levels — use `condition add fatigued`.",
     "concentration": "Pathfinder has sustained spells rather than Concentration — track them as conditions.",
     "attunement": "Pathfinder has no attunement limit — invested items are capped at 10 instead.",
+    "death": "Pathfinder has the dying condition and recovery checks — use `dying` and `roll.py recovery`.",
+    "death-saves": "Pathfinder has the dying condition and recovery checks — use `dying` and `roll.py recovery`.",
+    "short": "Pathfinder has no Short Rest — Treat Wounds and Refocus are the mid-day recovery.",
+    "short-rest": "Pathfinder has no Short Rest — Treat Wounds and Refocus are the mid-day recovery.",
+    "long": "Pathfinder's equivalent is `daily-prep`: a night's rest plus daily preparations.",
+    "long-rest": "Pathfinder's equivalent is `daily-prep`: a night's rest plus daily preparations.",
+    "hit": "Pathfinder has no Hit Dice spending — rest and Treat Wounds restore HP.",
 }
 
 
@@ -1345,7 +1360,12 @@ def cmd_tables(args: argparse.Namespace) -> int:
 def cmd_sources(args: argparse.Namespace) -> int:
     print("Provenance of every table in tools/pf2e.py\n")
     for key in sorted(SOURCES):
-        mark = "⚠ UNVERIFIED" if key in UNVERIFIED_TABLES else "verified"
+        flags = []
+        if key in UNVERIFIED_TABLES:
+            flags.append("⚠ UNVERIFIED")
+        if key in CONVENTION_TABLES:
+            flags.append("FRAMEWORK CONVENTION")
+        mark = " / ".join(flags) if flags else "verified"
         print(f"[{mark}] {key}\n    {SOURCES[key]}\n")
     if UNVERIFIED_TABLES:
         print(f"{len(UNVERIFIED_TABLES)} of {len(SOURCES)} tables are unverified: "
@@ -1356,6 +1376,11 @@ def cmd_sources(args: argparse.Namespace) -> int:
         print("\nEvery table above was read from Archives of Nethys, or is labelled as this")
         print("framework's own convention rather than a published rule. Re-verifying against")
         print("AoN found eight errors in this file; DESIGN_NOTES.md lists them under 'Pass 2'.")
+    print(f"\n{len(CONVENTION_TABLES)} of {len(SOURCES)} are this framework's own convention "
+          f"rather than a published rule:")
+    for k in CONVENTION_TABLES:
+        print(f"    - {k}")
+    print("\nFor the other ruleset's provenance: python3 tools/dnd5e.py sources")
     return 0
 
 
@@ -1434,10 +1459,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
-
-
 # --------------------------------------------------------------------------------------
 # The action economy, for the encounter tracker
 # --------------------------------------------------------------------------------------
@@ -1504,3 +1525,62 @@ def spend_action(c: dict[str, Any], kind: str, n: int = 1) -> str:
     c["actions_spent"] = int(c.get("actions_spent", 0)) + n
     pips = "◆" * left + "◇" * (3 - left) if left <= 3 else f"{left} actions"
     return f"{pips} ({left} left)"
+
+
+
+
+# --------------------------------------------------------------------------------------
+# Dashboard rendering
+# --------------------------------------------------------------------------------------
+
+
+def dashboard_stats(pc: dict[str, Any]) -> list[tuple[str, Any]]:
+    """The stat tiles on a character's dashboard card."""
+    s = pc.get("saves") or {}
+    return [
+        ("AC", pc.get("ac", 0)),
+        ("Fort", f"{int(s.get('fortitude', 0)):+d}"),
+        ("Ref", f"{int(s.get('reflex', 0)):+d}"),
+        ("Will", f"{int(s.get('will', 0)):+d}"),
+        ("Perc", f"{int(pc.get('perception', 0)):+d}"),
+        ("Speed", f"{pc.get('speed', 0)} ft"),
+    ]
+
+
+#: Headers for the dashboard's resources table, after the character's name.
+DASHBOARD_RESOURCE_COLUMNS = ("Hero", "Focus", "Refocus", "Spell slots")
+#: How a spell slot tier is abbreviated: Pathfinder ranks, D&D levels.
+SLOT_ABBREV = "r"
+
+
+def dashboard_resource_cells(pc: dict[str, Any]) -> list[str]:
+    f = pc.get("focus") or {}
+    slots = []
+    for rank in sorted(pc.get("spell_slots") or {}, key=lambda r: int(r)):
+        e = (pc["spell_slots"])[rank]
+        left = int(e.get("max", 0)) - int(e.get("used", 0))
+        slots.append(f"{SLOT_ABBREV}{rank}&nbsp;{left}/{e.get('max', 0)}")
+    return [
+        f"{pc.get('hero_points', 0)} / {pc.get('hero_points_max', 3)}",
+        f"{f.get('current', 0)} / {f.get('max', 0)}",
+        "available" if f.get("refocus_available", True) else "used",
+        " &middot; ".join(slots),
+    ]
+
+
+def dashboard_dire_tags(pc: dict[str, Any]) -> list[str]:
+    """The things that decide a death, rendered prominently rather than as conditions."""
+    out = []
+    if pc.get("dead"):
+        out.append("DEAD")
+    for nm in ("dying", "wounded", "doomed"):
+        v = int(pc.get(nm, 0))
+        if v:
+            limit = int(pc.get("dying_max", 4)) - int(pc.get("doomed", 0))
+            extra = f" of {limit}" if nm == "dying" else ""
+            out.append(f"{nm.upper()} {v}{extra}")
+    return out
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

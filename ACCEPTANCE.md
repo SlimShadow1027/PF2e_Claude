@@ -2377,3 +2377,485 @@ repository: 0 error(s), 0 warning(s)
 
 PASS — 0 errors, 1 warning(s)
 ```
+
+---
+
+# Acceptance run 2 — D&D 2024 (5.5e), and a cross-system world
+
+A second acceptance run, for the second ruleset. Same bar as the first: every claim below was
+executed, and what failed is recorded before what passed. The throwaway campaign was
+`candle-road`, cleaned up afterwards like `test-run` was.
+
+## Contents
+
+- What failed first — five real bugs, four of them in code that predated this work
+- Scaffolding a 5.5e campaign, and the refusal that has no default
+- The character sheet, and the fields that are not on it
+- Combat: the action economy, the crit rule, and 0 HP
+- Death Saving Throws to a resolution
+- **Mid-combat restore** — the test that matters
+- Every cross-ruleset refusal, both directions
+- A cross-system shared world, with the date gate holding across it
+- Provenance and the convention count
+
+---
+
+## What failed first
+
+Recorded because a run that only lists passes is not evidence. Four of these five were in code
+written before this work and surfaced only when a second ruleset exercised it.
+
+1. **`dashboard.py` crashed with `KeyError: 'bulk'`** on the first checkpoint of a 5.5e campaign.
+   The carry report had been made ruleset-neutral (`carried`, `unit`, `max`) but the dashboard
+   still read the Pathfinder-only `bulk` key. Fixed by moving the stat tiles, the resources
+   columns, the weight unit and the "decides a death" tags into the ruleset modules
+   (`dashboard_stats`, `DASHBOARD_RESOURCE_COLUMNS`, `dashboard_resource_cells`,
+   `dashboard_dire_tags`). The D&D dashboard now shows Inspiration, Hit Dice, Exhaustion,
+   Concentration and attunement where the Pathfinder one shows Hero Points, Focus and Refocus, and
+   the carry card hides the "encumbered after" column entirely for D&D rather than printing a
+   blank — SRD 5.2 defines no such band.
+
+2. **`pf2e.py sources` and `dnd5e.py sources` reported 25 and 33 tables as scripts but 26 and 34
+   as modules.** The action-economy section had been appended *after* the
+   `if __name__ == "__main__"` guard, so `raise SystemExit(main())` ran before those `_src()`
+   calls. Any provenance report run from the command line — the way a GM would run it — was
+   silently one table short. Both sections moved above the guard; the counts now agree.
+
+3. **`world.py promote --legend` had never worked** on a world whose `LEGENDS.md` already held a
+   hand-written undated legend. `parse_chronicle` required a `Date:` field on every entry,
+   although that file's own header says an undated legend is "always current". Pre-existing:
+   reproduced on the unmodified code before the fix.
+
+4. **That failure left the world half-updated.** The chronicle entry was appended and *then* the
+   legend append raised, and the chronicle is append-only, so there was no clean way back.
+   `promote` now parses the legends file before writing anything.
+
+5. **`recovery` on a 5.5e campaign answered the wrong question** — "Thorne Ashby is not dying"
+   rather than "this game has no recovery check", because the dying check ran before the ruleset
+   check. Reordered. In the same pass, three refusals (`death-save`, `short-rest`, `long-rest`)
+   were landing without their "use this command instead" hint, because the hint lookup took only
+   the first word of a multi-word name.
+
+---
+
+## Scaffolding, and the refusal that has no default
+
+```
+$ python3 tools/new_campaign.py "The Candle Road" --slug candle-road --system 5.5e
+wrote campaigns/candle-road/state.json and CHECKPOINT.md for a D&D 5.5e campaign
+campaigns/candle-road/ created from templates/ — 19 file(s), running Dungeons & Dragons 2024 (5.5e)
+...
+No unreplaced {{PLACEHOLDER}} anywhere in the new folder.
+```
+
+`--system` is required and `state.py init` refuses without it:
+
+> a new campaign must say which game it runs: pass `--system pf2e` or `--system 5.5e` (or put a
+> `System:` line in CAMPAIGN.md first). Nothing defaults here, because a state written under the
+> wrong ruleset carries the wrong fields from its first line.
+
+The scaffold wrote `System: dnd5e`, `"system": "dnd5e"`, the `generic` calendar (SRD 5.2 publishes
+none) and a start date flagged as a placeholder, with the tool saying so in its closing output.
+
+Aliases accepted: `dnd5e`, `dnd5.5e`, `5.5e`, `55e`, `dnd2024`, `5e2024`, `5e`, `dnd`, `d&d`, and
+the display names `D&D 5.5e` and `Dungeons & Dragons 2024 (5.5e)` — the last two because the
+Markdown layer writes those into a legacy record's `System:` line and a world README's column, and
+they have to read back.
+
+## The character sheet, and the fields that are not on it
+
+```
+$ python3 tools/state.py --campaign candle-road add-character "Thorne Ashby" --level 3 \
+      --hp 28 --ac 16 --str 16 --dex 14 --con 14 --int 10 --wis 13 --cha 8 \
+      --save str:+5 --save con:+4 --hit-die 10 --fort 8
+added Thorne Ashby (pc, level 3, 28 HP) as `thorne-ashby` — D&D 5.5e sheet
+⚠ ignored --fort: not D&D 5.5e fields
+```
+
+The sheet it wrote holds `abilities`, `saves` (six), `save_proficiencies`, `proficiency_bonus`,
+`passive_perception`, `initiative_mod`, `size`, `strength`, `hit_dice`, `death_saves`,
+`exhaustion`, `heroic_inspiration`, `concentration`, `spell_slots` and `attunement`. It holds **no**
+`fortitude`, `reflex`, `will`, `perception`, `hero_points`, `focus`, `dying`, `wounded`, `doomed`
+or `persistent` — so nothing on the character implies a rule their campaign does not have. The
+Pathfinder sheet is the mirror image, and `--fort` was reported as ignored rather than stored.
+
+Derived values the tool computed rather than being told: proficiency bonus +2 from level 3,
+passive Perception 11 from Wisdom 13, initiative +2 from Dexterity 14.
+
+Electrum, which exists in one game and not the other:
+
+```
+$ python3 tools/state.py --campaign candle-road gold add "40gp 8ep 15sp"
+party gains 40 gp, 8 ep, 15 sp → 40 gp, 8 ep, 15 sp
+
+$ python3 tools/state.py --campaign third-beginnings gold add "5ep"
+state.py: refused: ep is not a coin in this campaign's ruleset (it uses pp, gp, sp, cp).
+Electrum is a D&D denomination; Pathfinder has no equivalent.
+```
+
+Weight, likewise:
+
+```
+$ python3 tools/state.py --campaign candle-road item add "Rations" 3 --bulk L --owner thorne-ashby
+state.py: refused: --bulk measures Bulk, which is the other ruleset's unit — this is a
+D&D 5.5e campaign, so use --weight (pounds)
+```
+
+The rendered `CHECKPOINT.md` used the D&D columns, and the carry line used pounds including the
+purse's share at fifty coins to the pound:
+
+```
+| Character    | HP    | AC | Init | Pass. Perc | Insp | Hit Dice | Exh | Conditions |
+| Thorne Ashby | 28/28 | 16 | +2   | 11         | —    | 3/3d10   | —   | —          |
+
+- **Purse:** 40 gp, 8 ep, 15 sp
+- **Thorne Ashby** 57.3 lb of 240 lb capacity (Str 16, medium)
+```
+
+## Combat
+
+The budget, which is linear in party size and has no multiplier:
+
+```
+$ python3 tools/dnd5e.py encounter --party-level 3 --party-size 1 --threat moderate --cr 1 1/4
+Moderate-difficulty budget: 225 XP
+  Action-economy caution: more than 2 creatures against 1 character(s) is past the
+  published guideline.
+Built encounter: 1 x CR 1 (200 XP each), 1 x CR 1/4 (50 XP each)
+  total 250 XP → rated **moderate** for 1 character(s) at level 3
+  XP awarded on clearing it: 250
+```
+
+Nothing collapsed at a party of one, which is the Pathfinder table's behaviour at the Low row and
+is reported there rather than hidden. The award is the creatures' own XP, undivided.
+
+The tracker's columns came from the ruleset, and there is no MAP column because there is no
+multiple attack penalty:
+
+```
+   combatant              init           HP act  bns  move    rxn  pos   conditions
+   Thorne Ashby             15        28/28 ◆    —    10/30ft yes  -
+→  Hobgoblin Warrior        13        11/11 ◆    —    30/30ft yes  -
+   Goblin Warrior            9          7/7 ◆    —    30/30ft yes  -
+
+$ python3 tools/state.py --campaign candle-road encounter map-step thorne-ashby
+state.py: refused: the multiple attack penalty is a Pathfinder rule and this is a D&D 5.5e
+campaign. D&D 2024 has no such penalty: extra attacks come from the Attack action and the
+Extra Attack feature, at no penalty.
+```
+
+`—` in the `bns` column is information: a Bonus Action exists only where a feature grants one, and
+none of these three had one. A combatant added with `--bonus-action` shows `◆`/`◇` instead.
+
+Movement is its own allowance in feet, not an action:
+
+```
+$ python3 tools/state.py --campaign candle-road encounter action thorne-ashby 20 --kind move
+Thorne Ashby: moved 20 ft (10 ft left of 30)
+```
+
+The attack roll, and the crit rule:
+
+```
+$ python3 tools/roll.py attack "1d20+5" --ac 16 --actor "Hobgoblin Warrior" --campaign candle-road --private
+🎲 Hobgoblin Warrior — Longsword: 1d20+5 → [19] +5 = 24 vs AC 16 → HIT
+
+$ python3 tools/roll.py damage "1d8+3" --crit --type slashing --campaign candle-road
+🎲 Hobgoblin longsword crit: 2d8+3 → [3,5] +3 = 11 slashing (critical) — dice doubled from 1d8+3
+```
+
+**Two faces in the log, not a doubled total.** SRD 5.2 says "roll the attack's damage dice twice",
+so the expression is rewritten and the extra die is genuinely rolled. The Pathfinder line beside it
+still reads `(1d8+4) x2 → [6] +4 = 10 x2 = 20`, doubling the whole roll including the modifier.
+
+The natural-20 scoping, which is the difference most likely to be applied from the wrong game:
+
+Both lines below are real rolls. There is no way to ask the tool for a natural 20, so the same
+command was run in a loop until one came up, and the resulting line is printed verbatim:
+
+```
+$ python3 tools/roll.py attack "1d20+4" --ac 15 --system dnd5e
+🎲 attack: 1d20+4 → [20] +4 = 24 vs AC 15 → CRITICAL HIT  [natural 20: hits regardless of AC, and is a Critical Hit]
+
+$ python3 tools/roll.py save "1d20+4" --dc 15 --system dnd5e
+🎲 save: 1d20+4 → [20] +4 = 24 vs DC 15 → SUCCESS
+```
+
+Identical dice, identical total, identical margin of +9. One is a critical hit and the other is a
+plain success.
+
+A natural 20 on a save is a success and nothing more. The Pathfinder equivalent would read
+`CRITICAL SUCCESS [natural 20: upgraded from SUCCESS]`.
+
+Advantage and Disadvantage, including the published cancellation:
+
+```
+$ python3 tools/roll.py check "1d20+5" --dc 15 --system dnd5e --advantage
+🎲 check: 2d20kh1+5 → [16 (dropped 15)] +5 = 21 vs DC 15 → SUCCESS  [advantage]
+$ python3 tools/roll.py check "1d20+5" --dc 15 --system dnd5e --advantage --disadvantage
+🎲 check: 1d20+5 → [16] +5 = 21 vs DC 15 → SUCCESS
+```
+
+One d20, per SRD 5.2: "the roll has neither of them". The chat line prints `[advantage]` rather
+than `[fortune]`, because the two games call the same two dice different things.
+
+Surprise, which is Disadvantage on the Initiative roll and not a lost turn:
+
+```
+$ python3 tools/roll.py init --system dnd5e --actors "Thorne:+3,Goblin:+2" --party Thorne --surprised Thorne
+🎲 Thorne — Initiative (surprised: Disadvantage): 2d20kl1+3 → [4 (dropped 18)] +3 = 7  [disadvantage]
+```
+
+`--surprised` is refused on a Pathfinder campaign rather than applied under a label that game lacks.
+The printed tie rule is each game's own, and the D&D one says plainly that rolling ties off with
+dice is this framework's substitution for "the GM decides".
+
+## 0 HP, and Death Saving Throws
+
+```
+$ python3 tools/state.py --campaign candle-road damage thorne-ashby 28 --from-crit
+Thorne Ashby HP 0/28
+reduced to 0 HP — unconscious, and making Death Saving Throws from the start of their next turn
+
+$ python3 tools/state.py --campaign candle-road encounter next
+— round 2 —
+Thorne Ashby's turn (round 2), 1 action, 30 ft of movement, reaction available
+⚠ Thorne Ashby starts their turn at 0 HP — roll a Death Saving Throw now:
+  `state.py --campaign candle-road death-save roll thorne-ashby`
+
+$ python3 tools/state.py --campaign candle-road death-save roll thorne-ashby
+🎲 Thorne Ashby — Death Saving Throw → 1/3 successes, 0/3 failures: 1d20 → [17] = 17 vs DC 10 → SUCCESS
+$ python3 tools/state.py --campaign candle-road death-save roll thorne-ashby
+🎲 Thorne Ashby — Death Saving Throw → 2/3 successes, 0/3 failures: 1d20 → [16] = 16 vs DC 10 → SUCCESS
+$ python3 tools/state.py --campaign candle-road death-save stabilise thorne-ashby
+Thorne Ashby is Stable — Death Saves stop, still Unconscious at 0 HP, and regains 1 HP after
+1d4 hours if unhealed
+```
+
+The turn-start prompt is the thing a solo table most needs, because there is nobody else at the
+table to remember. The save is a real logged roll with no ability modifier, and `state.py` writes
+down a result it did not decide.
+
+Massive damage, separately, on a scratch campaign:
+
+```
+$ python3 tools/state.py --campaign X damage thorne 40 --from-crit     # 10 of 28 HP
+Thorne HP 0/28
+reduced to 0 HP with 30 damage remaining, which equals or exceeds the 28 HP maximum — instant death
+☠ Thorne is DEAD — massive damage: 30 damage past 0 HP meets the 28 HP maximum
+```
+
+No save, no dying track, no counters — which is why `02-character-creation.md` recommends
+announcing the rule once at level 1 and then never springing it.
+
+Exhaustion to its limit:
+
+```
+$ python3 tools/state.py --campaign X exhaustion set thorne 3
+Thorne: Exhaustion 3 — -6 to every D20 Test, -15 ft Speed
+$ python3 tools/state.py --campaign X exhaustion add thorne 3
+Thorne: Exhaustion 6 — -12 to every D20 Test, -30 ft Speed
+☠ Thorne is DEAD — Exhaustion level 6
+```
+
+Setting it to 7 is refused rather than clamped. Attunement likewise refuses the fourth item and
+names the three already held.
+
+## Mid-combat restore
+
+The test the first acceptance run called the one worth repeating before trusting a long campaign.
+A checkpoint taken in round 1 with 20 of 30 feet of movement spent, then four mutations (a critical
+hit to 0 HP, two turns advanced, two Death Saving Throws, a stabilise), then a restore, then a
+field-by-field diff against the pre-damage snapshot:
+
+```
+$ python3 tools/state.py --campaign candle-road restore 002
+restored campaigns/candle-road/checkpoints/002-mid-fight-round-1-the-hobgoblin-has-swung.md
+state.json and CHECKPOINT.md now match checkpoint 002
+committed the rewind (f46b421)
+
+### mid-combat restore: fields differing from the pre-damage snapshot
+NONE — every field restored identically, including the whole encounter tracker.
+
+tracker after restore: round 1 turn_index 1
+  Thorne Ashby         init 15 act 1 bns 0/0 move 20/30 rxn True
+  Hobgoblin Warrior    init 13 act 1 bns 0/0 move 0/30 rxn True
+  Goblin Warrior       init 9 act 1 bns 0/0 move 0/30 rxn True
+  Thorne HP {'current': 28, 'max': 28, 'temp': 0}
+  death_saves {'successes': 0, 'failures': 0, 'stable': False}
+  attuned ['Cloak of Protection']
+```
+
+The 20 feet of partial movement came back, which is the 5.5e-specific field most easily lost — it
+has no Pathfinder equivalent, so nothing in the existing snapshot code knew to carry it. It is
+carried because the snapshot is the whole state rather than an enumerated list of fields.
+
+## Every cross-ruleset refusal, both directions
+
+Each one names the command the GM actually wanted. This is the output, verbatim.
+
+| Command, on the wrong campaign | What it said |
+|---|---|
+| `hero gain` on 5.5e | hero is a PF2e concept … D&D 2024 has Heroic Inspiration, not Hero Points — use `inspiration give` / `inspiration spend`. |
+| `focus refocus` on 5.5e | … D&D 2024 has no Refocus — a Short Rest and Hit Dice are the mid-day recovery. |
+| `dying set` on 5.5e | … D&D 2024 has Death Saving Throws, not a dying value — use `death-save`. |
+| `recovery` on 5.5e | … D&D 2024 has Death Saving Throws, not a dying value — use `death-save`. |
+| `encounter map-step` on 5.5e | … D&D 2024 has no such penalty: extra attacks come from the Attack action. |
+| `--bulk` on 5.5e | … this is a D&D 5.5e campaign, so use `--weight` (pounds). |
+| `inspiration give` on PF2e | inspiration is a D&D 5.5e concept … Pathfinder has Hero Points — use `hero gain` / `hero spend`. |
+| `hit-dice spend` on PF2e | … Pathfinder has no Hit Dice spending — rest and Treat Wounds restore HP. |
+| `death-save roll` on PF2e | … Pathfinder has the dying condition and recovery checks — use `dying` and `roll.py recovery`. |
+| `exhaustion set` on PF2e | … Pathfinder has the fatigued condition — use `condition add fatigued`. |
+| `attune add` on PF2e | … Pathfinder has no attunement limit — invested items are capped at 10 instead. |
+| `concentration start` on PF2e | … Pathfinder has sustained spells rather than Concentration — track them as conditions. |
+| `short-rest` on PF2e | … Pathfinder has no Short Rest — Treat Wounds and Refocus are the mid-day recovery. |
+| `long-rest` on PF2e | … Pathfinder's equivalent is `daily-prep`. |
+| `5ep` into a PF2e purse | ep is not a coin in this campaign's ruleset … Electrum is a D&D denomination. |
+| `--weight` on PF2e | … this is a PF2e campaign, so use `--bulk` (Bulk). |
+| `--cr` on a PF2e combatant | --cr is a D&D 2024 concept … use `--level` for a creature's level, and Stride costs an action rather than drawing on a movement allowance. |
+| `--level` on a 5.5e combatant | --level is Pathfinder's creature scale; a D&D creature has a Challenge Rating. Pass `--cr`. |
+| `condition add karsa exhaustion` on PF2e | `'exhaustion'` is not a PF2e condition. It is a D&D 5.5e condition, and this is a PF2e campaign. *(then all 43 PF2e conditions)* |
+| `condition add thorne off-guard` on 5.5e | `'off-guard'` is not a D&D 5.5e condition. It is a PF2e condition, and this is a D&D 5.5e campaign. *(then all 15)* |
+| `init --surprised` on PF2e | --surprised is a D&D 2024 rule (Disadvantage on the Initiative roll) … In Pathfinder, an unaware creature is off-guard and the ambusher may get a free round — handle it in the fiction and the encounter tracker, not on the initiative roll. |
+
+The last row matters more than it looks: the two games' condition lists overlap in *name* and
+differ in *effect*, so a condition from the wrong list is a real error rather than a typo.
+
+## A cross-system shared world
+
+Varisia already held `third-beginnings`, a Pathfinder campaign starting 1 Abadius 4725 AR. The
+5.5e campaign was linked into the same world.
+
+```
+$ python3 tools/world.py link --campaign candle-road --world varisia --start-date "9 Erastus 4731 AR"
+candle-road (D&D 5.5e) → worlds/varisia, starting 9 Erastus 4731 AR
+
+This world is now shared across rulesets: PF2e campaign(s) are already set here.
+  The world layer stays system-neutral. Read `python3 tools/world.py crossing` and
+  system/23-cross-system-worlds.md before the first promotion.
+
+$ python3 tools/world.py systems varisia
+- **Pathfinder Second Edition (Remaster)** — third-beginnings (from 1 Abadius 4725 AR)
+- **Dungeons & Dragons 2024 (5.5e)** — candle-road (from 9 Erastus 4731 AR)
+
+This is a **cross-system world**. …
+Calendar: **golarion** (a built-in, named in CALENDAR.md) — 12 months, 365 days a year, era AR
+  One calendar for the whole world, which is what a shared timeline needs.
+```
+
+Both campaigns promoted into it. The entries carry a `System:` line and a `Scope:` line, and
+`promote` warned that the other ruleset reads this world:
+
+```
+  NOTE: PF2e campaign(s) also read this world.
+        Write the entry so it survives being read by them: what happened, who did
+        it, and what changed. No levels, no DCs, no stat blocks — those do not cross.
+```
+
+**The date gate held across the ruleset boundary**, which is the property the whole layer exists
+for. Reading the world as of 4727 AR — where the Pathfinder campaign is — withheld the 5.5e
+campaign's 4731 entry and did not print its title, because printing it would defeat the gate:
+
+```
+$ python3 tools/world.py as-of varisia "1 Abadius 4727 AR"
+Chronicle: 0 entry/entries at or before this date; 1 dated later are withheld by the date gate.
+
+**Withheld by the date gate:** 1 entry/entries dated later than 1 Abadius 4727 AR. Titles are
+not shown — reading them would defeat the gate. Use --gm if you need them.
+```
+
+The scope translation, in both directions:
+
+```
+$ python3 tools/world.py convert --level 7 --from pf2e --to dnd5e
+PF2e level 7 → scope band **regional**
+  in D&D 5.5e, that band is levels 5-10
+  Source: THIS FRAMEWORK'S OWN CONVENTION. Pathfinder 2e publishes no tier table …
+
+$ python3 tools/world.py convert --level 3 --from dnd5e --to pf2e
+D&D 5.5e level 3 → scope band **local**
+  in PF2e, that band is levels 1-4
+  Source: PUBLISHED. SRD 5.2, 'Character Creation' -> 'Tiers of Play' …
+```
+
+Note the two `Source:` lines differ. The D&D tiers are published and quoted; the Pathfinder mapping
+onto the same bands is this framework's, and the tool says so every time rather than once in a
+footnote.
+
+A legacy record written for the Pathfinder character carried its ruleset, its level *in that
+ruleset*, its scope band, and a section saying to rebuild rather than convert:
+
+```
+- **System:** Pathfinder Second Edition (Remaster)
+- **Level reached:** 4 (PF2e)
+- **Scope reached:** local — a farmstead, a village, a city ward …
+
+## If they appear in a campaign running the other ruleset
+**Do not convert the numbers.** … In D&D 5.5e that scope is roughly levels 1-4 — a range,
+not a conversion.
+```
+
+And the validator caught a deliberately bad entry:
+
+```
+$ python3 tools/validate.py --world varisia
+  warn  chronicle entry 'A warded vault' mentions a DC — the shared layer records what
+        happened, not anyone's numbers, because the other ruleset's reader cannot use them
+```
+
+## Provenance and the convention count
+
+```
+$ python3 tools/pf2e.py sources  | tail -4
+0 of 26 tables are unverified.
+1 of 26 are this framework's own convention rather than a published rule:
+    - settlement_item_levels
+
+$ python3 tools/dnd5e.py sources | tail -6
+0 of 34 tables are unverified.
+3 of 34 are this framework's own convention rather than a published rule:
+    - calendar
+    - treasure_by_level
+    - settlement_availability
+```
+
+**Three is the honest number, not a shortfall.** SRD 5.2 publishes no treasure-by-level table (the
+2024 ones are DMG material), no calendar at all, and no settlement-size table behind its
+rarity-availability prose. Each of those three says what it is, what published figures it was built
+from, and that it is not a rule. `python3 tools/rules.py check` confirms both rulesets implement
+all 22 names the shared tools require.
+
+Every numeric D&D table was read from SRD 5.2 and then cross-checked against `foundryvtt/dnd5e`
+v6.0.5. The two agreed on all of them — the CR-to-XP table, the cumulative advancement thresholds,
+the XP-budget-per-character table and the coin ratios matched value for value. No disagreement was
+found, which is a weaker claim than the Pathfinder pass's "re-reading found eight errors" but is
+the claim the evidence supports.
+
+## Cleanup
+
+`campaigns/candle-road/` was removed and Varisia's chronicle, legends, README and characters
+restored, the same way `test-run` and `standalone-test` were after the first run. The repository
+ends the run with one live campaign, one parked pitch, and one shared world:
+
+```
+$ python3 tools/validate.py --all --repo
+campaign third-beginnings: 0 error(s), 0 warning(s)
+world varisia: 0 error(s), 0 warning(s)
+repository: 0 error(s), 0 warning(s)
+
+PASS — 0 errors, 0 warning(s)
+```
+
+## What this run does not establish
+
+- **No 5.5e session has been played.** Everything above is the tooling exercised deliberately, not
+  a GM running a scene for a person. The same was true of the Pathfinder half at this point, and
+  that half has since been played; this one has not.
+- **Spell slots were set by hand, not derived from a class table.** `dnd5e.py` holds the
+  full-caster progression, but half casters and Warlock Pact Magic are deliberately not in it, so a
+  Paladin or a Warlock's slots are read off their class table by the GM.
+- **No multiclass character was built.** The procedure points at the SRD's rules; the tooling
+  stores whatever is written and does not check it.
+- **Treasure pacing is a convention and has not been played long enough to judge.** Whether "check
+  the floor at each level-up" produces a well-equipped character over twenty levels is not
+  something a single acceptance run can show.

@@ -971,6 +971,10 @@ RESOURCE_HINTS = {
     "wounded": "D&D 2024 has no wounded condition — death save counters reset on regaining any HP.",
     "doomed": "D&D 2024 has no doomed condition — Exhaustion 6 is the equivalent death clock.",
     "refocus": "D&D 2024 has no Refocus — a Short Rest and Hit Dice are the mid-day recovery.",
+    "recovery": "D&D 2024 has Death Saving Throws, not recovery checks — use `death-save roll`.",
+    "daily": "D&D 2024's equivalent is `long-rest`, and `short-rest` for the mid-day one.",
+    "daily-prep": "D&D 2024's equivalent is `long-rest`, and `short-rest` for the mid-day one.",
+    "bulk": "D&D 2024 measures weight in pounds, not Bulk — use `--weight`.",
 }
 
 
@@ -1584,10 +1588,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
-
-
 # --------------------------------------------------------------------------------------
 # The action economy, for the encounter tracker
 # --------------------------------------------------------------------------------------
@@ -1714,3 +1714,80 @@ def spend_action(c: dict[str, Any], kind: str, n: int = 1) -> str:
         f"{kind!r} is not something a D&D turn spends "
         f"(action, bonus-action, move, dash)"
     )
+
+
+
+
+# --------------------------------------------------------------------------------------
+# Dashboard rendering
+# --------------------------------------------------------------------------------------
+
+
+def dashboard_stats(pc: dict[str, Any]) -> list[tuple[str, Any]]:
+    """The stat tiles on a character's dashboard card."""
+    ab = pc.get("abilities") or {}
+    s = pc.get("saves") or {}
+    prof = int(pc.get("proficiency_bonus", 2))
+    tiles: list[tuple[str, Any]] = [
+        ("AC", pc.get("ac", 0)),
+        ("Init", f"{int(pc.get('initiative_mod', 0)):+d}"),
+        ("Prof", f"{prof:+d}"),
+        ("Pass. Perc", pc.get("passive_perception", 10)),
+        ("Speed", f"{pc.get('speed', 0)} ft"),
+    ]
+    # The six saves, where they are recorded. A blank sheet shows none rather than six zeros.
+    if any(int(s.get(a, 0)) for a in ABILITIES) or any(int(v) != 10 for v in ab.values()):
+        for a in ABILITIES:
+            tiles.append((a.upper(), f"{int(s.get(a, 0)):+d}"))
+    return tiles
+
+
+DASHBOARD_RESOURCE_COLUMNS = ("Insp.", "Hit Dice", "Exh.", "Concentrating on", "Attuned", "Spell slots")
+SLOT_ABBREV = "L"
+
+
+def dashboard_resource_cells(pc: dict[str, Any]) -> list[str]:
+    hd = pc.get("hit_dice") or {}
+    hd_max, hd_used = int(hd.get("max", 0)), int(hd.get("used", 0))
+    slots = []
+    for lvl in sorted(pc.get("spell_slots") or {}, key=lambda r: int(r)):
+        e = (pc["spell_slots"])[lvl]
+        left = int(e.get("max", 0)) - int(e.get("used", 0))
+        slots.append(f"{SLOT_ABBREV}{lvl}&nbsp;{left}/{e.get('max', 0)}")
+    conc = pc.get("concentration")
+    conc_name = (conc.get("on") if isinstance(conc, dict) else conc) or ""
+    att = pc.get("attunement") or {}
+    items = att.get("items") or []
+    exh = int(pc.get("exhaustion", 0))
+    return [
+        "held" if pc.get("heroic_inspiration") else "",
+        f"{hd_max - hd_used} / {hd_max}d{hd.get('die', 8)}" if hd_max else "",
+        str(exh) if exh else "",
+        str(conc_name),
+        f"{len(items)} / {att.get('max', ATTUNEMENT_LIMIT)}",
+        " &middot; ".join(slots),
+    ]
+
+
+def dashboard_dire_tags(pc: dict[str, Any]) -> list[str]:
+    """The things that decide a death, rendered prominently rather than as conditions."""
+    out = []
+    if pc.get("dead"):
+        out.append("DEAD")
+        return out
+    exh = int(pc.get("exhaustion", 0))
+    if exh:
+        e = exhaustion_effect(exh)
+        out.append(f"EXHAUSTION {exh} ({e['d20_penalty']} to D20 Tests)")
+    hp = pc.get("hp") or {}
+    ds = pc.get("death_saves") or {}
+    if int(hp.get("current", 1)) == 0:
+        if ds.get("stable"):
+            out.append("STABLE at 0 HP")
+        else:
+            out.append(f"DEATH SAVES {ds.get('successes', 0)}/3 up, {ds.get('failures', 0)}/3 down")
+    return out
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

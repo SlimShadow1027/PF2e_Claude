@@ -366,3 +366,253 @@ These are the GM's own suggestions, from having built it.
   damage, and the conditions on the `pcs` side of the reference. That is a real test. It is not the
   same as having lost a session to it and got it back. Run one real fight, checkpoint in the
   middle, and restore, before trusting a long one to it.
+
+---
+
+# Adding the second ruleset — D&D 2024, and a cross-system world
+
+Written by the session that added it. The framework ran one game; it now runs two, and a shared
+world can hold campaigns of both. This section records what was decided, what was verified, and
+what was decided **without** being able to ask.
+
+---
+
+## Verification: SRD 5.2, with a conversion in the chain
+
+The same discipline as the Pathfinder pass, with one extra link that has to be stated.
+
+**Primary source: System Reference Document 5.2**, which Wizards of the Coast publishes free of
+charge under CC-BY-4.0 and which contains the 2024 core rules.
+
+**The publisher's own file was not reachable.** `dndbeyond.com` and the direct PDF URL are both
+blocked by this container's egress policy, as are the SRD mirror sites:
+
+```
+$ curl -sS -o /dev/null -w "%{http_code}\n" https://media.dndbeyond.com/.../SRD_CC_v5.2.pdf
+000   (CONNECT tunnel failed, 403)
+$ curl -sS -o /dev/null -w "%{http_code}\n" https://5e24srd.com/index.html
+000   (CONNECT tunnel failed, 403)
+$ curl -sS -o /dev/null -w "%{http_code}\n" https://raw.githubusercontent.com/...
+200
+```
+
+GitHub was reachable, and so was `2e.aonprd.com` — the Pathfinder source that the first pass could
+not reach. So the SRD was read from a **complete Markdown transcription of the official PDF**,
+hosted on GitHub and carrying the required CC-BY-4.0 attribution:
+
+> `springbov/dndsrd5.2_markdown` @ `6a3547c1d625fb125fbbcb8ded563f5beff197a8`, file
+> `DND-SRD-5.2-CC.md` (1.5 MB, produced from `SRD_CC_v5.2.pdf` with the `marker` PDF-to-Markdown
+> tool, then hand-corrected by its author)
+
+**That is a conversion, not the publisher's file, and a conversion can introduce errors.** Two
+were visible in the text itself and are noted below. So every numeric table was additionally
+cross-checked against an independent implementation:
+
+> `foundryvtt/dnd5e` v6.0.5 @ `7bfb3f1c03e107bf65942151ef08d50ddb01ba8a`, `module/config.mjs` —
+> MIT-licensed software whose SRD content is CC-BY-4.0. No code from it is reproduced; it was read
+> to confirm numbers.
+
+### What the cross-check found
+
+**Agreement on every table it covers**, value for value:
+
+| Table | SRD 5.2 | `foundryvtt/dnd5e` | Agree |
+|---|---|---|---|
+| Character Advancement (20 cumulative XP thresholds) | read row by row | `CHARACTER_EXP_LEVELS` | yes, all 20 |
+| XP by Challenge Rating (integer CRs 0–30) | read row by row | `CR_EXP_LEVELS` | yes, all 31 |
+| XP Budget per Character (20 levels × 3 difficulties) | read row by row | `ENCOUNTER_DIFFICULTY` | yes, all 60 |
+| Coin values | Coin Values table | `currencies`, as coins-per-gp | yes, all 5 |
+| Proficiency Bonus by level | Proficiency Bonus table | implied by the advancement table | yes |
+
+**This is a weaker claim than the Pathfinder pass's.** That pass *found eight errors* when it
+re-read the published text, which is positive evidence that the re-reading was real. This pass
+found no disagreement, which is consistent with both sources being right and also with both being
+wrong in the same way. The honest statement is: two independent sources agree, and neither is the
+publisher's PDF.
+
+**The three fractional CR rows (1/8 → 25, 1/4 → 50, 1/2 → 100) rest on the SRD transcription
+alone**, because Foundry's array is indexed by integer CR and omits them. They are the three most
+likely values in this file to be wrong, and they are the ones a level 1 encounter is built from.
+If you own the 2024 Monster Manual, those are worth eyeballing first.
+
+### Two transcription artifacts seen and handled
+
+1. **The XP budget table's header reads `| Low DC | Moderate DC | High DC |`.** The published
+   table has "Encounter Difficulty" spanning three columns headed Low, Moderate and High; the
+   conversion collapsed the spanning header into each cell. The *values* are unaffected and match
+   Foundry exactly. The table in `dnd5e.py` uses the correct column names.
+2. **A step-numbered list in "D20 Tests" was renumbered 4–6 → 1–3 by the transcription's author**,
+   who documents the change in that repository's README as a correction of an apparent typo in the
+   PDF. Nothing in this framework depends on those numbers.
+
+### What SRD 5.2 does not contain, and what was done about it
+
+This is the most important part of this section, because the gaps are where a framework is most
+tempted to fill in from memory. **Nothing here was reconstructed.** Each gap is named in place and
+counted by `python3 tools/dnd5e.py sources` as a convention rather than a rule.
+
+| Gap | Why it is a gap | What the framework does |
+|---|---|---|
+| **Treasure by level** | The 2024 treasure tables and random hoards are Dungeon Master's Guide material, not open content | `treasure_for` returns the published *Starting Equipment at Higher Levels* figures as an expected **floor**, priced with the published rarity values, and says it is a convention. `system/dnd5e/09-loot-and-economy.md` paces by tier |
+| **A calendar** | SRD 5.2 publishes no months, no weekdays and no era | A campaign uses the framework's `generic` placeholder, or its world defines one in `CALENDAR.md`. Published settings' month names are **not** SRD material and are deliberately not reproduced |
+| **Earn Income / downtime wages** | No 2024 equivalent in open content | Named as absent; the campaign invents one and records it in `RULES_DELTAS.md` |
+| **Creature adjustment templates** | No Elite/Weak equivalent exists | Named as absent; adjusting a creature is homebrew and the bestiary file must say so, including what XP it is counted as |
+| **Settlement size table** | The rarity-availability *prose* is published; no size table is | Five buckets (village → wondrous) are the framework's, with the published prose quoted beside them |
+| **Random encounter frequency, morale, weather** | Not published | The framework's own, labelled, as they already were on the Pathfinder side |
+
+---
+
+## Decisions made without the user
+
+The user asked for "5.5e DND as well as pf2e" and for it to be "connected to the larger world,
+somewhat", and chose **full parity** and **cross-system shared worlds** from a clarifying question.
+Everything below was decided inside those two answers.
+
+### 1. One campaign runs exactly one ruleset
+
+Not a per-character or per-scene choice. A campaign declares `System:` and that decides its sheet
+shape, its tables, its documents and its refusals. The alternative — a campaign that could mix —
+would have no coherent answer for what a critical hit does.
+
+A campaign *can* be changed over, but it means rebuilding the characters, and the docs say so.
+
+### 2. Nothing defaults when creating a campaign
+
+`state.py init` and `new_campaign.py` both **refuse** without `--system`. A default would be the
+single most expensive mistake available: a state written under the wrong ruleset carries the wrong
+fields from its first line, and the error would not surface until the first death.
+
+A campaign that declares *nothing* still reads as `pf2e` — but only because every campaign written
+before this work is a Pathfinder campaign, and that is a migration, not a default.
+
+### 3. The tools refuse the other game's commands, by name
+
+`hero gain` on a 5.5e campaign does not fail with a KeyError or silently write a field; it says
+Pathfinder has Hero Points, this game has Heroic Inspiration, and names the command. Nineteen such
+refusals are listed in `ACCEPTANCE.md`.
+
+This was the single biggest design decision in the work. The failure mode worth preventing is not
+a crash — it is a GM quietly running one game's procedure at the other game's table, which produces
+plausible numbers and no error at all.
+
+### 4. The calendar belongs to the world, not the ruleset
+
+Moved out of `pf2e.py` into `rules.py`. One shared world keeps **one** calendar whoever is playing
+in it, which is what lets a Pathfinder campaign in 4725 AR and a D&D campaign in 4731 AR gate each
+other's chronicle entries by date. A world may define its own as a JSON block in `CALENDAR.md`, and
+both rulesets read its months and its era.
+
+This was not in the brief. It became necessary the moment two rulesets shared a world, because the
+alternative — each game reading dates in its own calendar — makes the date gate meaningless.
+
+### 5. Scope crosses; levels do not
+
+The only cross-system translation the framework will make. Four bands (`local`, `regional`,
+`national`, `worldly`), and `world.py convert` returns a band and a level **range**, never a single
+number, plus an explicit list of what it refuses to convert.
+
+**The asymmetry in its provenance is stated every time it runs**, because it is not a detail:
+
+- In **D&D** the four bands are *published* — SRD 5.2's Tiers of Play, which the SRD itself says
+  carry no rules and which describe the size of the stakes.
+- In **Pathfinder** the same 1–4 / 5–10 / 11–16 / 17–20 split is **this framework's own
+  convention**. Pathfinder publishes no tier table at all.
+
+A single number would have been more convenient and would have been a lie. `rules.py bands` prints
+both statements with the distinction intact.
+
+### 6. The gazetteer is the one place both games' numbers coexist
+
+A market is where a world fact and a ruleset's maths unavoidably meet. `GAZETTEER.md` carries
+Pathfinder's item level *and* D&D's highest purchasable rarity per settlement, in separate columns.
+
+**The two are picked independently from the place as described, never derived from each other.** A
+converted number would be a guess wearing a source's clothes, which is worse than a blank cell —
+and the template says so in those terms.
+
+### 7. D&D initiative ties are rolled off, against the published rule
+
+SRD 5.2 says the GM decides ties. An automated GM deciding that is exactly the unlogged choice the
+dice protocol exists to prevent, so the framework rolls ties off with real dice.
+
+`roll.py init` prints the **published rule** alongside the result and says plainly that the
+substitution is the framework's convention and that the player may override the order. This is the
+one place the framework knowingly does something other than what the rules say, and it is the
+reason it says so in the output rather than in a footnote.
+
+### 8. Critical damage rewrites the expression rather than multiplying a total
+
+D&D says "roll the attack's damage dice twice". `--crit` on a 5.5e campaign rewrites `1d8+4` to
+`2d8+4` and the extra die is **genuinely rolled**, with both faces in the audit log. Doubling an
+already-rolled number would produce a different distribution and would not be what the rule says.
+
+A term that keeps highest or lowest dice is **refused** rather than guessed at, because what
+"roll the dice twice" means for `2d6kh1` is a judgement call.
+
+### 9. `attack` is a separate command from `check` and `save`
+
+Because in D&D the natural-20 and natural-1 rules apply to attack rolls **only**. Rolling an attack
+with `check` suppresses the crit; rolling a save with `attack` invents one. The command names the
+kind of test and the kind of test decides the rule.
+
+In Pathfinder the three are interchangeable, which is why this did not exist before.
+
+### 10. The D&D docs replace rather than annotate
+
+`system/dnd5e/` holds eight documents that **replace** their numbered counterparts, instead of the
+shared documents gaining "in D&D, …" clauses throughout. Fifteen documents were genuinely shared
+and were left alone beyond their per-ruleset tables.
+
+A GM reading `06-encounter-runner.md` mid-fight should not have to filter half of it. The cost is
+that a shared improvement has to be made twice, and that cost is real.
+
+### 11. Schema 3, migrated in memory and written on first save
+
+A state written before this work has no `system` key. `load()` stamps it in (reading `CAMPAIGN.md`
+first, in case the Markdown was updated before the state) and `migrate` persists it. The live
+campaign migrated with **no change to any number** — the diff is two fields and a timestamp — and
+its `CHECKPOINT.md` party table and encounter tracker render byte-for-byte as before. That was the
+bar for calling this non-breaking.
+
+### 12. The licences are kept apart, deliberately
+
+ORC material and CC-BY-4.0 material cannot be relicensed into each other. Every table, quotation
+and rule statement sits in exactly one of `LICENSE_NOTES.md`'s two sections, and nothing was merged
+or derived across them.
+
+This is part of why the shared `worlds/` layer holds events and people and no rules text from
+either publisher: the design constraint and the legal one point the same way.
+
+CC-BY-4.0 asks that no attribution to Wizards of the Coast be included beyond its required
+statement, and permits a compatibility claim. `LICENSE_NOTES.md` does exactly that and no more.
+
+---
+
+## To verify before first play (D&D side)
+
+In the same spirit as the Pathfinder list above. Nothing here is marked `UNVERIFIED` in the tool —
+these are places where a second pair of eyes is worth more than the cross-check could provide.
+
+1. **The three fractional CR rows** (1/8, 1/4, 1/2 → 25, 50, 100 XP), which rest on the SRD
+   transcription alone. They are what a level 1 encounter is built from.
+2. **The full-caster spell slot table**, read from the Wizard's class table. The Bard, Cleric,
+   Druid and Sorcerer tables are stated to carry the identical progression; that was read, not
+   assumed, but it was read from the same transcription.
+3. **The treasure convention.** It is the framework's, built from published parts, and whether it
+   produces a well-equipped character over twenty levels is not something an acceptance run can
+   show. If you own the DMG, use its tables.
+4. **Whether the `generic` calendar is tolerable in play.** A campaign dated "1 Month 1 1" reads
+   badly. Intake is supposed to replace it, and a world that declares its own is better still.
+
+## What this ruleset deliberately does not do
+
+- **No class, species, feat, spell or item content.** Same as the Pathfinder side.
+- **No half-caster or Warlock slot tables.** Those are per-class and are read off the class table
+  by the GM; `state.py slots` stores whatever is written. Putting the full-caster table in and
+  stopping there was deliberate: one table that covers five classes exactly is useful, and a
+  half-table that covers two classes approximately is a trap.
+- **No multiclass validation.** The tooling stores what it is told.
+- **No 2014 compatibility.** This is the 2024 ruleset. Where the two differ — exhaustion, surprise,
+  the encounter multiplier, backgrounds carrying the ability increases — the 2024 answer is the
+  only one implemented, and `system/dnd5e/12-rules-quick-reference.md` ends with a list of the
+  habits most likely to come across from elsewhere.

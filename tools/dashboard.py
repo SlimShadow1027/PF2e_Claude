@@ -29,6 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from roll import atomic_write, campaign_dir, repo_root, utc_now  # noqa: E402
 import pf2e  # noqa: E402
+import rules  # noqa: E402
 import state as st  # noqa: E402
 
 # Wounded descriptors, used instead of enemy numbers in `standard` and `mystery`. These
@@ -223,6 +224,11 @@ def map_block(cdir: Path, slug_name: str | None) -> tuple[str, str] | None:
 def render(slug: str) -> str:
     cdir = campaign_dir(slug)
     data = st.load(slug)
+    # Which game this campaign runs decides the stat tiles, the resources columns, the
+    # unit weight is measured in, and what gets the prominent "decides a death" treatment.
+    system = st.system_of(data)
+    mod = st.rs(data)
+    weight_field = st.ENCUMBRANCE_FIELD[system][0]
     mode = data.get("transparency", "standard")
     cp = data.get("last_checkpoint") or {}
     title = data.get("title") or slug
@@ -264,8 +270,6 @@ def render(slug: str) -> str:
             cls = hp_class(cur, mx)
             pct = 0 if mx <= 0 else max(0, min(100, round(cur / mx * 100)))
             tpct = 0 if mx <= 0 else max(0, min(100 - pct, round(temp / mx * 100)))
-            s = pc.get("saves") or {}
-            f = pc.get("focus") or {}
             a('<div class="card">')
             a(f'<h3>{esc(pc.get("name", key))}<span class="sub">'
               f'{esc(pc.get("kind", "pc"))} &middot; level {esc(pc.get("level", 1))}</span></h3>')
@@ -276,24 +280,13 @@ def render(slug: str) -> str:
               + (f'<span class="temp" style="width:{tpct}%"></span>' if tpct else "")
               + "</div>")
             a('<div class="stats">')
-            for label, value in (
-                ("AC", pc.get("ac", 0)),
-                ("Fort", f"{int(s.get('fortitude', 0)):+d}"),
-                ("Ref", f"{int(s.get('reflex', 0)):+d}"),
-                ("Will", f"{int(s.get('will', 0)):+d}"),
-                ("Perc", f"{int(pc.get('perception', 0)):+d}"),
-                ("Speed", f"{pc.get('speed', 0)} ft"),
-            ):
+            for label, value in mod.dashboard_stats(pc):
                 a(f'<div class="stat"><b>{esc(value)}</b><span>{esc(label)}</span></div>')
             a("</div>")
-            # Dying / wounded / doomed get their own prominent treatment.
-            dire = []
-            for nm in ("dying", "wounded", "doomed"):
-                v = int(pc.get(nm, 0))
-                if v:
-                    limit = int(pc.get("dying_max", 4)) - int(pc.get("doomed", 0))
-                    extra = f" of {limit}" if nm == "dying" else ""
-                    dire.append(f'<span class="tag dire">{nm.upper()} {v}{extra}</span>')
+            # Whatever decides a death in this ruleset gets its own prominent treatment:
+            # Pathfinder's dying/wounded/doomed, D&D's death saves and Exhaustion.
+            dire = [f'<span class="tag dire">{esc(t)}</span>'
+                    for t in mod.dashboard_dire_tags(pc)]
             conds = []
             for c in pc.get("conditions") or []:
                 name = c["name"] + (f" {c['value']}" if c.get("value") else "")
@@ -314,16 +307,11 @@ def render(slug: str) -> str:
     # ---- resources --------------------------------------------------------
     if pcs:
         a("<h2>Resources</h2>")
-        a('<div class="card"><table><thead><tr><th>Character</th><th class="n">Hero</th>'
-          '<th class="n">Focus</th><th>Refocus</th><th>Spell slots</th>'
-          "<th>Consumables, ammunition, charges</th></tr></thead><tbody>")
+        a('<div class="card"><table><thead><tr><th>Character</th>'
+          + "".join(f'<th>{esc(c)}</th>' for c in mod.DASHBOARD_RESOURCE_COLUMNS)
+          + "<th>Consumables, ammunition, charges</th></tr></thead><tbody>")
         for key, pc in pcs.items():
-            f = pc.get("focus") or {}
-            slots = []
-            for rank in sorted(pc.get("spell_slots") or {}, key=lambda r: int(r)):
-                e = (pc["spell_slots"])[rank]
-                left = int(e.get("max", 0)) - int(e.get("used", 0))
-                slots.append(f"r{rank}&nbsp;{left}/{e.get('max', 0)}")
+            cells = mod.dashboard_resource_cells(pc)
             cons = []
             for it in pc.get("items") or []:
                 if it.get("kind") in ("consumable", "ammunition") or it.get("charges") is not None:
@@ -334,12 +322,12 @@ def render(slug: str) -> str:
                         bits += f" ({it['charges']} charges)"
                     cons.append(bits)
             dash = '<span class="muted">—</span>'
+            # The cells are pre-rendered by the ruleset and may contain &nbsp; and &middot;,
+            # so they are not escaped again here; everything in them is ruleset-generated
+            # except a Concentration target, which is escaped where it is built.
             a(f"<tr><td>{esc(pc.get('name', key))}</td>"
-              f"<td class=\"n\">{esc(pc.get('hero_points', 0))} / {esc(pc.get('hero_points_max', 3))}</td>"
-              f"<td class=\"n\">{esc(f.get('current', 0))} / {esc(f.get('max', 0))}</td>"
-              f"<td>{'available' if f.get('refocus_available', True) else 'used'}</td>"
-              f"<td>{' &middot; '.join(slots) or dash}</td>"
-              f"<td>{', '.join(cons) or dash}</td></tr>")
+              + "".join(f'<td>{c or dash}</td>' for c in cells)
+              + f"<td>{', '.join(cons) or dash}</td></tr>")
         a("</tbody></table></div>")
 
     # ---- encounter strip --------------------------------------------------
@@ -405,18 +393,27 @@ def render(slug: str) -> str:
       f"{esc((data.get('party') or {}).get('xp', 0))} &middot; party level "
       f"{esc((data.get('party') or {}).get('level', 1))}</p></div>")
 
-    a('<div class="card"><h3>Bulk</h3>')
-    rows = st.bulk_report(data)
+    rows = st.carry_report(data)
+    unit = rows[0]["unit"] if rows else ("Bulk" if system == "pf2e" else "lb")
+    a(f'<div class="card"><h3>Carried weight ({esc(unit)})</h3>')
     if rows:
-        a('<table><thead><tr><th>Carrier</th><th class="n">Bulk</th><th class="n">Encumbered after</th>'
-          '<th class="n">Max</th><th></th></tr></thead><tbody>')
+        # D&D 2024 defines no intermediate encumbered band, so that column is only shown
+        # where the ruleset actually has one rather than printed as a blank.
+        has_band = any(r.get("encumbered_after") is not None for r in rows)
+        a('<table><thead><tr><th>Carrier</th><th class="n">Carried</th>'
+          + ('<th class="n">Encumbered after</th>' if has_band else "")
+          + '<th class="n">Max</th><th></th></tr></thead><tbody>')
         for r in rows:
             flag = ('<span class="tag dire">over limit</span>' if r["over_max"]
                     else ('<span class="tag bad">encumbered</span>' if r["encumbered"] else ""))
-            a(f'<tr><td>{esc(r["name"])}</td><td class="n">{r["bulk"]:.1f}</td>'
-              f'<td class="n">{r["encumbered_after"]}</td><td class="n">{r["max"]}</td>'
+            a(f'<tr><td>{esc(r["name"])}</td><td class="n">{float(r["carried"]):.1f}</td>'
+              + (f'<td class="n">{esc(r["encumbered_after"])}</td>' if has_band else "")
+              + f'<td class="n">{esc(r["max"])}</td>'
               f"<td>{flag}</td></tr>")
         a("</tbody></table>")
+        if not has_band:
+            a('<p class="muted">SRD 5.2 defines no intermediate encumbered band: '
+              'you carry freely up to the maximum.</p>')
     else:
         a('<p class="empty">Nobody is carrying anything yet.</p>')
     a("</div></div>")
@@ -425,19 +422,19 @@ def render(slug: str) -> str:
     stash = (data.get("party") or {}).get("stash") or []
     if carried or stash:
         a('<div class="card"><h3>Carried items</h3><table><thead><tr><th>Who</th><th>Item</th>'
-          '<th class="n">Qty</th><th class="n">Bulk</th><th>Kind</th><th class="n">Charges</th>'
+          '<th class="n">Qty</th><th class="n">' + esc(unit) + '</th><th>Kind</th><th class="n">Charges</th>'
           "</tr></thead><tbody>")
         for who, items in carried:
             for it in items:
                 a(f"<tr><td>{esc(who)}</td><td>{esc(it['name'])}</td>"
                   f"<td class=\"n\">{esc(it.get('qty', 1))}</td>"
-                  f"<td class=\"n\">{esc(it.get('bulk', '-'))}</td>"
+                  f"<td class=\"n\">{esc(it.get(weight_field, '-'))}</td>"
                   f"<td>{esc(it.get('kind', 'gear'))}</td>"
                   f"<td class=\"n\">{esc(it.get('charges')) if it.get('charges') is not None else '—'}</td></tr>")
         for it in stash:
             a(f"<tr><td class=\"muted\">stash</td><td>{esc(it['name'])}</td>"
               f"<td class=\"n\">{esc(it.get('qty', 1))}</td>"
-              f"<td class=\"n\">{esc(it.get('bulk', '-'))}</td>"
+              f"<td class=\"n\">{esc(it.get(weight_field, '-'))}</td>"
               f"<td>{esc(it.get('kind', 'gear'))}</td>"
               f"<td class=\"n\">{esc(it.get('charges')) if it.get('charges') is not None else '—'}</td></tr>")
         a("</tbody></table></div>")

@@ -63,9 +63,14 @@ def rs(data: dict[str, Any]):
 
 
 def _hint(data: dict[str, Any], what: str) -> str:
-    """The other ruleset's name for a resource this one does not have, if it has one."""
+    """The other ruleset's name for a resource this one does not have, if it has one.
+
+    Tries the whole phrase, then its first word, so both `attunement` and `short rest`
+    find their entry. A refusal with no hint is a refusal the GM has to go and look up.
+    """
     hints = getattr(rs(data), "RESOURCE_HINTS", {})
-    return hints.get(what, "")
+    key = str(what).strip().lower()
+    return hints.get(key) or hints.get(key.replace(" ", "-")) or hints.get(key.split()[0], "")
 
 
 def _wrong_game(data: dict[str, Any], what: str, needs: str) -> StateError:
@@ -2243,6 +2248,11 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
         return [f"{pc['name']}: {cmd} {args.value}"], True, data
 
     if cmd == "recovery":
+        # The ruleset guard comes first: told to make a recovery check on a D&D campaign,
+        # "there is no recovery check in this game" is the useful answer, and "they are not
+        # dying" is a confusing one about a field that game does not have.
+        if system_of(data) != "pf2e":
+            raise _wrong_game(data, "dying", "pf2e")
         key, pc = find_character(data, args.who)
         d = int(pc.get("dying", 0))
         if d < 1:
@@ -2551,10 +2561,12 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
             elif args.cr is not None or args.bonus_action or args.speed is not None:
                 bad = [f for f, v in (("--cr", args.cr), ("--bonus-action", args.bonus_action),
                                       ("--speed", args.speed)) if v]
+                noun = ("are D&D 2024 concepts" if len(bad) > 1
+                        else "is a D&D 2024 concept")
                 raise StateError(
-                    f"{', '.join(bad)} {'are' if len(bad) > 1 else 'is'} D&D 2024 concepts and "
-                    f"this is a Pathfinder campaign — use --level for a creature's level, and "
-                    f"Stride costs an action rather than drawing on a movement allowance"
+                    f"{', '.join(bad)} {noun} and this is a Pathfinder campaign — use --level "
+                    f"for a creature's level, and Stride costs an action rather than drawing on "
+                    f"a movement allowance"
                 )
             return encounter_add(
                 data, args.name, args.side, ref=args.ref, initiative=args.initiative, hp=args.hp,

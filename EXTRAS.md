@@ -79,3 +79,54 @@ pictures, because the GM can read positions back out of them.
   catch that — actually read them.
 - **Rules by memory.** If you ever get a rules answer with no source cited, ask for the source. That one
   habit catches most mechanical errors.
+
+---
+
+# Added later: the second ruleset
+
+## What was left out of the D&D side on purpose
+
+- **Half-caster and Warlock spell slot tables.** `dnd5e.py` holds the full-caster progression,
+  which covers Bard, Cleric, Druid, Sorcerer and Wizard exactly. Paladin, Ranger and Pact Magic
+  are read off their own class tables by the GM. One table that is exactly right for five classes
+  is useful; a table that is approximately right for two more is a trap.
+- **Multiclass validation.** The tooling stores what it is told. Prerequisites and the
+  multiclass-spellcaster slot table are the GM's to look up.
+- **The 2014 rules.** Where the two editions differ — exhaustion, surprise, the encounter
+  multiplier, where ability score increases live — only the 2024 answer is implemented.
+  `system/dnd5e/12-rules-quick-reference.md` ends with the habits most likely to arrive from
+  elsewhere, and six that are specifically false in this game.
+- **The Bastion system.** Optional 2024 downtime content, and not in SRD 5.2.
+- **Any DMG content.** Treasure tables, random hoards and published settings are not open content.
+  The framework names each gap rather than reconstructing it — see `DESIGN_NOTES.md`.
+
+## What a cross-system world deliberately will not do
+
+- **Convert a stat block, a sheet or a purse.** `world.py convert` translates *scope* and prints
+  what it refuses. Rebuilding a character in the target ruleset from their legacy record is the
+  supported path, and the record carries a section saying so.
+- **Derive one game's market numbers from the other's.** The gazetteer holds both columns, picked
+  independently. A derived number would be a guess wearing a source's clothes.
+- **Merge rules text across the licence boundary.** ORC and CC-BY-4.0 material cannot be
+  relicensed into each other, so the shared layer holds events and people and no rules text from
+  either publisher.
+
+## Things to watch for once you are playing the D&D side
+
+- **The habits that come across from Pathfinder.** In rough order of likelihood: narrating a
+  "critical success" on a skill check, treating a natural 20 on a save as special, raising DCs to
+  keep up with a levelling party, charging an action for movement, giving everyone a Bonus Action,
+  and applying a multiple attack penalty. Five of those six make the game harder than written, and
+  four of them make it harder for the player rather than the monsters. The tools catch the ones
+  that touch state; nothing catches narration.
+- **Massive damage.** It kills with no save and no dying track, which is a sharper edge than
+  anything on the Pathfinder side. Announce the rule once at level 1 and then never spring it.
+- **The Long Rest wipes the attrition clock.** Full HP, all Hit Dice, all slots, one Exhaustion
+  level. If a campaign feels toothless, the lever is denying the rest — a place that cannot be
+  safely slept in, a deadline, a pursuit — not harsher encounters.
+- **A solo character at 0 HP cannot stabilise themselves.** The DC 10 Wisdom (Medicine) check needs
+  someone else's hands. That is the mechanical reason the solo-levers document treats an ally as
+  the primary lever in this game rather than a nicety, and it is worth saying out loud before the
+  player decides to go alone.
+- **Treasure pacing is a convention here, not a table.** If it drifts, say so and fix it in the
+  open; there is no published budget to appeal to.

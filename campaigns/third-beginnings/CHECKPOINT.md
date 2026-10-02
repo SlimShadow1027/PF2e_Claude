@@ -4,7 +4,7 @@
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
 - Checkpoint: **004** Vessa Tarn built; Roderic legends written; Cove and Sump Door in the gazetteer
-- Rendered at: 2026-10-02T17:44:37Z
+- Rendered at: 2026-10-02T18:17:30Z
 - Session: 1 (in progress)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Standard**

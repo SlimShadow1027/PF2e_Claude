@@ -1,9 +1,30 @@
 # PF2e_Claude
 
-A kit for running **Pathfinder Second Edition (Remaster)** campaigns with Claude as Game Master,
-built for solo and very small tables.
+A kit for running campaigns with Claude as Game Master, built for solo and very small tables.
 
-The framework is built. `PROMPT.md` is the specification it was built from, kept for reference.
+**Two rulesets, one framework:**
+
+| `System:` | Game | Rules module | Ruleset docs |
+|---|---|---|---|
+| `pf2e` | Pathfinder Second Edition (Remaster) | `tools/pf2e.py` | the numbered docs in `system/` |
+| `dnd5e` | fifth edition, 2024 revision ("5.5e") | `tools/dnd5e.py` | `system/dnd5e/` |
+
+A campaign declares one and the tools dispatch on it. They also **refuse the other game's
+commands and name the right one**, because the failure mode worth preventing is not a crash — it
+is a GM quietly running one game's procedure at the other game's table. Asking for Hero Points in
+a 5.5e campaign points you at Heroic Inspiration; asking for a recovery check points you at Death
+Saving Throws; putting electrum in a Pathfinder purse is refused by name.
+
+```
+python3 tools/rules.py list                 # the rulesets and their aliases
+python3 tools/rules.py which <campaign>     # which game a campaign runs
+```
+
+A **shared world can hold campaigns of both games**, which is the other thing this framework is
+for. See "The shared world" below.
+
+The framework is built. `PROMPT.md` is the specification the Pathfinder half was built from, kept
+for reference.
 
 Two properties this is designed around, because they are the two that make an automated GM
 trustworthy:
@@ -21,18 +42,22 @@ trustworthy:
 ## Layout
 
 ```
-CLAUDE.md              auto-loaded GM operating contract — the seven rules and the boot sequence
+CLAUDE.md              auto-loaded GM operating contract — the eight rules and the boot sequence
 README.md              this file
 DESIGN_NOTES.md        assumptions, decisions made without the user, and the "to verify" list
 ACCEPTANCE.md          the transcript of the acceptance run, including what failed first
-LICENSE_NOTES.md       ORC and Paizo Community Use attribution; what this repo does and does not copy
+LICENSE_NOTES.md       attribution for BOTH rulesets — ORC for one, CC-BY-4.0 for the other
 PROMPT.md              the original specification
 EXTRAS.md              what was deliberately left out, and the failure modes to watch for
 
-system/                campaign-agnostic rules of engagement — 23 documents
+system/                rules of engagement — 16 shared documents, plus:
+system/dnd5e/            the 8 where fifth edition needs a different answer
 tools/                 all dice and all math; standard-library Python only
+  rules.py               which game a campaign runs; the calendar; cross-system translation
+  pf2e.py                Pathfinder tables, each with a Source: line
+  dnd5e.py               fifth-edition tables, same discipline
 templates/             copied into a new campaign folder by tools/new_campaign.py
-worlds/                OPTIONAL shared settings, one folder each
+worlds/                OPTIONAL shared settings, one folder each — system-neutral
 campaigns/             generated campaigns live here, one folder each
 .claude/commands/      slash commands
 ```
@@ -51,7 +76,21 @@ wait for my pick before generating anything else.
 
 Or type `/newcampaign "The Ashen Covenant"`.
 
-Intake is an interview, a few questions at a time, with concrete example answers and a "roll it"
+**Intake asks which game first**, because everything after it comes out of a different document
+depending on the answer. If you have no preference, two questions usually settle it: do you want
+to spend time building the character or start playing in five minutes, and do you want the dice to
+tell you *how well* or just *whether*. Then:
+
+```
+python3 tools/new_campaign.py "The Ashen Covenant" --system pf2e
+python3 tools/new_campaign.py "The Ashen Covenant" --system 5.5e
+```
+
+`--system` is required. Nothing defaults, because a campaign scaffolded under the wrong ruleset
+carries the wrong calendar, the wrong character sheet and the wrong rules documents from its first
+file.
+
+The rest is an interview, a few questions at a time, with concrete example answers and a "roll it"
 option on every question. It ends with three pitches and a pause — no world is built until you
 approve one.
 
@@ -97,6 +136,13 @@ Or `/resume <slug>`.
 | `dashboard` `worldprep` | the HTML dashboard, and an off-screen turn |
 | `pause` `fade` `cut` `dial it back` `dial it up` | the safety tools |
 
+Plus each game's own resources, which the tools refuse on the other game's campaign:
+
+| | |
+|---|---|
+| **Pathfinder** | `hero point` `refocus` `recovery` |
+| **fifth edition** | `inspiration` `short rest` `long rest` `hit dice` `death save` `concentration` `attune` |
+
 Slash commands for the ones worth a keystroke: `/checkpoint` `/recap` `/status` `/sheet`
 `/levelup` `/encounter` `/dashboard` `/dice-audit` `/worldprep` `/oracle` `/endsession`
 `/newcampaign` `/resume`.
@@ -119,7 +165,43 @@ python3 tools/analyze.py --campaign X --fairness      # audit the dice
 python3 tools/dashboard.py --campaign X               # offline HTML dashboard
 python3 tools/world.py as-of verdant-reach "4712 AR"  # date-gated shared-world read
 python3 tools/graph.py --campaign X                   # NPC relationship graph
+
+python3 tools/rules.py which third-beginnings         # which game a campaign runs
+python3 tools/dnd5e.py encounter --party-level 3 --party-size 1 --threat moderate
+python3 tools/dnd5e.py sources                        # provenance, and what is convention
+python3 tools/world.py convert --level 7 --from pf2e --to dnd5e
 ```
+
+## The shared world
+
+`worlds/` is optional, off by default, and **system-neutral**: one world can hold a Pathfinder
+campaign and a fifth-edition campaign at once, in different eras, with the date gate keeping each
+from being spoiled by the other's future.
+
+What makes that work is a single rule — **the world records what happened, never anyone's
+numbers.** Events, people, places, debts and reputations cross between the games. Levels, DCs,
+ACs, CRs, stat blocks and treasure do not, because the two games' maths is different in shape and
+not merely in scale.
+
+The one translation the framework will make is **scope**: four bands naming the size of the thing
+a character can plausibly threaten or protect, from `local` to `worldly`.
+
+```
+$ python3 tools/world.py convert --level 7 --from pf2e --to dnd5e
+PF2e level 7 → scope band **regional**
+  which is: a city and the land that feeds it; a barony; a stretch of coast
+  in D&D 5.5e, that band is levels 5-10
+
+A range, not a conversion. This deliberately will not:
+  - converting a stat block: a CR 5 monster and a level 5 PF2e creature are not the same creature …
+```
+
+Chronicle entries carry a `System:` line and a `Scope:` line; `validate.py` warns when an entry
+mentions a DC, an AC, a CR or a level, because the shared layer's reader may be playing the other
+game. `python3 tools/world.py crossing` is the full statement, and
+`system/23-cross-system-worlds.md` is the reasoning — including why a cross-system world is
+interesting rather than merely possible: the same place, seen through a different set of rules, and
+a party whose numbers cannot reproduce what the last one did.
 
 Full CLI reference: `tools/README.md`.
 
@@ -133,10 +215,18 @@ Full CLI reference: `tools/README.md`.
   the GM cannot decide an outcome and then produce a roll that matches it.
 - **Creatures come from published stat blocks**, cited by source. Homebrew names its base creature.
   The validator fails a bestiary file with no source.
-- **Numbers get verified, not remembered.** Every table carries a `Source:` line naming the
-  Archives of Nethys page it was read from, anything that is this framework's own convention
-  rather than a published rule says so in place, and anything that could not be checked says
-  `⚠ UNVERIFIED` rather than guessing quietly. `python3 tools/pf2e.py sources` prints the lot.
+- **Numbers get verified, not remembered.** Every table carries a `Source:` line naming where it
+  was read from, anything that is this framework's own convention rather than a published rule
+  says so in place, and anything that could not be checked says `⚠ UNVERIFIED` rather than
+  guessing quietly. `python3 tools/pf2e.py sources` and `python3 tools/dnd5e.py sources` print the
+  lot — and the second reports how many tables are *convention* as a separate count, because
+  fifth edition's open content has real gaps where Pathfinder's does not.
+- **A gap in the published rules is named, not filled from memory.** SRD 5.2 has no
+  treasure-by-level table, no Earn Income equivalent, no creature adjustment templates and no
+  calendar. The framework says so in each place and offers a convention that is labelled as one.
+- **The two rulesets never mix**, in a campaign or in a shared world. The tools refuse most
+  crossings by name, and the licences require it too: ORC material and CC-BY-4.0 material cannot
+  be relicensed into each other.
 - **One source of truth per kind of fact.** Volatile numbers live in `state.json`; prose and built
   character choices live in Markdown. `CHECKPOINT.md` is rendered from state, never hand-edited.
 - **Impossible states are refused, not clamped.** HP above maximum, negative coins, spending a Hero
@@ -153,18 +243,35 @@ Full CLI reference: `tools/README.md`.
   trap rather than a tactical problem.
 - **Nothing campaign-specific lives outside `campaigns/`.**
 
-## Two things to know before you trust it with a long campaign
+## Things to know before you trust it with a long campaign
 
-- **Every rules table has now been read from Archives of Nethys, and that pass found fourteen
-  errors.** The framework was first built while AoN was unreachable and the numeric tables were
+- **The Pathfinder half has been played; the fifth-edition half has been tested but not played.**
+  `ACCEPTANCE.md` holds what was exercised: a 5.5e campaign scaffolded, a character built, damage
+  to 0 HP, death saves rolled to a resolution, massive damage, exhaustion to 6, the encounter
+  tracker through a round, a checkpoint and a restore, and a cross-system world with both games
+  promoting into it. That is the same bar the Pathfinder half was held to before its first
+  session, and it is not the same thing as a session. Run one real fight and take a checkpoint in
+  the middle of it before trusting it with a long campaign.
+- **Fifth edition's open content has real gaps, and the framework names them rather than filling
+  them.** SRD 5.2 publishes no treasure-by-level table, no Earn Income equivalent, no
+  Elite/Weak-style creature adjustment and no calendar. Where an answer is needed anyway it is
+  labelled as this framework's convention and `python3 tools/dnd5e.py sources` counts those
+  separately. If you own the 2024 DMG, use its tables and record the deviation — the framework has
+  a place for that in `RULES_DELTAS.md`.
+- **Every Pathfinder rules table has been read from Archives of Nethys, and that pass found
+  fourteen errors.** The framework was first built while AoN was unreachable and the numeric tables were
   checked against the Foundry VTT PF2e source instead, with five marked `⚠ UNVERIFIED`. When AoN
   became reachable, re-reading the published text found **eight wrong values in `tools/pf2e.py` and
   six more stated inline in `system/`** — most of them in tables that had *not* been flagged. They
   are all listed in `DESIGN_NOTES.md` under "Pass 2", corrected in place, and
-  `python3 tools/pf2e.py sources` now reports 0 of 23 tables unverified. Two of the eight would
+  `python3 tools/pf2e.py sources` now reports 0 of 26 tables unverified. Two of the eight would
   have been felt immediately at a solo table: XP awards do **not** scale with party size, and the
   published Low encounter budget really does collapse to 0 XP at a party of one.
+- **Every fifth-edition table was read from SRD 5.2 and then cross-checked against an independent
+  implementation**, because the SRD was read from a Markdown transcription of the official PDF
+  rather than the PDF itself. The two sources agreed on all of them — the CR-to-XP table, the
+  cumulative advancement thresholds, the XP-budget-per-character table and the coin ratios matched
+  value for value. `LICENSE_NOTES.md` names both sources and their commits.
 - **The mid-combat restore has been tested but not played.** `ACCEPTANCE.md` holds the transcript:
   a checkpoint taken in the middle of round 3 of a four-combatant fight, and every tracker field
-  restored identically. Run one real fight and take a checkpoint in the middle of it before
-  trusting it with a long one.
+  restored identically. The 5.5e tracker restores the same way, with its own columns.
