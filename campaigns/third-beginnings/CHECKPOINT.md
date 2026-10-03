@@ -4,7 +4,7 @@
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
 - Checkpoint: **004** Vessa Tarn built; Roderic legends written; Cove and Sump Door in the gazetteer
-- Rendered at: 2026-10-01T16:51:16Z
+- Rendered at: 2026-10-03T17:15:54Z
 - Session: 1 (in progress)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Standard**
@@ -14,7 +14,7 @@
 - **Where:** Roderic's Cove — the lee of an upturned dory, up the shingle away from the windlass queue
 - **When:** 1 Abadius 4725 AR, 08:35
 
-Session 1, scene 2. Behind the dory with Vessa. She has given Karsa the whole account: the collapse beside the door, two chambers, a stair, and a flat waterline twenty feet down with dry dusty stone below it. She thinks it is dropping and admits she cannot prove it. Karsa has not yet told her about the detect magic result.
+Session 1, scene 2 end. Karsa has committed out loud: 'I want in.' Vessa has described the collapse and named the blocking problem — her own 40 seconds of air. The two of them want different outcomes and both know it.
 
 ## Party
 
@@ -38,6 +38,11 @@ Session 1, scene 2. Behind the dory with Vessa. She has given Karsa the whole ac
 ## Clocks
 
 - **The waterline falls** `▰▱▱▱▱▱▱` 1/7 — ticks 1 per week · The flat waterline across the stairwell behind the Sump Door is dropping. Vessa Tarn has seen it twice and cannot prove it. At full, the last of the lower levels is dry stone. Player-visible: she told Karsa on 1 Abadius 4725 AR. Telegraphed, per the encounter-objective duty.
+
+## Quests
+
+- **Get through the collapse** — active · next lead: The way in is the collapse beside the Sump Door, not the door. Blocker: Vessa has 7 rounds of air and no way to extend it.
+- **Who was Roderic, actually** — active · next lead: Dorrow's 200 years is secondhand from a dead man, Old Brannic, about 11 years ago. Karsa can recall nothing from Roderic's supposed century.
 
 ## Next likely beats
 

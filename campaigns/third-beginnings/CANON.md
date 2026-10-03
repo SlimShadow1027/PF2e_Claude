@@ -36,6 +36,10 @@ contradicted but also are not treated as something the character has heard.
 | 22 | — | **Twenty feet down that stair the water stops at a flat waterline.** Below it the steps are **dry stone with dust on them**. She put her arm through to the shoulder and withdrew it dry. She descended four steps and came back. | Session 1, scene 2 | known |
 | 23 | — | Vessa has been down twice since and believes the **waterline is lower each time**. She cannot prove it, never marked it, and said so unprompted. | Session 1, scene 2 | known |
 | 24 | — | **The waterline is genuinely falling.** Clock `The waterline falls`, 1/7, ticking 1 per week. | GM | **GM-side truth** |
+| 25 | 1 Abadius 4725 AR | Karsa told Vessa Tarn, out loud: **"I want in."** | Session 1, scene 2 | known |
+| 26 | — | The collapse is **left of the door-frame**, under an overhang of fallen course; the gap is roughly two feet at its widest and about eight feet long. Vessa calls it passable "if you're thin and stupid". | Session 1, scene 2 | known |
+| 27 | — | Vessa's own goal is to get the door **shut and forgotten**. Karsa's is to know what is behind it. Both said so. | Session 1, scene 2 | known |
+| 28 | — | Vessa can hold her breath about **forty seconds** and has no way to extend it. She has never been past the fourth step of the stair for that reason. | Session 1, scene 2 | known |
 | 8 | — | **Roderic is alive.** He is a serving mercenary officer, not a historical figure. | Carried from the player's other campaign, 2026-09-30 | **GM-side truth** |
 | 9 | — | Every account of Roderic circulating in the Cove is wrong in some specific way. Four are recorded in `worlds/varisia/LEGENDS.md`. | GM | **GM-side truth** |
 
