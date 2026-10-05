@@ -1,0 +1,262 @@
+# Checkpoint 001 — mid-fight at the windlass well
+
+**Immutable.** Never edit a past checkpoint. Restore it with `python3 tools/state.py --campaign test_campaign restore 001`.
+
+- Taken: 2026-10-05T19:46:17Z
+- In-world: 1 Month 1 1, 14:00
+- Location: Roderic's Cove — the salt-stair below the windlass
+- Session: 1
+- Mid-combat: yes — Something in the windlass well, round 1
+
+## Where we are
+
+Mirren is on the salt-stair, counting windlass turns.
+
+## Immediate situation
+
+- Who is present: _unrecorded_
+- What is about to happen: _unrecorded_
+
+## Encounter tracker at this moment
+
+```
+Something in the windlass well — round 1, objective: cut the rope before the cage reaches the top
+
+   combatant              init           HP act  bns  move    rxn  pos   conditions
+   Mirren Vale              16        10/19 ◆    —    30/30ft yes  -     grappled
+→  Grick                    11        27/27 ◆    —    30/30ft yes  -     
+
+One action a turn, plus a Bonus Action only when something grants one, plus one Reaction, plus movement up to your Speed and one free object interaction. There is no multiple attack penalty: extra attacks come from the Attack action itself.
+```
+
+## Active conditions and effects
+
+- **Mirren Vale**: grappled (until removed)
+
+## Clocks (what the world is doing off-screen)
+
+- none
+
+## Unresolved threads
+
+- see QUESTS.md
+
+## Next likely beats
+
+_(unrecorded)_
+
+## State snapshot
+
+The canonical machine-readable state at this moment. `restore` reads this block.
+
+<!-- STATE-SNAPSHOT-BEGIN -->
+```json
+{
+  "schema_version": 3,
+  "system": "dnd5e",
+  "campaign": "test_campaign",
+  "title": "Test Campaign",
+  "created_at": "2026-10-05T19:45:11Z",
+  "updated_at": "2026-10-05T19:46:17Z",
+  "transparency": "standard",
+  "difficulty_preset": "Standard",
+  "session_in_progress": true,
+  "session_number": 1,
+  "scene_count": 0,
+  "checkpoint_counter": 1,
+  "last_checkpoint": {
+    "id": "001",
+    "name": "mid-fight at the windlass well",
+    "at": "2026-10-05T19:46:17Z",
+    "slug": "mid-fight-at-the-windlass-well"
+  },
+  "time": {
+    "calendar": "generic",
+    "year": 1,
+    "month": 1,
+    "day": 1,
+    "minute_of_day": 840,
+    "elapsed_minutes": 360
+  },
+  "location": "Roderic's Cove — the salt-stair below the windlass",
+  "party": {
+    "level": 1,
+    "xp": 0,
+    "gold": {
+      "pp": 0,
+      "gp": 12,
+      "ep": 0,
+      "sp": 4,
+      "cp": 0
+    },
+    "stash": []
+  },
+  "pcs": {
+    "mirren-vale": {
+      "name": "Mirren Vale",
+      "kind": "pc",
+      "level": 2,
+      "hp": {
+        "current": 10,
+        "max": 19,
+        "temp": 0
+      },
+      "conditions": [
+        {
+          "name": "grappled",
+          "value": null,
+          "duration": {
+            "kind": "until-removed",
+            "remaining": null
+          },
+          "source": null
+        }
+      ],
+      "items": [
+        {
+          "name": "Shortbow",
+          "qty": 1,
+          "weight": "2",
+          "kind": "gear",
+          "charges": null,
+          "level": null
+        }
+      ],
+      "sheet": "characters/mirren-vale.md",
+      "notes": "",
+      "ac": 15,
+      "abilities": {
+        "str": 10,
+        "dex": 16,
+        "con": 12,
+        "int": 14,
+        "wis": 12,
+        "cha": 8
+      },
+      "saves": {
+        "str": 0,
+        "dex": 5,
+        "con": 0,
+        "int": 4,
+        "wis": 0,
+        "cha": 0
+      },
+      "save_proficiencies": [],
+      "skills": {},
+      "proficiency_bonus": 2,
+      "passive_perception": 11,
+      "initiative_mod": 3,
+      "speed": 30,
+      "size": "Medium",
+      "strength": 10,
+      "hit_dice": {
+        "die": 8,
+        "max": 2,
+        "used": 0
+      },
+      "death_saves": {
+        "successes": 0,
+        "failures": 0,
+        "stable": false
+      },
+      "exhaustion": 0,
+      "heroic_inspiration": false,
+      "concentration": null,
+      "spell_slots": {
+        "1": {
+          "max": 3,
+          "used": 0
+        }
+      },
+      "attunement": {
+        "max": 3,
+        "items": []
+      }
+    }
+  },
+  "clocks": {},
+  "quests": {},
+  "encounter": {
+    "name": "Something in the windlass well",
+    "objective": "cut the rope before the cage reaches the top",
+    "map": null,
+    "round": 1,
+    "turn_index": 1,
+    "started_at": "2026-10-05T19:46:16Z",
+    "combatants": [
+      {
+        "id": "mirren-vale",
+        "name": "Mirren Vale",
+        "side": "party",
+        "ref": "mirren-vale",
+        "initiative": 16,
+        "initiative_natural": null,
+        "hp": null,
+        "conditions": null,
+        "position": null,
+        "squad": null,
+        "level": null,
+        "cr": null,
+        "notes": "",
+        "defeated": false,
+        "actions_remaining": 1,
+        "actions_spent": 0,
+        "bonus_action_max": 0,
+        "bonus_action_remaining": 0,
+        "speed": 30,
+        "movement_used": 0,
+        "object_interaction_used": false,
+        "reaction_available": true,
+        "reaction_used_for": null,
+        "concentrating_on": null,
+        "base_speed": 30,
+        "death_saves": null
+      },
+      {
+        "id": "grick",
+        "name": "Grick",
+        "side": "adversary",
+        "ref": null,
+        "initiative": 11,
+        "initiative_natural": null,
+        "hp": {
+          "current": 27,
+          "max": 27,
+          "temp": 0
+        },
+        "conditions": [],
+        "position": null,
+        "squad": null,
+        "level": null,
+        "cr": "2",
+        "notes": "",
+        "defeated": false,
+        "actions_remaining": 1,
+        "actions_spent": 0,
+        "bonus_action_max": 0,
+        "bonus_action_remaining": 0,
+        "speed": 30,
+        "movement_used": 0,
+        "object_interaction_used": false,
+        "reaction_available": true,
+        "reaction_used_for": null,
+        "concentrating_on": null,
+        "base_speed": 30,
+        "death_saves": {
+          "successes": 0,
+          "failures": 0,
+          "stable": false
+        }
+      }
+    ],
+    "log": [],
+    "telegraphed": false
+  },
+  "notes": {
+    "situation": "Mirren is on the salt-stair, counting windlass turns.",
+    "next_beats": ""
+  }
+}
+```
+<!-- STATE-SNAPSHOT-END -->
+
