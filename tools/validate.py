@@ -499,6 +499,83 @@ def check_world(wslug: str, r: Report) -> None:
                        f"cannot use them (`python3 tools/world.py crossing`)")
                 break
 
+    # -- the living history ----------------------------------------------------
+    hpath = root / "HISTORY.md"
+    if not hpath.exists():
+        r.warn(f"worlds/{wslug}/HISTORY.md is missing — the world has no shared prose history. "
+               f"`world.py history add` creates it on first use")
+        chapters = []
+    else:
+        try:
+            chapters = wd.parse_history(wd.history_body(hpath.read_text(encoding="utf-8")), wslug)
+        except wd.WorldError as exc:
+            r.error(f"worlds/{wslug}/HISTORY.md: {exc}")
+            chapters = []
+        else:
+            r.ok(f"HISTORY.md parses ({len(chapters)} chapter(s))")
+
+    keys = [c.span_end.key() for c in chapters]
+    if keys != sorted(keys):
+        r.error(f"worlds/{wslug}/HISTORY.md chapters are not in span order — the file is read "
+                f"in order and gated on each span's end")
+    titles = [c.title for c in chapters]
+    for t in sorted({t for t in titles if titles.count(t) > 1}):
+        r.error(f"worlds/{wslug}/HISTORY.md has {titles.count(t)} chapters titled {t!r} — "
+                f"a duplicate usually means an append that half-failed")
+    for c in chapters:
+        if c.certainty not in wd.CERTAINTIES:
+            r.error(f"history chapter {c.title!r} has certainty {c.certainty!r}; it must be one "
+                    f"of {', '.join(wd.CERTAINTIES)} — an unstated certainty reads as fact")
+        if not c.body.strip():
+            r.error(f"history chapter {c.title!r} has a span and a certainty but no prose")
+        for sid in c.systems:
+            if not rules.is_known(sid):
+                r.error(f"history chapter {c.title!r} names ruleset {sid!r}, which is not one "
+                        f"this framework knows")
+        nums = wd._ruleset_numbers(f"{c.title} {c.body}")
+        if nums:
+            r.warn(f"history chapter {c.title!r} mentions {', '.join(nums)} — the living history "
+                   f"is read by every ruleset in this world, and a reader playing the other game "
+                   f"cannot use those")
+
+    # -- the per-ruleset narrative folders --------------------------------------
+    for d in sorted(p for p in root.iterdir() if p.is_dir()):
+        if not rules.is_known(d.name):
+            continue
+        if d.name != rules.canonical(d.name):
+            r.error(f"worlds/{wslug}/{d.name}/ should be named {rules.canonical(d.name)!r} — "
+                    f"the canonical ruleset id, so the tools can find it")
+        accounts = [f for f in sorted(d.glob("*.md")) if f.name != "README.md"]
+        if not (d / "README.md").exists():
+            r.warn(f"worlds/{wslug}/{d.name}/README.md is missing — it says what this folder is "
+                   f"for and who may read it")
+        for f in accounts:
+            text = f.read_text(encoding="utf-8")
+            declared = pf2e.read_field(text, "System")
+            if declared and rules.is_known(declared) and rules.canonical(declared) != d.name:
+                r.error(f"{f.relative_to(repo_root())} declares system {declared!r} but sits in "
+                        f"the {d.name} folder")
+            cname = pf2e.read_field(text, "Campaign")
+            if cname and cname.strip() in set(list_campaigns()):
+                actual = rules.for_campaign(cname.strip())
+                if actual != d.name:
+                    r.error(f"{f.relative_to(repo_root())} is the account of campaign "
+                            f"{cname.strip()!r}, which runs {actual}, but sits in {d.name}/")
+        if accounts:
+            r.ok(f"{d.name}/: {len(accounts)} campaign account(s)")
+
+    # -- the universe register --------------------------------------------------
+    pos = wd.world_position(wslug)
+    uni = (pos.get("Universe") or "").strip()
+    if uni and uni.lower() not in ("none", "—", "-", ""):
+        upath = wd.universe_path()
+        if not upath.exists():
+            r.error(f"worlds/{wslug}/README.md declares universe {uni!r} but worlds/"
+                    f"{wd.UNIVERSE_FILE} does not exist — `world.py universe --init` writes it")
+        elif not pos.get("Position"):
+            r.warn(f"worlds/{wslug}/README.md is in universe {uni!r} but declares no "
+                   f"`Position:` — without it the register cannot say where this world sits")
+
     # No live state anywhere under worlds/.
     for p in sorted(root.rglob("*")):
         if not p.is_file() or p.suffix.lower() not in (".md", ".json", ".jsonl", ".txt"):

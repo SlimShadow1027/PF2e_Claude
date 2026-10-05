@@ -359,6 +359,709 @@ def read_chronicle(world: str) -> tuple[Path, list[Entry]]:
 # --------------------------------------------------------------------------------------
 # init
 # --------------------------------------------------------------------------------------
+# The living history — the world's own book about itself
+# --------------------------------------------------------------------------------------
+#
+# Four layers hold the past, and they are deliberately different shapes. Writing in the
+# wrong one is the most common way a shared world turns into either a spreadsheet or a
+# novel nobody can query:
+#
+#   CHRONICLE.md          the spine. Dated, structured, terse, machine-read, date-gated.
+#                         One entry per concluded event. This is what `as-of` filters.
+#   HISTORY.md            the book. Prose, shared by every ruleset, deliberately LESS
+#                         PRECISE — it carries a span rather than a date and a stated
+#                         certainty, because a world's memory of itself is uncertain and
+#                         pretending otherwise is the lie. No numbers from any ruleset.
+#   <system>/<campaign>.md  the full account. One file per campaign, grouped by ruleset,
+#                         as detailed and as system-flavoured as it likes, because only
+#                         that ruleset's campaigns read it.
+#   LEGENDS.md            the distortions. How the above is told wrongly in-world.
+#
+# `system/24-the-living-history.md` is the long version, including which to write in.
+
+#: How sure the world is that a chapter happened the way it says.
+CERTAINTIES = ("attested", "recorded", "disputed", "legendary", "lost")
+
+CERTAINTY_MEANS = {
+    "attested": "more than one campaign saw it, or it left physical proof; treat as fact",
+    "recorded": "one campaign saw it and wrote it down; treat as fact unless contradicted",
+    "disputed": "accounts disagree on what happened, or who did it, or when",
+    "legendary": "the world tells it, nobody alive saw it, and the details have drifted",
+    "lost": "something happened here and the world no longer knows what",
+}
+
+HISTORY_HEADER = """# The history of {title}
+
+The world's own book about itself. **Prose, shared by every ruleset, and deliberately less
+precise than `CHRONICLE.md`.**
+
+This is the layer a GM reads to know what kind of place this is, and the layer a player's
+character could plausibly have been taught. It is written as history is written: in spans
+rather than dates, with the certainty of each account stated, and with the gaps left visible
+rather than filled.
+
+## What goes in here, and what does not
+
+| | |
+|---|---|
+| **In** | What happened and why it mattered. Causes, consequences, who was changed. Named people, places, factions. The shape of an age. What the world believes about itself |
+| **In** | Uncertainty, stated: who disagrees, what was never established, what is only remembered |
+| **Out** | **Any ruleset's numbers.** No levels, DCs, ACs, CRs, stat blocks, treasure or dice. A reader of this file may be playing a different game from the one that wrote the chapter |
+| **Out** | Live state of any kind. That stays in `campaigns/<slug>/state.json`, permanently |
+| **Out** | The blow-by-blow. That is the per-ruleset narrative in `<system>/<campaign>.md` |
+
+## How a chapter is shaped
+
+Each chapter carries three fields and then as much prose as it earns:
+
+- **Span** — the range it covers, in this world's calendar. The *end* of the span is what
+  the date gate reads, so a chapter is withheld from a campaign that has not reached it.
+- **Certainty** — one of `attested`, `recorded`, `disputed`, `legendary`, `lost`.
+- **Sources** — which campaigns contributed, each with its ruleset in brackets. A chapter
+  with no source is the world's own background, written before any campaign ran.
+
+Append with `python3 tools/world.py history add`, read with
+`python3 tools/world.py history {slug}`, and the date-gated read in `as-of` includes it.
+
+<!-- HISTORY-CHAPTERS-BELOW -->
+"""
+
+
+@dataclass
+class Chapter:
+    """One chapter of a world's living history. Prose, with a span rather than a date."""
+
+    title: str
+    span: str
+    span_end: WorldDate
+    certainty: str
+    sources: str
+    body: str
+    raw: str = ""
+
+    @property
+    def systems(self) -> list[str]:
+        """The rulesets named in the Sources field, canonicalised."""
+        found = []
+        for m in re.finditer(r"\(([^)]+)\)", self.sources):
+            try:
+                sid = rules.canonical(m.group(1).strip())
+            except rules.RulesError:
+                continue
+            if sid not in found:
+                found.append(sid)
+        return found
+
+    def render(self) -> str:
+        lines = [
+            f"## {self.title}",
+            "",
+            f"- **Span:** {self.span}",
+            f"- **Certainty:** {self.certainty}",
+            f"- **Sources:** {self.sources or 'the world itself'}",
+            "",
+            self.body.strip(),
+            "",
+        ]
+        return "\n".join(lines)
+
+
+def _span_end(span: str, world: str | None = None) -> WorldDate:
+    """The latest date a span reaches, which is what the date gate reads.
+
+    A span may be written '4726-4729 AR', '4726 to 4729 AR', 'before 4700 AR', or a single
+    date. Anything unparseable raises, because a chapter that cannot be ordered cannot be
+    gated, and a chapter that cannot be gated will eventually spoil somebody.
+    """
+    text = str(span).strip()
+    if not text:
+        raise WorldError("a history chapter needs a Span; without one it cannot be date-gated")
+    # Normalise the separators a person would actually type.
+    norm = re.sub(r"\s*(?:--|–|—|\bto\b|\bthrough\b)\s*", "-", text, flags=re.IGNORECASE)
+    norm = re.sub(r"^\s*(?:before|by|up to|until)\s+", "", norm, flags=re.IGNORECASE)
+    parts = [p.strip() for p in norm.split("-") if p.strip()]
+    if not parts:
+        raise WorldError(f"cannot read a span out of {span!r}")
+    # A span like '4726-4729 AR' puts the era only on the last part, so carry it backwards.
+    era = ""
+    m = _era_re(world).search(parts[-1])
+    if m:
+        era = m.group(1)
+    best: WorldDate | None = None
+    for part in parts:
+        candidate = part if _era_re(world).search(part) else f"{part} {era}".strip()
+        try:
+            d = parse_date(candidate, world)
+        except WorldError:
+            continue
+        if best is None or d.key() > best.key():
+            best = d
+    if best is None:
+        raise WorldError(
+            f"cannot order the span {span!r}. Write it as '4726-4729 AR', '4729 AR', or "
+            f"'before 4700 AR'."
+        )
+    return best
+
+
+def parse_history(text: str, world: str | None = None) -> list[Chapter]:
+    """Read the chapters out of a HISTORY.md."""
+    out: list[Chapter] = []
+    blocks = re.split(r"^##\s+", text, flags=re.MULTILINE)[1:]
+    for block in blocks:
+        lines = block.splitlines()
+        title = lines[0].strip()
+        fields: dict[str, str] = {}
+        body_from = 1
+        for i, line in enumerate(lines[1:], start=1):
+            m = _FIELD_RE.match(line)
+            if m:
+                fields[m.group(1).strip().lower()] = m.group(2).strip()
+                body_from = i + 1
+            elif line.strip() and not line.lstrip().startswith(("-", "*")):
+                break
+        if "span" not in fields:
+            raise WorldError(
+                f"history chapter {title!r} has no **Span:** field, so it cannot be date-gated"
+            )
+        body = "\n".join(lines[body_from:]).strip()
+        out.append(
+            Chapter(
+                title=title,
+                span=fields["span"],
+                span_end=_span_end(fields["span"], world),
+                certainty=(fields.get("certainty") or "").strip().lower(),
+                sources=fields.get("sources", ""),
+                body=body,
+                raw="## " + block.rstrip() + "\n",
+            )
+        )
+    return out
+
+
+HISTORY_MARKER = "<!-- HISTORY-CHAPTERS-BELOW -->"
+
+
+def history_body(text: str) -> str:
+    """Only the part of HISTORY.md below the marker holds chapters.
+
+    The header explains what the file is for and does so in `##` sections, so parsing the
+    whole file reads "What goes in here, and what does not" as a chapter with no Span and
+    refuses to write anything. The chronicle has the same marker for the same reason; its
+    header simply has no headings, which hid the problem until this file did.
+    """
+    _, sep, body = text.partition(HISTORY_MARKER)
+    return body if sep else text
+
+
+def read_history(world: str) -> tuple[Path, list[Chapter]]:
+    path = world_dir(world) / "HISTORY.md"
+    if not path.exists():
+        return path, []
+    return path, parse_history(history_body(path.read_text(encoding="utf-8")), world)
+
+
+def cmd_history(args: argparse.Namespace) -> int:
+    """Read the living history, date-gated unless --all is passed."""
+    wdir = world_dir(args.world)
+    if not wdir.is_dir():
+        raise WorldError(f"no world at {wdir}")
+    path, chapters = read_history(args.world)
+    if not path.exists():
+        print(f"worlds/{args.world}/HISTORY.md does not exist yet.")
+        print("Create it with `python3 tools/world.py init ... --force`, or write the first")
+        print("chapter with `python3 tools/world.py history add`.")
+        return 0
+    chapters.sort(key=lambda c: c.span_end.key())
+
+    cutoff = parse_date(args.date, args.world) if args.date else None
+    shown = [c for c in chapters if cutoff is None or c.span_end.key() <= cutoff.key()]
+    later = len(chapters) - len(shown)
+
+    print(f"# The history of {args.world}"
+          + (f" — as of {cutoff}" if cutoff else " — in full"))
+    print()
+    if cutoff:
+        print(f"{len(shown)} chapter(s) at or before this date"
+              + (f"; {later} reaching later are withheld by the date gate." if later else "."))
+    else:
+        print(f"{len(shown)} chapter(s). **Not date-gated** — do not read this during a campaign "
+              f"that has not reached the end of it.")
+    print()
+    if not shown:
+        print("_(the world has no recorded history at or before this date.)_")
+        return 0
+    for c in shown:
+        print(c.raw)
+    if later and cutoff:
+        print("---")
+        print()
+        print(f"**Withheld by the date gate:** {later} chapter(s) reaching past {cutoff}. "
+              f"Titles are not shown — reading them would defeat the gate.")
+    return 0
+
+
+def cmd_history_add(args: argparse.Namespace) -> int:
+    """Append a chapter to the living history, in span order."""
+    wdir = world_dir(args.world)
+    if not wdir.is_dir():
+        raise WorldError(f"no world at {wdir}")
+    path = wdir / "HISTORY.md"
+    if not path.exists():
+        atomic_write(path, HISTORY_HEADER.format(title=args.world, slug=args.world))
+        print(f"created worlds/{args.world}/HISTORY.md")
+
+    certainty = args.certainty.strip().lower()
+    if certainty not in CERTAINTIES:
+        raise WorldError(f"certainty must be one of {', '.join(CERTAINTIES)} (got {certainty!r})")
+
+    sources = args.sources or ""
+    if args.campaign:
+        system = rules.for_campaign(args.campaign)
+        tag = f"{args.campaign} ({rules.short_of(system)})"
+        sources = f"{sources}; {tag}" if sources else tag
+
+    chapter = Chapter(
+        title=args.title,
+        span=args.span,
+        span_end=_span_end(args.span, args.world),
+        certainty=certainty,
+        sources=sources,
+        body=args.body,
+    )
+
+    # The same refusal the chronicle uses: nothing live, and nothing from a ruleset.
+    blob = f"{args.title} {args.body}".lower()
+    for marker in LIVE_STATE_MARKERS:
+        if marker in blob:
+            raise WorldError(
+                f"refusing to write this chapter: the text contains {marker!r}, which looks like "
+                f"live state. The history gets what happened and why it mattered."
+            )
+    numbers = _ruleset_numbers(f"{args.title} {args.body}")
+    if numbers and not args.allow_numbers:
+        raise WorldError(
+            "refusing to write this chapter: it mentions " + ", ".join(numbers) + ". The living "
+            "history is read by every ruleset in this world, and a reader playing the other game "
+            "cannot use those. Say what happened instead — `python3 tools/world.py crossing` has "
+            "the before-and-after table. Pass --allow-numbers only if the number is an in-world "
+            "quantity (a count of ships, a span of years) rather than a rules value."
+        )
+
+    print("About to append this chapter to the world's living history:")
+    print()
+    print(f"  worlds/{args.world}/HISTORY.md")
+    print(chapter.render().replace("\n", "\n  "))
+    others = [sid for sid in rules.for_world(args.world) if sid not in chapter.systems]
+    if others:
+        print(f"  NOTE: {', '.join(rules.short_of(x) for x in others)} campaign(s) also read this "
+              f"history.")
+    if not args.yes:
+        try:
+            answer = input("\nAppend it? [y/N] ").strip().lower()
+        except EOFError:
+            answer = ""
+        if answer not in ("y", "yes"):
+            print("Nothing written.")
+            return 1
+
+    _insert_chapter(path, chapter, args.world)
+    # The chapter is written at this point. Counting it back is a courtesy, so a failure
+    # here must not be reported as a failure of the write — an earlier version of this
+    # function raised on the re-read and told the user nothing had been written while the
+    # file on disk had in fact grown by one chapter, which is the worst of both.
+    try:
+        _, after = read_history(args.world)
+        count = f"{len(after)} chapter(s), in span order"
+    except WorldError as exc:
+        count = (f"written, but the file no longer parses ({exc}) — fix it by hand before "
+                 f"the next append")
+    print(f"\nappended to worlds/{args.world}/HISTORY.md — {count}")
+    print(f"certainty `{certainty}`: {CERTAINTY_MEANS[certainty]}")
+    print("\nNo live state and no ruleset's numbers were written. The blow-by-blow belongs in")
+    print(f"`worlds/{args.world}/<system>/<campaign>.md` — see `world.py narrative`.")
+    return 0
+
+
+_NUMBER_PATTERNS = (
+    (r"\bDC\s*\d+", "a DC"),
+    (r"\bAC\s*\d+", "an AC"),
+    (r"\bCR\s*\d+", "a Challenge Rating"),
+    (r"\blevel[- ]\d+\b", "a level"),
+    (r"\b\d+d\d+\b", "a dice expression"),
+    (r"\b\d+\s*(?:gp|sp|cp|ep|pp)\b", "a coin value"),
+    (r"\b\d+\s*(?:hp|hit points)\b", "hit points"),
+)
+
+
+def _ruleset_numbers(text: str) -> list[str]:
+    """Which ruleset numbers a passage mentions. Used to keep the shared layer neutral."""
+    found = []
+    for pat, what in _NUMBER_PATTERNS:
+        if re.search(pat, text, re.IGNORECASE) and what not in found:
+            found.append(what)
+    return found
+
+
+def _insert_chapter(path: Path, chapter: Chapter, world: str) -> None:
+    """Add a chapter in span order, the way `insert_by_date` does for the chronicle."""
+    text = path.read_text(encoding="utf-8")
+    head, sep, body = text.partition(HISTORY_MARKER)
+    if not sep:
+        head, sep, body = text, HISTORY_MARKER, ""
+    existing = parse_history(body, world)
+    block = chapter.render()
+    if not existing:
+        atomic_write(path, head + sep + "\n\n" + block)
+        return
+    pieces, placed = [], False
+    for c in existing:
+        if not placed and chapter.span_end.key() < c.span_end.key():
+            pieces.append(block)
+            placed = True
+        pieces.append(c.raw.rstrip() + "\n")
+    if not placed:
+        pieces.append(block)
+    atomic_write(path, head + sep + "\n\n" + "\n".join(pieces))
+
+
+# --------------------------------------------------------------------------------------
+# Per-ruleset narrative history — one thorough account per campaign
+# --------------------------------------------------------------------------------------
+
+SYSTEM_FOLDER_README = """# {system_name} campaigns in {world}
+
+One file per campaign, holding the **thorough narrative history** of what happened in it.
+
+This folder is read by {system_short} campaigns only, which is what lets it be detailed in a
+way the shared `HISTORY.md` cannot be. Here you may name the rules, the class, the spell,
+the creature and the roll that turned a scene — a reader of this folder is playing the same
+game, so none of it is noise to them.
+
+## How this relates to the rest of the world
+
+| File | Shape | Who reads it |
+|---|---|---|
+| `../CHRONICLE.md` | dated, structured, terse, one entry per event | every ruleset, date-gated |
+| `../HISTORY.md` | prose, spans rather than dates, certainty stated, **no numbers** | every ruleset, date-gated |
+| **this folder** | prose, thorough, system-flavoured, as long as it earns | **{system_short} only** |
+| `../LEGENDS.md` | how the above is told wrongly in-world | every ruleset |
+
+So one event can appear in all four: a line in the chronicle, a paragraph in the history,
+three pages here, and a distorted song in the legends.
+
+## The rule that still applies
+
+**Nothing live.** Current hit points, coins, inventory, conditions, positions, checkpoints
+and roll logs stay in `campaigns/<slug>/` permanently, even here. What belongs here is the
+*account* — what happened, what it cost, who changed — written after the fact.
+
+`python3 tools/validate.py --world {world}` fails a file here that reads like live state.
+"""
+
+NARRATIVE_TEMPLATE = """# {title}
+
+The thorough narrative history of this campaign. Written for a {system_short} reader, so the
+rules may be named.
+
+- **Campaign:** {campaign}
+- **System:** {system_name}
+- **World:** worlds/{world}
+- **Span:** {span}
+- **Status:** active / concluded / abandoned / on hold
+- **Protagonists:** {characters}
+
+> The shared, system-neutral version of these events lives in `../HISTORY.md`, and the dated
+> index in `../CHRONICLE.md`. This file is where the detail goes. Write it as the account a
+> player would want to re-read in two years, not as a log.
+
+---
+
+## Before it started
+
+_What was already true. The situation the first scene walked into._
+
+## The arcs
+
+_One section per arc, in order. For each: what the party wanted, what stood in the way, what
+it cost, and what was different afterwards. Name the moments that mattered and say why they
+mattered — a reader who was not there should be able to feel the turn._
+
+### _(arc name)_
+
+- **Span:**
+- **What changed:**
+
+_Prose._
+
+---
+
+## The people
+
+_Who mattered, and what became of them. Allies, enemies, the ones who were neither._
+
+| Who | What they were to the party | Where they ended |
+|---|---|---|
+| | | |
+
+## What it cost
+
+_Deaths, losses, debts, bargains, things that cannot be undone. This is the section that
+makes a campaign's history worth keeping._
+
+## What is still unresolved
+
+_Threads a later campaign in this world could pick up. World-level ones also belong in
+`../gm-private/threads.md`._
+
+---
+
+## Promoted to the shared layer
+
+_Which of the above reached `../CHRONICLE.md` and `../HISTORY.md`, so the two do not drift._
+
+| What | Chronicle entry | History chapter |
+|---|---|---|
+| | | |
+"""
+
+
+def system_dir(world: str, system: str) -> Path:
+    return world_dir(world) / rules.canonical(system)
+
+
+def ensure_system_folder(world: str, system: str) -> tuple[Path, bool]:
+    """The per-ruleset narrative folder for a world, created on first use."""
+    sid = rules.canonical(system)
+    d = system_dir(world, sid)
+    created = not d.exists()
+    d.mkdir(parents=True, exist_ok=True)
+    readme = d / "README.md"
+    if not readme.exists():
+        atomic_write(readme, SYSTEM_FOLDER_README.format(
+            system_name=rules.name_of(sid), system_short=rules.short_of(sid), world=world))
+    return d, created
+
+
+def cmd_narrative(args: argparse.Namespace) -> int:
+    """Create or report the per-ruleset narrative history file for a campaign."""
+    world = args.world or _world_of(args.campaign)
+    if not world:
+        raise WorldError(
+            f"{args.campaign} has no `World:` field, so it has no world to keep a narrative in. "
+            f"A standalone campaign's history lives in its own `sessions/` folder."
+        )
+    if not world_dir(world).is_dir():
+        raise WorldError(f"no world at {world_dir(world)}")
+    system = rules.for_campaign(args.campaign)
+    d, created = ensure_system_folder(world, system)
+    if created:
+        print(f"created worlds/{world}/{system}/ with its README")
+
+    path = d / f"{args.campaign}.md"
+    if path.exists() and not args.force:
+        chapters = path.read_text(encoding="utf-8")
+        print(f"worlds/{world}/{system}/{args.campaign}.md already exists "
+              f"({len(chapters.splitlines())} lines). Pass --force to overwrite it.")
+        print("\nIt is yours to write by hand — the tool only scaffolds it. Add to it at the end")
+        print("of each arc, while the detail is still in reach.")
+        return 0
+
+    cm = campaign_dir(args.campaign) / "CAMPAIGN.md"
+    title = args.campaign
+    span = "_(start date to now)_"
+    if cm.exists():
+        text = cm.read_text(encoding="utf-8")
+        first = text.splitlines()[0].lstrip("# ").strip()
+        if first:
+            title = first
+        start = pf2e.read_field(text, "Start date")
+        if start:
+            span = f"{start} to _(now)_"
+    chars = []
+    spath = campaign_dir(args.campaign) / "state.json"
+    if spath.exists():
+        try:
+            data = json.loads(spath.read_text(encoding="utf-8"))
+            chars = [pc.get("name", k) for k, pc in (data.get("pcs") or {}).items()
+                     if pc.get("kind") == "pc"]
+        except (OSError, ValueError):
+            pass
+
+    atomic_write(path, NARRATIVE_TEMPLATE.format(
+        title=title, campaign=args.campaign, world=world,
+        system_name=rules.name_of(system), system_short=rules.short_of(system),
+        span=span, characters=", ".join(chars) or "_(not yet)_"))
+    print(f"wrote worlds/{world}/{system}/{args.campaign}.md")
+    print(f"  the thorough {rules.short_of(system)} account — the rules may be named here")
+    print(f"  the shared, neutral version goes in worlds/{world}/HISTORY.md "
+          f"(`world.py history add`)")
+    return 0
+
+
+# --------------------------------------------------------------------------------------
+# The universe — the layer above worlds
+# --------------------------------------------------------------------------------------
+
+UNIVERSE_FILE = "UNIVERSE.md"
+
+UNIVERSE_TEMPLATE = """# The universe
+
+The layer above `worlds/`. **Optional, and only worth having once a second world exists.**
+
+A world is a place campaigns are set in. A universe is what is true *across* places — so
+that a campaign on another continent, another plane or in another age can be the same
+universe as the first without sharing its geography, its factions or its history.
+
+## The worlds in it
+
+| World | Where it sits | Era | Rulesets | Reachable from |
+|---|---|---|---|---|
+| | | | | |
+
+`python3 tools/world.py universe` rebuilds this table from the world folders themselves, so
+it does not drift. Each world declares its own position with a `Position:` field in its
+README.
+
+## What is true everywhere
+
+_The things a character from any of these worlds would recognise. Keep this short — the
+longer it is, the less room each world has to be itself._
+
+### Cosmology
+
+_Planes, afterlives, where magic comes from, what the stars are. Only the parts that hold
+in every world below._
+
+### The deep past
+
+_What happened before any of these worlds had a history of its own, and is remembered
+everywhere — usually wrongly, and differently in each place._
+
+### Powers that span worlds
+
+_Gods, empires, orders, things that are worshipped or feared in more than one of them.
+A power named here can appear in any world; one named in a single world's `PANTHEON.md`
+cannot._
+
+## How the worlds connect
+
+_The honest answer is often "they do not, yet", and that is a fine answer. Write it down
+anyway, because "no known route" is itself a fact a campaign can work against._
+
+| From | To | Route | Who knows it | Cost |
+|---|---|---|---|---|
+| | | | | |
+
+## What crosses between worlds
+
+The same discipline as `system/23-cross-system-worlds.md`, one layer up. Across worlds:
+
+| Crosses | Does not cross |
+|---|---|
+| Cosmology, planar structure, the deep past | Local history, local factions, local geography |
+| Powers named in this file | Powers named in a single world's PANTHEON.md |
+| A character who physically travelled, with their story | A character's reputation, unless news travelled with them |
+| Items, with their histories | Any ruleset's numbers — see `world.py crossing` |
+
+**A world's history is its own.** A chapter in one world's `HISTORY.md` is not known in
+another unless something carried it there, and saying what carried it is more interesting
+than assuming it did.
+
+## The rules that keep this layer clean
+
+- **Nothing live, ever.** Same as `worlds/`.
+- **No ruleset's numbers.** This file may be read by a campaign in any of the games.
+- **Write here only what is true in every world listed.** A fact true in one world belongs
+  in that world's files. This is the most commonly broken rule and the one that makes the
+  layer worthless when broken.
+"""
+
+
+def universe_path() -> Path:
+    return repo_root() / "worlds" / UNIVERSE_FILE
+
+
+def world_position(world: str) -> dict[str, str]:
+    """A world's declared place in the universe, from its README."""
+    p = world_dir(world) / "README.md"
+    if not p.exists():
+        return {}
+    text = p.read_text(encoding="utf-8")
+    out = {}
+    for field in ("Universe", "Position", "Era", "Reachable from"):
+        v = pf2e.read_field(text, field)
+        if v:
+            out[field] = v.strip()
+    return out
+
+
+def list_worlds() -> list[str]:
+    root = repo_root() / "worlds"
+    if not root.is_dir():
+        return []
+    return sorted(d.name for d in root.iterdir()
+                  if d.is_dir() and (d / "README.md").exists())
+
+
+def cmd_universe(args: argparse.Namespace) -> int:
+    """Show the universe register, rebuilding the world table from the folders."""
+    path = universe_path()
+    if args.init:
+        if path.exists() and not args.force:
+            raise WorldError(f"{path} already exists (pass --force to overwrite it)")
+        atomic_write(path, UNIVERSE_TEMPLATE)
+        print(f"wrote worlds/{UNIVERSE_FILE}")
+        print("\nIt is optional and only worth having once a second world exists. Declare each")
+        print("world's place in it with a `Universe:` and `Position:` field in its README.")
+        return 0
+
+    worlds = list_worlds()
+    print("# The universe — worlds registered in it")
+    print()
+    if not path.exists():
+        print(f"_(worlds/{UNIVERSE_FILE} does not exist. `world.py universe --init` writes it. "
+              f"It is optional.)_")
+        print()
+    rows = []
+    for w in worlds:
+        pos = world_position(w)
+        systems = rules.for_world(w)
+        rows.append({
+            "world": w,
+            "universe": pos.get("Universe", "—"),
+            "position": pos.get("Position", "—"),
+            "era": pos.get("Era", "—"),
+            "rulesets": ", ".join(rules.short_of(s) for s in systems) or "none yet",
+            "reachable from": pos.get("Reachable from", "—"),
+        })
+    if not rows:
+        print("_(no worlds yet. `world.py init \"<name>\"` makes one.)_")
+        return 0
+    cols = ["world", "universe", "position", "era", "rulesets", "reachable from"]
+    widths = {c: max(len(c), *(len(str(r[c])) for r in rows)) for c in cols}
+    print("  ".join(c.ljust(widths[c]) for c in cols))
+    print("  ".join("-" * widths[c] for c in cols))
+    for r in rows:
+        print("  ".join(str(r[c]).ljust(widths[c]) for c in cols))
+    print()
+    named = {r["universe"] for r in rows if r["universe"] != "—"}
+    if len(named) > 1:
+        print(f"⚠ These worlds name {len(named)} different universes: {', '.join(sorted(named))}.")
+        print("  That is legal, but nothing crosses between universes — not even cosmology.")
+    elif named:
+        print(f"All of them are in **{named.pop()}**, so what `{UNIVERSE_FILE}` says is true in "
+              f"every one.")
+    else:
+        print(f"None of them declares a `Universe:` field, so they are unrelated places that")
+        print(f"happen to live in the same repository. Add the field to link them.")
+    unlinked = [r["world"] for r in rows if r["rulesets"] == "none yet"]
+    if unlinked:
+        print(f"\nNo campaign is set in: {', '.join(unlinked)}.")
+    return 0
+
+
+# --------------------------------------------------------------------------------------
 
 def _slug(name: str) -> str:
     """'The Verdant Reach' -> 'verdant-reach'. A leading article is dropped, because a folder
@@ -374,8 +1077,19 @@ WORLD_FILES: dict[str, str] = {
 
 A shared setting. Several campaigns can be set here, in different eras.
 
-A world here is **system-neutral**: campaigns running either ruleset can be set in it, and
-the shared layer records what happened rather than anyone's numbers.
+A world here is **system-neutral**: campaigns running any supported ruleset can be set in
+it, and the shared layer records what happened rather than anyone's numbers.
+
+## Where this world sits
+
+- **Universe:** none
+- **Position:** _(a continent, a plane, an age — whatever distinguishes it from the others)_
+- **Era:** _(the present day here)_
+- **Reachable from:** _(other worlds, and how; "no known route" is a fine answer)_
+
+> `Universe:` links this world to others in `worlds/UNIVERSE.md`, so a campaign somewhere
+> else entirely can be the same universe without sharing this world's history or geography.
+> `none` keeps it standalone. `python3 tools/world.py universe` lists the register.
 
 ## Campaigns set in this world
 
@@ -391,6 +1105,10 @@ a newcomer needs to know._
 ## What lives where
 
 - `CHRONICLE.md` — dated record of concluded events, append-only, one line of visibility each.
+- `HISTORY.md` — the living history: prose, shared by every ruleset, spans rather than dates,
+  the certainty of each account stated, and **no ruleset's numbers**.
+- `<system>/<campaign>.md` — the thorough narrative history of one campaign, read only by
+  campaigns of that ruleset, so it may name the rules.
 - `LEGENDS.md` — how those events are *remembered* in-world, distortions included.
 - `GAZETTEER.md` — places, regions, settlements and what can be bought in each.
 - `FACTIONS.md` — long-lived organisations, their standing and leadership.
@@ -419,6 +1137,7 @@ a newcomer needs to know._
   `python3 tools/world.py crossing` is the full statement.
 """,
     "CHRONICLE.md": CHRONICLE_HEADER,
+    "HISTORY.md": HISTORY_HEADER,
     "LEGENDS.md": """# Legends
 
 How the events in `CHRONICLE.md` are *told* in this world: exaggerated, misattributed,
@@ -682,6 +1401,16 @@ def cmd_link(args: argparse.Namespace) -> int:
               f"its own — declare one there so every campaign in the world shares a timeline")
     print("\nThe date gate is now live: when running this campaign, read world material dated at or")
     print(f"before its current in-world date and nothing later. `world.py as-of {args.world} <date>`.")
+    # The per-ruleset narrative folder, so there is somewhere for the thorough account to
+    # go from the first session rather than after someone remembers it exists.
+    _, made = ensure_system_folder(args.world, system)
+    print(f"  {'created' if made else 'using'} worlds/{args.world}/{system}/ for this ruleset's "
+          f"narrative histories")
+    npath = system_dir(args.world, system) / f"{args.campaign}.md"
+    if not npath.exists():
+        print(f"  write the campaign's own account with `python3 tools/world.py narrative "
+              f"--campaign {args.campaign}`")
+
     if already:
         print(f"\nThis world is now shared across rulesets: {', '.join(rules.short_of(x) for x in already)}"
               f" campaign(s) are already set here.")
@@ -696,7 +1425,7 @@ def cmd_link(args: argparse.Namespace) -> int:
 
 
 def cmd_as_of(args: argparse.Namespace) -> int:
-    cutoff = parse_date(args.date)
+    cutoff = parse_date(args.date, args.world)
     path, entries = read_chronicle(args.world)
     entries.sort(key=lambda e: e.date.key())
     visible, later, withheld = [], [], []
@@ -761,12 +1490,68 @@ def cmd_as_of(args: argparse.Namespace) -> int:
                 print(f"\n_{len(legends) - len(ok)} later legend(s) withheld._")
             print()
 
+    # The living history, gated the same way. Its chapters carry a span, and the END of the
+    # span is what the gate reads, so a chapter still running at the cutoff is withheld.
+    hpath, chapters = read_history(args.world)
+    if hpath.exists():
+        chapters.sort(key=lambda c: c.span_end.key())
+        shown = [c for c in chapters if c.span_end.key() <= cutoff.key()]
+        held = len(chapters) - len(shown)
+        print("## The living history at this date")
+        print()
+        if shown:
+            print(f"{len(shown)} chapter(s)"
+                  + (f"; {held} reaching later are withheld." if held else ".")
+                  + " Prose, shared by every ruleset, and imprecise on purpose.")
+            print()
+            for c in shown:
+                print(f"### {c.title}")
+                print()
+                print(f"- **Span:** {c.span} · **Certainty:** {c.certainty or 'unstated'}"
+                      + (f" · **Sources:** {c.sources}" if c.sources else ""))
+                print()
+                print(c.body)
+                print()
+        else:
+            print("_(no chapter of the history reaches this date yet"
+                  + (f"; {held} are withheld by the gate.)_" if held else ".)_"))
+            print()
+
+    # The thorough per-ruleset account, named rather than printed: it is long, and a
+    # campaign of the other ruleset should not read it at all.
+    sys_dirs = [d for d in sorted(world_dir(args.world).iterdir())
+                if d.is_dir() and rules.is_known(d.name)] if world_dir(args.world).is_dir() else []
+    if sys_dirs:
+        print("## Per-ruleset narrative histories")
+        print()
+        for d in sys_dirs:
+            files = sorted(f.stem for f in d.glob("*.md") if f.name != "README.md")
+            print(f"- `worlds/{args.world}/{d.name}/` — {rules.short_of(d.name)}: "
+                  + (", ".join(files) if files else "_(no campaign accounts yet)_"))
+        print()
+        print("Read only your own ruleset's folder. These are thorough and name the rules, so")
+        print("another game's is noise at best and a spoiler at worst — and they are NOT")
+        print("date-gated, so read a campaign's own file and not a later one's.")
+        print()
+
     print("## Undated setting material (read in full)")
     print()
     for name in ("GAZETTEER.md", "FACTIONS.md", "PANTHEON.md", "CALENDAR.md", "canon.md"):
         p = world_dir(args.world) / name
         print(f"- `worlds/{args.world}/{name}`" + ("" if p.exists() else "  _(absent)_"))
     print()
+    pos = world_position(args.world)
+    if pos.get("Universe") and pos["Universe"].lower() not in ("none", "—", "-"):
+        print(f"## Universe: {pos['Universe']}")
+        print()
+        print(f"- This world sits at: {pos.get('Position', '_(unstated)_')}")
+        if pos.get("Reachable from"):
+            print(f"- Reachable from: {pos['Reachable from']}")
+        print(f"- What is true across every world in it: `worlds/{UNIVERSE_FILE}`")
+        print()
+        print("Another world's history is **not** known here unless something carried it.")
+        print()
+
     print("Nothing under `worlds/` holds live state. Hit points, coins, inventory and conditions")
     print("live only in `campaigns/<slug>/state.json`.")
     return 0
@@ -1284,6 +2069,34 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("crossing", help="what crosses between the rulesets, and what does not")
     p.add_argument("--world", default=None)
 
+    p = sub.add_parser("history", help="the world's living history, date-gated")
+    p.add_argument("world")
+    p.add_argument("--date", default=None,
+                   help="read as of this in-world date; omit for the whole book (not gated)")
+
+    p = sub.add_parser("history-add", help="append a chapter to the living history")
+    p.add_argument("--world", required=True)
+    p.add_argument("--title", required=True)
+    p.add_argument("--span", required=True,
+                   help="the range it covers, e.g. '4726-4729 AR'. Its END is what the gate reads")
+    p.add_argument("--certainty", required=True, choices=list(CERTAINTIES))
+    p.add_argument("--body", required=True, help="the prose; as long as it earns")
+    p.add_argument("--sources", default=None, help="free text, e.g. 'the Cove's own records'")
+    p.add_argument("--campaign", default=None,
+                   help="a campaign that contributed; its ruleset is added automatically")
+    p.add_argument("--allow-numbers", action="store_true",
+                   help="permit a number that is an in-world quantity, not a rules value")
+    p.add_argument("--yes", action="store_true", help="skip the confirmation prompt")
+
+    p = sub.add_parser("narrative", help="the thorough per-ruleset narrative for one campaign")
+    p.add_argument("--campaign", required=True)
+    p.add_argument("--world", default=None)
+    p.add_argument("--force", action="store_true", help="overwrite an existing file")
+
+    p = sub.add_parser("universe", help="the layer above worlds: what is true across them")
+    p.add_argument("--init", action="store_true", help="write worlds/UNIVERSE.md")
+    p.add_argument("--force", action="store_true")
+
     p = sub.add_parser("convert", help="what a level in one ruleset means in the other")
     p.add_argument("--level", type=int, required=True)
     p.add_argument("--from", dest="source", required=True)
@@ -1304,6 +2117,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         "systems": cmd_systems,
         "crossing": cmd_crossing,
         "convert": cmd_convert,
+        "history": cmd_history,
+        "history-add": cmd_history_add,
+        "narrative": cmd_narrative,
+        "universe": cmd_universe,
     }
     try:
         return fns[args.cmd](args)

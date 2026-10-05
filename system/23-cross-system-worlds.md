@@ -8,6 +8,10 @@ the one place where getting it wrong is silent: a level written into a chronicle
 fail validation loudly the way a bad date does — it just misinforms a reader two campaigns later
 who has no way to know it was ever meaningless to them.
 
+The layer where the two games' campaigns each keep their *own* detailed history —
+`worlds/<world>/<system>/<campaign>.md` — is in `24-the-living-history.md`. It exists precisely
+so that the shared layer can stay imprecise without anyone losing the detail.
+
 ```
 python3 tools/world.py systems <world>          # which rulesets play here, and the calendar
 python3 tools/world.py crossing                 # what crosses, and what does not

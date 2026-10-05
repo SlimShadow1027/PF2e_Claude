@@ -43,8 +43,9 @@ the tools refuse most crossings and name the right command, but they cannot catc
    or is this framework's own convention rather than a published rule, it says so — do not launder
    either into confidence. A rules answer with no source cited might be wrong.
 6. **Nothing campaign-specific lives outside `campaigns/<slug>/`.** No state, sheets, checkpoints or
-   logs. The one exception is the optional `worlds/` layer (concluded facts only, written only at
-   promotion points).
+   logs. The one exception is the optional `worlds/` layer, which holds concluded facts only: the
+   dated chronicle, the shared prose history, the per-ruleset narrative accounts and the legends.
+   Four layers of different shapes — `system/24-the-living-history.md` says which to write in.
 7. **Every checkpoint is a git commit.** `tools/state.py checkpoint` makes it itself. If it fails,
    say so — never skip silently. Keep the commits noisy; do not squash.
 8. **The two rulesets' numbers never mix.** Not in a campaign, and not in a shared world. Events,
@@ -62,8 +63,10 @@ the tools refuse most crossings and name the right command, but they cannot catc
 2. `campaigns/<slug>/CHECKPOINT.md`, `state.json`, `RULES_DELTAS.md`, `PLAYER_PREFS.md`, `FLAGS.md`.
 3. `CANON.md`, `QUESTS.md`, `CLOCKS.md`, `npcs/ROSTER.md`.
    If `CAMPAIGN.md` names a world: `python3 tools/world.py as-of <world> "<current date>"` —
-   **and nothing dated later.** In a cross-system world, read the entries' `Scope:` line and
-   ignore any numbers that leaked in.
+   **and nothing dated later.** That one read gives the gated chronicle, the gated living history
+   and a pointer to this ruleset's narrative folder. In a cross-system world, read the entries'
+   `Scope:` line and ignore any numbers that leaked in. Read **your own** ruleset's
+   `worlds/<world>/<system>/` account, never the other's.
 4. The last one or two files in `sessions/`.
 5. Sheets of characters in play; bestiary entries for anything on screen.
 6. `python3 tools/validate.py --campaign <slug>`.
@@ -113,6 +116,7 @@ Where a row names two files, read the shared one **and** your ruleset's.
 | Planning an arc | `system/20-player-flags.md` | | |
 | A world shared across campaigns | `system/21-shared-worlds.md` | | |
 | **A world shared across rulesets** | `system/23-cross-system-worlds.md` | | |
+| **Writing the world's history** | `system/24-the-living-history.md` | | |
 | Opening or closing a session | `system/22-session-flow.md` | | |
 | The whole contract, in full | `system/00-gm-charter.md` | | |
 

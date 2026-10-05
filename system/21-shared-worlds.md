@@ -3,6 +3,12 @@
 **Optional, and off unless a campaign asks for it.** A campaign with `World: none` behaves exactly
 as it does otherwise; nothing about this layer becomes mandatory.
 
+> **The past lives in four layers, not one.** This document covers `CHRONICLE.md` and
+> `LEGENDS.md`. The shared prose history and the per-ruleset narrative accounts are in
+> `24-the-living-history.md`, which also has the table for deciding which layer a thing goes in.
+> The short version: the chronicle is dated and terse, the history is prose and imprecise, the
+> per-ruleset account is thorough and may name the rules, and the legends are wrong on purpose.
+>
 > **A world is system-neutral.** Campaigns running either ruleset can be set in the same world, and
 > the shared layer records what happened rather than anyone's numbers. Everything in this document
 > applies to both. **If a world has campaigns in both games, read
@@ -23,6 +29,8 @@ already been concluded.
 worlds/<world-slug>/
   README.md          # what this world is, which campaigns are set in it, and their date spans
   CHRONICLE.md       # the overarching record: dated significant events, each tagged with its campaign
+  HISTORY.md         # the living history: prose, spans rather than dates, certainty stated
+  <system>/          # one folder per ruleset, holding a thorough narrative per campaign
   characters/
     <name>.md        # one legacy record per character who has played in this world
   GAZETTEER.md       # places, regions, settlements, and their item levels
