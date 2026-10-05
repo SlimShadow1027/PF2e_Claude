@@ -4,7 +4,7 @@
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
 - Checkpoint: **001** mid-fight at the windlass well
-- Rendered at: 2026-10-05T19:46:17Z
+- Rendered at: 2026-10-05T19:47:00Z
 - Session: 1 (in progress)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Standard**
