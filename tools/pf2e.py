@@ -1582,5 +1582,61 @@ def dashboard_dire_tags(pc: dict[str, Any]) -> list[str]:
     return out
 
 
+
+
+# --------------------------------------------------------------------------------------
+# Validation — each ruleset checks its own resources
+# --------------------------------------------------------------------------------------
+
+
+def validate_character(pc: dict[str, Any], name: str, current_hp: int, max_hp: int) -> list[tuple[str, str]]:
+    """Check this ruleset's own resources on one character.
+
+    Returns (level, message) pairs where level is "error" or "warn". The shared checks —
+    HP integrality, HP above maximum, negative level — stay in validate.py; everything
+    here is Pathfinder-specific and would be vacuous on a D&D sheet.
+    """
+    out: list[tuple[str, str]] = []
+    for field in ("hero_points", "dying", "wounded", "doomed"):
+        v = pc.get(field, 0)
+        if isinstance(v, int) and v < 0:
+            out.append(("error", f"{name}: {field} is negative ({v})"))
+
+    cap = int(pc.get("hero_points_max", 3))
+    if int(pc.get("hero_points", 0)) > cap:
+        out.append(("error", f"{name}: {pc.get('hero_points')} Hero Points, above the cap of {cap}"))
+
+    limit = int(pc.get("dying_max", 4)) - int(pc.get("doomed", 0))
+    if int(pc.get("dying", 0)) >= limit and limit > 0:
+        out.append(("warn", f"{name}: dying {pc.get('dying')} is at or past the death threshold {limit}"))
+    if int(pc.get("dying", 0)) > 0 and current_hp > 0:
+        out.append(("error", f"{name}: dying {pc.get('dying')} while at {current_hp} HP — "
+                             f"dying ends at 1 HP or more"))
+
+    f = pc.get("focus") or {}
+    if int(f.get("current", 0)) > int(f.get("max", 0)):
+        out.append(("error", f"{name}: {f.get('current')} Focus Points, above the pool "
+                             f"maximum {f.get('max')}"))
+    if int(f.get("current", 0)) < 0:
+        out.append(("error", f"{name}: negative Focus Points"))
+
+    # Fields that belong to the other ruleset have no business on this sheet.
+    for stray in ("death_saves", "hit_dice", "exhaustion", "heroic_inspiration", "attunement"):
+        if pc.get(stray) is not None:
+            out.append(("error", f"{name}: has a `{stray}` field, which is a D&D 2024 concept — "
+                                 f"this campaign runs {SYSTEM_SHORT}"))
+    return out
+
+
+def validate_combatant(c: dict[str, Any], name: str) -> list[tuple[str, str]]:
+    out: list[tuple[str, str]] = []
+    if int(c.get("map_step", 0)) not in (0, 1, 2):
+        out.append(("error", f"combatant {name} has MAP step {c.get('map_step')}; it runs 0-2"))
+    left = c.get("actions_remaining")
+    if left is not None and not 0 <= int(left) <= 3:
+        out.append(("error", f"combatant {name} has {left} actions remaining; a turn has 3"))
+    return out
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

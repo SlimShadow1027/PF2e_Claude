@@ -11,6 +11,8 @@ the shared layer records what happened rather than anyone's numbers.
 |---|---|---|---|
 | third-beginnings | PF2e | 1 Abadius 4725 AR | active |
 
+| test_campaign | D&D 5.5e | 3 Gozran 4729 AR | active |
+
 ## What this world is
 
 _Two or three paragraphs: the shape of the place, what makes it itself, and the one thing

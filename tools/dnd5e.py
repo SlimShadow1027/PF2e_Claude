@@ -1789,5 +1789,104 @@ def dashboard_dire_tags(pc: dict[str, Any]) -> list[str]:
     return out
 
 
+
+
+# --------------------------------------------------------------------------------------
+# Validation — each ruleset checks its own resources
+# --------------------------------------------------------------------------------------
+
+
+def validate_character(pc: dict[str, Any], name: str, current_hp: int, max_hp: int) -> list[tuple[str, str]]:
+    """Check this ruleset's own resources on one character.
+
+    Returns (level, message) pairs where level is "error" or "warn". Before this existed
+    the validator ran Pathfinder's checks against a D&D sheet, where every field it looked
+    for is absent and every check therefore passed vacuously — so a 5.5e campaign got no
+    resource validation at all. These are the equivalents.
+    """
+    out: list[tuple[str, str]] = []
+
+    ds = pc.get("death_saves") or {}
+    succ, fail = int(ds.get("successes", 0)), int(ds.get("failures", 0))
+    for label, v in (("successes", succ), ("failures", fail)):
+        if v < 0:
+            out.append(("error", f"{name}: negative Death Save {label} ({v})"))
+        elif v > DEATH_SAVES_TO_RESOLVE:
+            out.append(("error", f"{name}: {v} Death Save {label}, above the {DEATH_SAVES_TO_RESOLVE} "
+                                 f"that resolve it"))
+    if (succ or fail or ds.get("stable")) and current_hp > 0 and not pc.get("dead"):
+        out.append(("error", f"{name}: Death Save counters set ({succ}/{fail}) while at "
+                             f"{current_hp} HP — they reset on regaining any Hit Points"))
+    if fail >= DEATH_SAVES_TO_RESOLVE and not pc.get("dead"):
+        out.append(("error", f"{name}: {fail} Death Save failures but not recorded dead"))
+    if succ >= DEATH_SAVES_TO_RESOLVE and not ds.get("stable") and current_hp == 0:
+        out.append(("warn", f"{name}: {succ} Death Save successes but not marked Stable"))
+
+    exh = pc.get("exhaustion", 0)
+    if isinstance(exh, int):
+        if exh < 0:
+            out.append(("error", f"{name}: negative Exhaustion ({exh})"))
+        elif exh > EXHAUSTION_MAX:
+            out.append(("error", f"{name}: Exhaustion {exh}, above {EXHAUSTION_MAX}, which is death"))
+        elif exh >= EXHAUSTION_MAX and not pc.get("dead"):
+            out.append(("error", f"{name}: Exhaustion {EXHAUSTION_MAX} but not recorded dead"))
+
+    hd = pc.get("hit_dice") or {}
+    hd_max, hd_used = int(hd.get("max", 0)), int(hd.get("used", 0))
+    if hd_used < 0:
+        out.append(("error", f"{name}: negative Hit Dice spent ({hd_used})"))
+    if hd_used > hd_max:
+        out.append(("error", f"{name}: {hd_used} Hit Dice spent of {hd_max}"))
+    if hd_max and hd_max != int(pc.get("level", hd_max)):
+        out.append(("warn", f"{name}: {hd_max} Hit Dice at level {pc.get('level')} — a character "
+                            f"has one per level unless a feature says otherwise"))
+    if hd.get("die") and int(hd["die"]) not in (6, 8, 10, 12):
+        out.append(("error", f"{name}: Hit Die is d{hd['die']}; the classes use d6, d8, d10 or d12"))
+
+    att = pc.get("attunement") or {}
+    items = att.get("items") or []
+    cap = int(att.get("max", ATTUNEMENT_LIMIT))
+    if len(items) > cap:
+        out.append(("error", f"{name}: attuned to {len(items)} items, above the limit of {cap} "
+                             f"({', '.join(items)})"))
+    if len(set(i.lower() for i in items)) != len(items):
+        out.append(("error", f"{name}: the same item is listed twice in attunement"))
+
+    prof = pc.get("proficiency_bonus")
+    if prof is not None and int(prof) != proficiency_bonus(int(pc.get("level", 1))):
+        out.append(("warn", f"{name}: Proficiency Bonus {prof:+d} recorded, but level "
+                            f"{pc.get('level')} gives {proficiency_bonus(int(pc.get('level', 1))):+d}"))
+
+    for lvl, e in (pc.get("spell_slots") or {}).items():
+        if str(lvl) not in [str(i) for i in range(1, 10)]:
+            out.append(("error", f"{name}: spell slot level {lvl!r} — D&D spell levels run 1 to 9"))
+
+    # Fields that belong to the other ruleset have no business on this sheet.
+    for stray in ("hero_points", "focus", "dying", "wounded", "doomed", "str_mod", "perception"):
+        if pc.get(stray) is not None:
+            out.append(("error", f"{name}: has a `{stray}` field, which is a Pathfinder concept — "
+                                 f"this campaign runs {SYSTEM_SHORT}"))
+    return out
+
+
+def validate_combatant(c: dict[str, Any], name: str) -> list[tuple[str, str]]:
+    out: list[tuple[str, str]] = []
+    if c.get("map_step") is not None:
+        out.append(("error", f"combatant {name} has a MAP step, which is a Pathfinder rule; "
+                             f"D&D 2024 has no multiple attack penalty"))
+    left = c.get("actions_remaining")
+    if left is not None and not 0 <= int(left) <= 1:
+        out.append(("error", f"combatant {name} has {left} actions remaining; a D&D turn has 1"))
+    speed, used = int(c.get("speed", 30) or 30), int(c.get("movement_used", 0))
+    if used < 0:
+        out.append(("error", f"combatant {name} has negative movement used ({used})"))
+    elif used > speed:
+        out.append(("error", f"combatant {name} has moved {used} ft of a {speed} ft Speed"))
+    bmax, bleft = int(c.get("bonus_action_max", 0) or 0), int(c.get("bonus_action_remaining", 0) or 0)
+    if bleft > bmax:
+        out.append(("error", f"combatant {name} has {bleft} Bonus Actions left of {bmax}"))
+    return out
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

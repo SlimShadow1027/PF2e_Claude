@@ -342,7 +342,8 @@ def render(slug: str) -> str:
         )
         a(f"<p><strong>Objective:</strong> {esc(enc.get('objective'))}{warn}</p>")
         a('<table><thead><tr><th></th><th>Combatant</th><th class="n">Init</th><th>HP</th>'
-          '<th>Actions</th><th class="n">MAP</th><th>Reaction</th><th>Position</th>'
+          + "".join(f'<th class="n">{esc(n)}</th>' for n, _ in mod.ENCOUNTER_COLUMNS[:-1])
+          + '<th>Reaction</th><th>Position</th>'
           "<th>Conditions</th></tr></thead><tbody>")
         idx = int(enc.get("turn_index", 0))
         for i, c in enumerate(enc.get("combatants") or []):
@@ -358,22 +359,21 @@ def render(slug: str) -> str:
                 except st.StateError:
                     pc = {}
                 cl = pc.get("conditions") or []
-                dying = int(pc.get("dying", 0))
+                flags = mod.dashboard_dire_tags(pc)
             else:
                 cl = c.get("conditions") or []
-                dying = int(c.get("dying") or 0)
+                flags = mod.dashboard_dire_tags(c)
             cs = ", ".join(x["name"] + (f" {x['value']}" if x.get("value") else "") for x in cl)
-            if dying:
-                cs = f"<strong>dying {dying}</strong>" + (f", {cs}" if cs else "")
-            left = int(c.get("actions_remaining", 3))
-            pips = "◆" * max(0, left) + "◇" * max(0, 3 - left)
+            if flags:
+                cs = ", ".join(f"<strong>{esc(t)}</strong>" for t in flags) + (f", {cs}" if cs else "")
+            cells = mod.combatant_action_cells(c)
             a(f'<tr class="{"turn" if i == idx else ""}">'
               f'<td>{"&rarr;" if i == idx else ""}</td><td>{esc(c.get("name"))}'
               + (f' <span class="muted">(squad {esc(c["squad"])})</span>' if c.get("squad") else "")
               + f'</td><td class="n">{esc(c.get("initiative") if c.get("initiative") is not None else "—")}</td>'
-              f"<td>{hp_text}</td><td>{pips}</td>"
-              f'<td class="n">{esc(c.get("map_step", 0))}</td>'
-              f'<td>{"available" if c.get("reaction_available") else esc("used: " + str(c.get("reaction_used_for") or ""))}</td>'
+              f"<td>{hp_text}</td>"
+              + "".join(f'<td class="n">{esc(v)}</td>' for v in cells[:-1])
+              + f'<td>{"available" if c.get("reaction_available") else esc("used: " + str(c.get("reaction_used_for") or ""))}</td>'
               f'<td>{esc(c.get("position") or "—")}</td><td>{cs or "—"}</td></tr>')
         a("</tbody></table>")
         if mode != "glass":

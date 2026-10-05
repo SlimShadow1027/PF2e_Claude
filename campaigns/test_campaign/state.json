@@ -4,7 +4,7 @@
   "campaign": "test_campaign",
   "title": "Test Campaign",
   "created_at": "2026-10-05T19:45:11Z",
-  "updated_at": "2026-10-05T19:47:00Z",
+  "updated_at": "2026-10-05T19:51:35Z",
   "transparency": "standard",
   "difficulty_preset": "Standard",
   "session_in_progress": true,
@@ -18,10 +18,10 @@
     "slug": "mid-fight-at-the-windlass-well"
   },
   "time": {
-    "calendar": "generic",
-    "year": 1,
-    "month": 1,
-    "day": 1,
+    "calendar": "golarion",
+    "year": 4729,
+    "month": 4,
+    "day": 3,
     "minute_of_day": 840,
     "elapsed_minutes": 360
   },

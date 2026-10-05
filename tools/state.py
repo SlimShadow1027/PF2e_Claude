@@ -2089,7 +2089,8 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("text", nargs="*")
 
     sub.add_parser("render", help="rewrite CHECKPOINT.md from state.json")
-    sub.add_parser("bulk", help="report Bulk carried against the limits")
+    sub.add_parser("carry", help="report what each carrier is carrying against their limits")
+    sub.add_parser("bulk", help="Pathfinder's name for `carry`")
 
     p = sub.add_parser("checkpoint")
     p.add_argument("message")
@@ -2463,8 +2464,8 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
         out.append("party stash:")
         out += ["  " + f"{it['name']} ×{it.get('qty', 1)}" for it in stash] or ["  (empty)"]
         out.append("")
-        for row in bulk_report(data):
-            out.append(f"{row['name']}: Bulk {row['bulk']:.1f} / encumbered after {row['encumbered_after']} / max {row['max']}")
+        for row in carry_report(data):
+            out.append(f"{row['name']}: {row['line']}")
         return out, False, data
 
     if cmd == "clock":
@@ -2598,17 +2599,21 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
         p = write_render(slug, data)
         return [f"rewrote {p.relative_to(repo_root())} from state.json"], False, None
 
-    if cmd == "bulk":
+    if cmd in ("carry", "bulk"):
+        # Each ruleset builds its own `line`, because the units and the thresholds differ:
+        # Bulk against an encumbered band and a maximum, against pounds and a single
+        # capacity. Reading row['bulk'] here used to raise KeyError on a D&D campaign.
         out = []
-        for row in bulk_report(data):
+        for row in carry_report(data):
             flag = " OVER THE LIMIT" if row["over_max"] else (" encumbered" if row["encumbered"] else "")
-            carried = f"{row['bulk']:.1f} Bulk"
-            if row["bulk_free"]:
-                carried += f" ({row['counted']:.1f} counted, {row['bulk_free']:.1f} free)"
-            limits = f"encumbered after {row['encumbered_after']} / max {row['max']}"
-            if row["bulk_bonus"]:
-                limits += f" (includes +{row['bulk_bonus']} from a feat)"
-            out.append(f"{row['name']}: {carried} / {limits}{flag}")
+            extra = ""
+            if row.get("bulk_free"):
+                extra = f" ({row['counted']:.1f} counted, {row['bulk_free']:.1f} free)"
+            if row.get("bulk_bonus"):
+                extra += f" (includes +{row['bulk_bonus']} from a feat)"
+            if row.get("strength_assumed"):
+                extra += " ⚠ Strength not recorded; assumed 10"
+            out.append(f"{row['name']}: {row['line']}{extra}{flag}")
         return out or ["no characters"], False, data
 
     if cmd == "checkpoint":

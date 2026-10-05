@@ -4,7 +4,7 @@
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
 - Checkpoint: **001** mid-fight at the windlass well
-- Rendered at: 2026-10-05T19:47:00Z
+- Rendered at: 2026-10-05T19:51:35Z
 - Session: 1 (in progress)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Standard**
@@ -13,7 +13,7 @@
 ## Scene
 
 - **Where:** Roderic's Cove — the salt-stair below the windlass
-- **When:** 1 Month 1 1, 14:00
+- **When:** 3 Gozran 4729 AR, 14:00
 
 Mirren is on the salt-stair, counting windlass turns.
 

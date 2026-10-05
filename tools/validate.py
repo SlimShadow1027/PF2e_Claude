@@ -83,6 +83,19 @@ def check_campaign(slug: str, r: Report) -> None:
         return
     r.ok("state.json parses")
 
+    # Which game this campaign runs decides which resources exist and so which checks
+    # mean anything. A campaign whose two files disagree is reported rather than resolved.
+    declared_state = rules.declared_in_state(slug)
+    declared_md = rules.declared_in_campaign_md(slug)
+    if declared_state and declared_md and declared_state != declared_md:
+        r.error(f"state.json says the ruleset is {declared_state!r} and CAMPAIGN.md says "
+                f"{declared_md!r} — state.json wins; fix CAMPAIGN.md or re-run "
+                f"`state.py --campaign {slug} migrate`")
+    system = st.system_of(data)
+    mod = rules.load(system)
+    slot_word = st.SLOT_WORD.get(system, "rank")
+    r.ok(f"ruleset: {mod.SYSTEM_NAME}")
+
     if data.get("schema_version") != st.SCHEMA_VERSION:
         r.warn(f"state.json schema_version is {data.get('schema_version')}, this tooling writes "
                f"{st.SCHEMA_VERSION}")
@@ -107,39 +120,38 @@ def check_campaign(slug: str, r: Report) -> None:
         if mx <= 0:
             r.warn(f"{name}: maximum HP is {mx} — set it before play")
 
-        for field in ("hero_points", "dying", "wounded", "doomed", "level"):
-            v = pc.get(field, 0)
-            if isinstance(v, int) and v < 0:
-                r.error(f"{name}: {field} is negative ({v})")
-        if int(pc.get("hero_points", 0)) > int(pc.get("hero_points_max", 3)):
-            r.error(f"{name}: {pc.get('hero_points')} Hero Points, above the cap of {pc.get('hero_points_max')}")
-        dying_limit = int(pc.get("dying_max", 4)) - int(pc.get("doomed", 0))
-        if int(pc.get("dying", 0)) >= dying_limit and dying_limit > 0:
-            r.warn(f"{name}: dying {pc.get('dying')} is at or past the death threshold {dying_limit}")
-        if int(pc.get("dying", 0)) > 0 and cur > 0:
-            r.error(f"{name}: dying {pc.get('dying')} while at {cur} HP — dying ends at 1 HP or more")
+        if isinstance(pc.get("level"), int) and pc["level"] < 0:
+            r.error(f"{name}: level is negative ({pc['level']})")
 
-        f = pc.get("focus") or {}
-        if int(f.get("current", 0)) > int(f.get("max", 0)):
-            r.error(f"{name}: {f.get('current')} Focus Points, above the pool maximum {f.get('max')}")
-        if int(f.get("current", 0)) < 0:
-            r.error(f"{name}: negative Focus Points")
+        # The resources are the ruleset's, so the ruleset checks them. Before this, the
+        # Pathfinder checks ran against every sheet — and on a D&D sheet every field they
+        # look for is absent, so each one passed vacuously and a 5.5e campaign got no
+        # resource validation at all.
+        for level, message in mod.validate_character(pc, name, cur, mx):
+            (r.error if level == "error" else r.warn)(message)
+
         for rank, e in (pc.get("spell_slots") or {}).items():
             if int(e.get("used", 0)) > int(e.get("max", 0)):
-                r.error(f"{name}: rank {rank} has {e.get('used')} of {e.get('max')} slots used")
+                r.error(f"{name}: {slot_word} {rank} has {e.get('used')} of {e.get('max')} slots used")
             if int(e.get("used", 0)) < 0:
-                r.error(f"{name}: rank {rank} has negative slots used")
+                r.error(f"{name}: {slot_word} {rank} has negative slots used")
 
+        # The condition lists belong to the ruleset, and the two games' lists overlap in
+        # name while differing in effect — so checking a D&D sheet against Pathfinder's
+        # list rejects `grappled` and accepts nothing it should.
         for c in pc.get("conditions") or []:
             cname = c.get("name")
-            if cname not in st.KNOWN_CONDITIONS:
-                r.error(f"{name}: {cname!r} is not a PF2e condition")
-            if cname in st.TRACKED_SEPARATELY:
+            if cname not in mod.KNOWN_CONDITIONS:
+                other = [sid for sid in rules.SYSTEMS
+                         if sid != system and cname in rules.load(sid).KNOWN_CONDITIONS]
+                extra = (f" It is a {rules.short_of(other[0])} condition." if other else "")
+                r.error(f"{name}: {cname!r} is not a {mod.SYSTEM_SHORT} condition.{extra}")
+            if cname in mod.TRACKED_SEPARATELY:
                 r.error(f"{name}: {cname} is in the conditions list as well as its own field — "
                         "two copies of the same number")
-            if cname in st.VALUED_CONDITIONS and not c.get("value"):
+            if cname in mod.VALUED_CONDITIONS and not c.get("value"):
                 r.error(f"{name}: {cname} carries no value but always takes one")
-            if cname in st.UNVALUED_CONDITIONS and c.get("value") is not None:
+            if cname in mod.UNVALUED_CONDITIONS and c.get("value") is not None:
                 r.error(f"{name}: {cname} carries a value but does not take one")
             dur = c.get("duration") or {}
             if dur.get("kind") not in st.DURATION_KINDS:
@@ -201,8 +213,8 @@ def check_campaign(slug: str, r: Report) -> None:
                 r.error(f"combatant {c.get('name')} is not a party member and has no HP block")
             if int(c.get("actions_remaining", 0)) < 0:
                 r.error(f"combatant {c.get('name')} has negative actions remaining")
-            if int(c.get("map_step", 0)) not in (0, 1, 2):
-                r.error(f"combatant {c.get('name')} has MAP step {c.get('map_step')}; it runs 0-2")
+            for level, message in mod.validate_combatant(c, str(c.get("name"))):
+                (r.error if level == "error" else r.warn)(message)
         idx = int(enc.get("turn_index", 0))
         if enc.get("combatants") and not 0 <= idx < len(enc["combatants"]):
             r.error(f"the live encounter's turn_index {idx} is outside its combatant list")
@@ -277,11 +289,44 @@ def check_campaign(slug: str, r: Report) -> None:
                 r.error(f"encounters/history.md entry {title!r} has no `Objective:` field")
 
     # -- the shared-world date gate -------------------------------------------
+    check_campaign_calendar(slug, data, r)
     check_campaign_world_link(slug, data, r)
 
 
 def _strip_timestamps(text: str) -> str:
     return re.sub(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", "<ts>", text)
+
+
+def check_campaign_calendar(slug: str, data: dict[str, Any], r: Report) -> None:
+    """A linked campaign must keep its world's calendar, or the dates mean nothing.
+
+    Found by the test_campaign run: `world.py link` wrote `Start date: 3 Gozran 4729 AR`
+    into CAMPAIGN.md while state.json still held the D&D default `generic` calendar, so
+    `status`, CHECKPOINT.md and the dashboard all showed "1 Month 1 1" for a campaign the
+    campaign file dated in Absalom Reckoning — two places holding disagreeing copies of
+    the same fact, which is the exact failure the framework exists to prevent.
+    """
+    world = rules.world_of_campaign(slug)
+    if not world:
+        return
+    in_state = str((data.get("time") or {}).get("calendar") or "").lower()
+    if not in_state:
+        r.error(f"state.json has no time.calendar, but this campaign is linked to worlds/{world}")
+        return
+    try:
+        declared = wd.world_calendar_name(world)
+    except Exception:  # a malformed CALENDAR.md is reported by check_world
+        return
+    if declared and in_state != declared:
+        r.error(
+            f"state.json uses the {in_state!r} calendar but worlds/{world} uses {declared!r} — "
+            f"the world owns the calendar, so dates in this campaign do not line up with the "
+            f"chronicle. Fix with `python3 tools/state.py --campaign {slug} "
+            f"set time.calendar {declared}` and set the year, month and day to match "
+            f"CAMPAIGN.md's start date."
+        )
+    elif declared:
+        r.ok(f"calendar matches worlds/{world}: {declared}")
 
 
 def check_campaign_world_link(slug: str, data: dict[str, Any], r: Report) -> None:
@@ -426,9 +471,17 @@ def check_world(wslug: str, r: Report) -> None:
         if len(cals) > 1:
             r.warn(f"worlds/{wslug}/CHRONICLE.md mixes eras ({', '.join(sorted(cals))}) — a shared "
                    f"world should keep one calendar so both campaigns read one timeline")
-        if not declared and not cals:
-            r.warn(f"worlds/{wslug}/CALENDAR.md declares no calendar block, and this world is read "
-                   f"by more than one ruleset — declare one so both read its dates identically")
+        # A world may either define its own calendar in a block or name a built-in in the
+        # `Calendar in use:` field. Either is a single written answer, which is all a shared
+        # timeline needs; only naming neither is a problem.
+        named = wd.world_calendar_name(wslug)
+        if not named:
+            r.warn(f"worlds/{wslug}/CALENDAR.md names no calendar and defines none, and this "
+                   f"world is read by more than one ruleset — name a built-in in "
+                   f"`Calendar in use:` or define one in the CALENDAR block, so every campaign "
+                   f"here shares a timeline")
+        else:
+            r.ok(f"calendar: {named}, shared by every campaign in this world")
 
     # The forbidden crossing: a ruleset's own numbers in the shared layer.
     for e in entries:

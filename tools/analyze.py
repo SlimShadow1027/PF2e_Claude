@@ -365,14 +365,37 @@ def play_block(records: list[dict[str, Any]]) -> list[str]:
             L.append("Not enough save rolls yet to call one of them the weak one.")
         L.append("")
 
-    # Multiple attack penalty steps
+    # Multiple attack penalty steps. Pathfinder only — D&D 2024 has no such penalty, so
+    # on those logs every map_step is None and this section would be a table of one row
+    # labelled "step 0", which reads like a finding and is not one.
+    log_systems = {r.get("system") or "pf2e" for r in records} or {"pf2e"}
+    one_system = next(iter(log_systems)) if len(log_systems) == 1 else None
+    if len(log_systems) > 1:
+        L.append("### ⚠ This log mixes rulesets")
+        L.append("")
+        L.append("Rolls from " + ", ".join(sorted(log_systems)) + " are in one campaign's log, "
+                 "which should not happen. Run `python3 tools/rules.py which <slug>` and "
+                 "`python3 tools/validate.py --campaign <slug>`. The sections below mix two "
+                 "games' numbers and should not be read as findings.")
+        L.append("")
+    show_map = one_system == "pf2e" or len(log_systems) > 1
     attacks = [r for r in checks if r.get("map_step") is not None or r.get("kind") == "check"]
     by_map: dict[int, list[dict[str, Any]]] = defaultdict(list)
     for r in attacks:
         step = int(r.get("map_step") or 0)
         if re.search(r"strike|attack|slam|claw|bite|jaws|shot", str(r.get("label") or ""), re.IGNORECASE):
             by_map[step].append(r)
-    if by_map:
+    if by_map and not show_map:
+        hits = [r for rs in by_map.values() for r in rs]
+        rate = sum(1 for r in hits if (r.get("degree_index") or 0) >= 1) / len(hits)
+        L.append("### Attack routines")
+        L.append("")
+        L.append(f"- {len(hits)} attack roll(s), {rate:.1%} hit.")
+        L.append("- No penalty-step breakdown: D&D 2024 has no multiple attack penalty, so there "
+                 "are no steps to compare. Extra attacks come from the Attack action and the "
+                 "Extra Attack feature, at full bonus.")
+        L.append("")
+    elif by_map:
         L.append("### Attack routines by multiple-attack-penalty step")
         L.append("")
         L.append("| MAP step | n | Hit rate | s.e. | Crit rate |")
@@ -399,6 +422,7 @@ def play_block(records: list[dict[str, Any]]) -> list[str]:
         L.append(f"- {len(crits)} of them critical ({len(crits) / len(dmg):.1%}).")
         L.append("")
 
+    # Pathfinder's dying track. A D&D log has none of these and gets the Death Save block.
     recoveries = [r for r in records if r.get("kind") == "recovery"]
     if recoveries:
         L.append("### Dying and recovery")
@@ -412,17 +436,47 @@ def play_block(records: list[dict[str, Any]]) -> list[str]:
         L.append(f"- {succ} succeeded, {len(recoveries) - succ} did not.")
         L.append("")
 
+    # Death Saving Throws are D&D's equivalent of the dying track above, and they do leave
+    # dice behind, so they get the same treatment rather than being invisible in the audit.
+    deaths = [r for r in records if r.get("kind") == "death-save"
+              or "death-save" in (r.get("tags") or [])]
+    if deaths:
+        L.append("### Death Saving Throws")
+        L.append("")
+        succ = sum(1 for r in deaths if (r.get("extra") or {}).get("successes_incurred"))
+        twenties = sum(1 for r in deaths if r.get("natural") == 20)
+        ones = sum(1 for r in deaths if r.get("natural") == 1)
+        L.append(f"- {len(deaths)} Death Saving Throw(s): {succ} succeeded, "
+                 f"{len(deaths) - succ} failed.")
+        if twenties:
+            L.append(f"- {twenties} natural 20(s), each of which restored 1 Hit Point outright.")
+        if ones:
+            L.append(f"- {ones} natural 1(s), each counting as two failures.")
+        resolved = [r for r in deaths if (r.get("extra") or {}).get("resolution") in ("dead", "stable")]
+        if resolved:
+            dead = sum(1 for r in resolved if (r.get("extra") or {}).get("resolution") == "dead")
+            L.append(f"- {len(resolved)} reached a resolution: {dead} death(s), "
+                     f"{len(resolved) - dead} stabilised.")
+        L.append("- The save takes no ability modifier, so this is as close to a raw d20 sample "
+                 "as the log holds — worth comparing against the fairness block above.")
+        L.append("")
+
+    reroll_name = {"pf2e": "Hero Points", "dnd5e": "Heroic Inspiration"}.get(one_system or "pf2e",
+                                                                             "Rerolls")
     hero = [r for r in records if "fortune" in (r.get("tags") or []) or r.get("kind") == "fortune"]
-    L.append("### Hero Points")
+    L.append(f"### {reroll_name}")
     L.append("")
     if hero:
-        L.append(f"- {len(hero)} fortune reroll(s) in the log. What each was spent on:")
+        L.append(f"- {len(hero)} keep-the-higher reroll(s) in the log. What each was spent on:")
         for r in hero[:20]:
             L.append(f"  - seq {r.get('seq')}: {r.get('label') or '(unlabelled)'} "
                      f"→ {r.get('degree') or r.get('total')}")
     else:
-        L.append("- No fortune rerolls in the log yet. Hero Point *spends* are recorded in "
+        L.append(f"- No such rerolls in the log yet. {reroll_name} *spends* are recorded in "
                  "`state.json` and the checkpoint commits; only rerolls leave a die behind.")
+    if one_system == "dnd5e":
+        L.append("- Note that Heroic Inspiration rerolls **any** die and the new roll stands, so "
+                 "a spend may show as an ordinary reroll rather than as two kept dice.")
     L.append("")
 
     oracle = [r for r in records if "oracle" in (r.get("tags") or [])]

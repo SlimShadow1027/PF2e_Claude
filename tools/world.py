@@ -638,10 +638,48 @@ def cmd_link(args: argparse.Namespace) -> int:
             rtext = rtext.replace("## What this world is", row + "\n\n## What this world is", 1)
     atomic_write(rpath, rtext)
 
+    # The world owns the calendar, so adopt it into state.json as well as writing the
+    # date into CAMPAIGN.md. Writing only the Markdown left the two disagreeing, and
+    # nothing caught it: the campaign file said 3 Gozran 4729 AR while every rendered
+    # date said "1 Month 1 1".
+    adopted = None
+    cal = world_calendar_name(args.world)
+    if cal:
+        spath = campaign_dir(args.campaign) / "state.json"
+        if spath.exists():
+            try:
+                data = json.loads(spath.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                data = None
+            if isinstance(data, dict):
+                t = dict(data.get("time") or {})
+                if str(t.get("calendar", "")).lower() != cal:
+                    before = t.get("calendar")
+                    t["calendar"] = cal
+                    # Seat the clock on the start date so the two files agree from the
+                    # first render rather than from the first `advance-time`.
+                    d = parse_date(args.start_date, args.world)
+                    t["year"], t["month"], t["day"] = d.year, d.month, d.day
+                    t.setdefault("minute_of_day", 8 * 60)
+                    t.setdefault("elapsed_minutes", 0)
+                    data["time"] = t
+                    atomic_write(spath, json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+                    adopted = (before, cal, rules.format_time(t))
+
     print(f"{args.campaign} ({rules.short_of(system)}) → worlds/{args.world}, "
           f"starting {args.start_date}")
     print(f"  wrote World:, Era: and Start date: into {cpath.relative_to(repo_root())}")
     print(f"  added a row to {rpath.relative_to(repo_root())}")
+    if adopted:
+        before, cal, rendered = adopted
+        print(f"  adopted the world's calendar into state.json: {before!r} → {cal!r}, "
+              f"clock set to {rendered}")
+        print(f"  (re-render with `python3 tools/state.py --campaign {args.campaign} render`)")
+    elif cal:
+        print(f"  calendar already {cal!r}, matching the world")
+    else:
+        print(f"  ⚠ worlds/{args.world}/CALENDAR.md names no calendar, so this campaign keeps "
+              f"its own — declare one there so every campaign in the world shares a timeline")
     print("\nThe date gate is now live: when running this campaign, read world material dated at or")
     print(f"before its current in-world date and nothing later. `world.py as-of {args.world} <date>`.")
     if already:
@@ -1068,6 +1106,31 @@ returns a band and a level *range*, never a single number, and lists what it ref
 - Record the scope band. A later campaign in the other ruleset reads that to know whether
   this was a village matter or a kingdom one.
 """
+
+
+def world_calendar_name(world: str) -> str | None:
+    """The calendar this world uses: its own CALENDAR block, else the name it declares.
+
+    A world owns its calendar, so every campaign in it has to share one. This is the
+    single place that answers "which one", for `link` to adopt and for `validate.py` to
+    check against.
+    """
+    own = rules.load_world_calendar(world)
+    if own:
+        return own
+    path = world_dir(world) / "CALENDAR.md"
+    if not path.exists():
+        return None
+    raw = pf2e.read_field(path.read_text(encoding="utf-8"), "Calendar in use")
+    if not raw:
+        return None
+    rules.load_all()
+    # The field is prose ("golarion (Absalom Reckoning)"), so match the registered names
+    # longest-first — otherwise a name that is a prefix of another would win wrongly.
+    for name in sorted(rules.CALENDARS, key=len, reverse=True):
+        if name in raw.lower():
+            return name
+    return None
 
 
 def cmd_crossing(args: argparse.Namespace) -> int:
