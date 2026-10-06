@@ -16,6 +16,12 @@ python3 tools/pf2e.py encounter --party-level <N> --party-size <M> --add "ghoul:
 # D&D 2024 — note the budget is per character x party size, and there is no multiplier
 python3 tools/dnd5e.py encounter --party-level <N> --party-size <M> --threat moderate
 python3 tools/dnd5e.py encounter --party-level <N> --party-size <M> --cr 1 1/4 1/4
+
+# D&D 4e — one budget column, not three; difficulty comes from the encounter's LEVEL.
+# The budget table is owner-supplied, so check it is filled before relying on this.
+python3 tools/dnd4e.py tables
+python3 tools/dnd4e.py encounter --party-level <N> --party-size <M>
+python3 tools/dnd4e.py encounter --party-level <N> --party-size <M> --monster 1x4:soldier 3x2:minion
 ```
 
 Read the solo warning the tool prints. The budget prices creatures by level; it does not price
@@ -47,10 +53,12 @@ At the end: XP, treasure, persisting conditions, the `encounters/history.md` ent
 `Objective:` field and an honest `Difficulty landed as:` line, `encounter end`, and a checkpoint.
 
 Read the encounter-building doc for **this campaign's ruleset** —
-`system/07-encounter-building.md` for Pathfinder, `system/dnd5e/07-encounter-building.md` for
+`system/07-encounter-building.md` for Pathfinder, `system/dnd5e/07-encounter-building.md` or
+`system/dnd4e/07-encounter-building.md` for
 D&D — plus the shared `system/17-encounter-objectives.md`. `python3 tools/rules.py which <slug>`
 if you are unsure which.
 
 The combat runner differs too: `system/06-encounter-runner.md` against
-`system/dnd5e/06-encounter-runner.md`. Three actions and a multiple attack penalty versus one
+`system/dnd5e/06-encounter-runner.md` or `system/dnd4e/06-encounter-runner.md`. Three actions
+and a multiple attack penalty versus one
 action, a Bonus Action and a movement allowance in feet.

@@ -57,6 +57,24 @@ LIVE_STATE_MARKERS = (
     "checkpoint:",
 )
 
+#: `Position:` is both a live-state word (a combatant's square) and the name of the field a
+#: world README uses to say where it sits in the universe. The declaration block is exempt,
+#: so the framework's own template does not trip its own validator. Matched on the whole
+#: line, so a stray "position: B3" elsewhere in a world file is still caught.
+WORLD_DECLARATION_FIELDS = ("universe", "position", "era", "reachable from")
+
+
+def is_world_declaration_line(line: str) -> bool:
+    """True for a line like `- **Position:** a plane` in a world's own README."""
+    text = line.strip().lstrip("-*").strip()
+    text = text.lstrip("*").strip()
+    for field in WORLD_DECLARATION_FIELDS:
+        if text.lower().startswith(field):
+            after = text[len(field):].lstrip("*").lstrip()
+            if after.startswith(":"):
+                return True
+    return False
+
 
 class WorldError(Exception):
     pass
@@ -66,7 +84,7 @@ class WorldError(Exception):
 # Dates
 # --------------------------------------------------------------------------------------
 
-# Month names from every registered calendar, because a world is read by both rulesets and
+# Month names from every registered calendar, because a world is read by every ruleset and
 # its dates have to parse the same way for each. A world that defines its own calendar in
 # CALENDAR.md registers it here too — see `month_lookup`.
 #: The year an undated entry sorts at. LEGENDS.md may hold entries with no date — the
@@ -153,7 +171,7 @@ def parse_date(text: str, world: str | None = None) -> WorldDate:
     entry never accidentally sorts after a dated one inside the same year.
 
     Pass `world` and the world's own calendar is consulted too, so a shared world may use a
-    calendar neither ruleset ships with and both rulesets will still read its dates.
+    calendar no ruleset ships with and every ruleset will still read its dates.
     """
     lookup = month_lookup(world) if world else _MONTH_LOOKUP
     raw = str(text).strip()
@@ -1114,7 +1132,7 @@ a newcomer needs to know._
 - `FACTIONS.md` — long-lived organisations, their standing and leadership.
 - `PANTHEON.md` — gods and cosmology.
 - `CALENDAR.md` — the calendar, eras, and the current present day. The calendar belongs to
-  the world, not to a ruleset, so both games read the same dates.
+  the world, not to a ruleset, so every game reads the same dates.
 - `canon.md` — world-level established facts, append-only.
 - `characters/` — one legacy record per character who has played here.
 - `npcs/` — NPCs who persist beyond one campaign.
@@ -1131,7 +1149,7 @@ a newcomer needs to know._
 - **Reads are date-gated.** A campaign reads world material dated at or before its own
   current in-world date and nothing later.
 - **No ruleset's numbers go in here.** Events, people, places, debts and reputations
-  cross between the two games; levels, DCs, stat blocks and treasure do not. Chronicle
+  cross between the games; levels, DCs, stat blocks and treasure do not. Chronicle
   entries carry a `System:` line saying which game wrote them and a `Scope:` line saying
   how far the event reached — scope is the only translation this framework will make.
   `python3 tools/world.py crossing` is the full statement.
@@ -1155,7 +1173,7 @@ entries. A legend with no date is treated as always current.
     "GAZETTEER.md": """# Gazetteer
 
 Places, regions and settlements. A market is the one place where a world fact and a
-ruleset's numbers meet, so each settlement carries **both games' answers** and a campaign
+ruleset's numbers meet, so each settlement carries **one column per ruleset** and a campaign
 reads its own column.
 
 | Place | Type | Region | Item level (PF2e) | Buys up to (D&D) | One line |
@@ -1518,7 +1536,7 @@ def cmd_as_of(args: argparse.Namespace) -> int:
             print()
 
     # The thorough per-ruleset account, named rather than printed: it is long, and a
-    # campaign of the other ruleset should not read it at all.
+    # campaign of another ruleset should not read it at all.
     sys_dirs = [d for d in sorted(world_dir(args.world).iterdir())
                 if d.is_dir() and rules.is_known(d.name)] if world_dir(args.world).is_dir() else []
     if sys_dirs:
@@ -1726,7 +1744,7 @@ story. Record both and note the gap._
 |---|---|
 | | |
 
-## If they appear in a campaign running the other ruleset
+## If they appear in a campaign running another ruleset
 
 **Do not convert the numbers.** The level above means something in {system_short} and nothing
 in the other game; `Scope reached` is the field that crosses. Rebuild them from this page —
@@ -1774,7 +1792,7 @@ def cmd_legacy(args: argparse.Namespace) -> int:
                     f"a range, not a conversion. See `python3 tools/world.py crossing`.")
     else:
         crossing = ("Record the scope band once their level is known; it is the only field that "
-                    "means anything to the other ruleset.")
+                    "means anything to another ruleset.")
     atomic_write(
         path,
         LEGACY_TEMPLATE.format(
@@ -1796,7 +1814,7 @@ def cmd_legacy(args: argparse.Namespace) -> int:
     print("Fill in the deeds, the reputation, and the gap between them. Set availability deliberately —")
     print("the GM honours it in every other campaign in this world.")
     if band:
-        print(f"\nScope '{band}' is what crosses to the other ruleset; the level does not. "
+        print(f"\nScope '{band}' is what crosses to another ruleset; the level does not. "
               f"See `world.py crossing`.")
     return 0
 
@@ -1888,7 +1906,7 @@ returns a band and a level *range*, never a single number, and lists what it ref
 - Name the obstacle's nature, not its numbers. "A warded door nobody local could open"
   rather than "a DC 28 Thievery check".
 - Name what an item *is* and *did*, not its bonus.
-- Record the scope band. A later campaign in the other ruleset reads that to know whether
+- Record the scope band. A later campaign in another ruleset reads that to know whether
   this was a village matter or a kingdom one.
 """
 
@@ -1942,7 +1960,7 @@ def cmd_systems(args: argparse.Namespace) -> int:
     print()
     if not systems:
         print("No campaign is linked to this world yet. It is system-neutral and stays that way;")
-        print("linking a campaign of either ruleset is all it takes.")
+        print("linking a campaign of any supported ruleset is all it takes.")
     else:
         for sid in systems:
             camps = []
@@ -1969,7 +1987,7 @@ def cmd_systems(args: argparse.Namespace) -> int:
         c = rules.CALENDARS[cal]
         print(f"Calendar: **{cal}** — {len(c['months'])} months, "
               f"{sum(d for _, d in c['months'])} days a year, era {c['era'] or '(none)'}")
-        print("  Defined by this world in CALENDAR.md, so both rulesets read its dates identically.")
+        print("  Defined by this world in CALENDAR.md, so every ruleset reads its dates identically.")
         return 0
 
     # No block of its own. The prose field still says which built-in it uses, and naming

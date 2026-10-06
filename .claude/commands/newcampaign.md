@@ -8,7 +8,8 @@ Create a new campaign. Three steps, and the last is the long one.
 **1. Ask which game**, before anything else — this is Block 0 of intake and everything after it
 depends on the answer:
 
-> Pathfinder Second Edition (Remaster), or Dungeons & Dragons 2024 ("5.5e")?
+> Pathfinder Second Edition (Remaster), Dungeons & Dragons 2024 ("5.5e"), or Dungeons &
+> Dragons 4th Edition?
 
 If they have no preference, two questions usually settle it: *"spend time building the character,
 or start playing in five minutes?"* and *"do you want the dice to tell you how well, or just
@@ -18,7 +19,7 @@ mechanical difference worth mentioning up front at a table of one character.
 **2. Scaffold the folder** so there is somewhere to write answers as they arrive:
 
 ```
-python3 tools/new_campaign.py "$ARGUMENTS" --system <pf2e|dnd5e>
+python3 tools/new_campaign.py "$ARGUMENTS" --system <pf2e|dnd5e|dnd4e>
 ```
 
 `--system` is **required**. Nothing defaults, because a campaign scaffolded under the wrong

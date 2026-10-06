@@ -27,29 +27,57 @@ at 0 HP — comes out of a different document depending on the answer.
    that climb with level, a deep character build with a lot of dials.
 2. **Dungeons & Dragons 2024 ("5.5e")** — pass or fail, one action a turn, DCs that do not climb,
    a lighter build and a shorter turn.
+3. **Dungeons & Dragons 4th Edition** — pass or fail, thirty levels in three tiers, a turn of
+   three differently sized actions, four static defences the attacker rolls against, powers
+   instead of slots, and a healing-surge pool that is the real attrition clock. The most
+   tactical and the most grid-dependent of the three. **Read the warning below before
+   offering it.**
 
 If the player has no preference, two questions usually settle it:
 
 - *"Do you want to spend time building the character, or start playing in five minutes?"* The
-  Pathfinder build has more decisions in it; the D&D one can be done in a quick-build pass.
+  Pathfinder build has more decisions in it; the D&D 2024 one can be done in a quick-build pass.
 - *"Do you want the dice to tell you how well, or just whether?"* Degrees of success are the thing
   Pathfinder players miss most in other games, and the thing new players find heaviest.
 
-And one thing worth saying plainly: **at a table of one character, D&D's encounter budget is
-linear and nothing degenerates, while Pathfinder's published Low budget collapses to zero XP and
-needs a workaround.** That is not a reason to pick one, but it is the kind of thing a player would
-rather hear now than in session four.
+And one thing worth saying plainly: **at a table of one character, both D&D editions' encounter
+budgets are linear and nothing degenerates, while Pathfinder's published Low budget collapses to
+zero XP and needs a workaround.** That is not a reason to pick one, but it is the kind of thing a
+player would rather hear now than in session four. For 4e specifically, add that the budget being
+linear does **not** make the fight fair — see `system/dnd4e/03-difficulty-and-solo-levers.md`.
 
-> Record in `CAMPAIGN.md`: `System:` — `pf2e` or `dnd5e`. Then
+> ### If the answer is 4e, say this before going on
+>
+> **4e is not supported on the same footing as the other two, and the player should hear why
+> now rather than discover it mid-session.** D&D 4e has no open-content release, so this
+> framework ships 4e **procedure** and **no 4e numbers at all**. The advancement table, the
+> encounter budget, the monster XP values, the DC-by-level table, the treasure parcels and the
+> magic-item prices are all **yours to transcribe** into `tools/dnd4e_tables.json` from books
+> you own, and until you do, those tools refuse to compute and name the book.
+>
+> So the honest offer is: *"I can run 4e, and you will need the Player's Handbook and the
+> Dungeon Master's Guide for it. A heroic-tier campaign needs three tables filled in before
+> session one — about twenty minutes of typing. Everything else works immediately."*
+>
+> If that is a problem, say so and offer one of the other two rather than starting and
+> stalling. `system/dnd4e/README.md` is the full statement.
+
+> Record in `CAMPAIGN.md`: `System:` — `pf2e`, `dnd5e` or `dnd4e`. Then
 > `python3 tools/state.py --campaign <slug> init --system <that>`, which **refuses to run without
 > it**, because a state written under the wrong ruleset carries the wrong fields from its first
 > line.
 >
-> **Then read that ruleset's documents and not the other's.** `CLAUDE.md` has the file map. A
+> **Then read that ruleset's documents and not another's.** `CLAUDE.md` has the file map. A
 > campaign can be changed over later, but it means rebuilding the characters — say so if asked.
+>
+> For a 4e campaign, also run `python3 tools/dnd4e.py tables` and agree with the player which
+> tables get filled before session one.
 
-If the campaign is going into a world where a campaign of the *other* ruleset already lives, that
-is supported and good; read `23-cross-system-worlds.md` before Block 4.
+If the campaign is going into a world where a campaign of *another* ruleset already lives, that
+is supported and good; read `23-cross-system-worlds.md` before Block 4. A 4e campaign is a
+particularly good candidate for the `worlds/UNIVERSE.md` layer rather than a shared world —
+same universe, different plane or age — because its level scale and its numbers are further from
+the other two than they are from each other.
 
 ---
 

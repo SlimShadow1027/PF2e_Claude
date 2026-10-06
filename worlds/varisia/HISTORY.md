@@ -41,6 +41,14 @@ Append with `python3 tools/world.py history add`, read with
 
 Nobody in Roderic's Cove will tell you who cut the first stair down into the sump, and the three people who claim to know do not agree. The oldest version has it that the stair was not cut at all but found, already going down, by salvagers who were looking for something else and did not like what they found. What is agreed: there was a door at the bottom, it was sealed from the far side, and for a long lifetime the Cove made its living by not opening it. The windlass came later. So did the admission fee.
 
+## The ways down, and the people who stopped coming back
+
+- **Span:** before 4700 AR
+- **Certainty:** disputed
+- **Sources:** the Cove's own telling; three unrelated parish records
+
+Varisia has places where the ground is thinner than it should be. The Cove will tell you about the sump; so will a dozen other settlements about their own equivalent, and the lists do not overlap, which is why this is disputed rather than attested — either it is a widespread feature of the country or it is a widespread story about one. What the parish records agree on is the shape of the loss. People go down, in ones and twos, usually by accident, and the ones who go far enough down do not come back up. Not bodies either. Three unrelated parishes, a hundred miles apart, kept the same kind of ledger for the same kind of absence, and none of them wrote a theory next to it. The common wisdom is that the deep places simply kill people, which is true of most deep places and is not an explanation of the ledgers. The uncommon wisdom, held by people who sell things to the credulous, is that there is somewhere down there, that it is not a cave, and that the reason nobody returns is not that they died.
+
 ## The water began to fall
 
 - **Span:** 4726-4729 AR
@@ -48,4 +56,3 @@ Nobody in Roderic's Cove will tell you who cut the first stair down into the sum
 - **Sources:** third-beginnings (PF2e)
 
 The waterline in the sump started dropping, and the Cove noticed late. Vessa Tarn says she reported it twice before anyone wrote it down; the harbour office says once. Either way the stone below the line came up dry, which it should not have been, and the queue at the windlass doubled inside a season. By the end of the span the Cove had stopped pretending the sump was a sump.
-

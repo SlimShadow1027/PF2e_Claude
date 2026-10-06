@@ -21,8 +21,13 @@
 >
 > `World:` names a folder under `worlds/`, or `none` for a standalone campaign. A campaign
 > with `World: none` behaves exactly as it does today — nothing about the shared layer
-> becomes mandatory. See `system/21-shared-worlds.md`. A world may hold campaigns of **both**
-> rulesets; see `system/23-cross-system-worlds.md`.
+> becomes mandatory. See `system/21-shared-worlds.md`. A world may hold campaigns of **any
+> of the three** rulesets; see `system/23-cross-system-worlds.md`.
+>
+> If `System:` is **dnd4e**, read `system/dnd4e/README.md` before the first session and run
+> `python3 tools/dnd4e.py tables`. 4e has no open-content release, so this framework ships
+> no 4e numbers at all and the maths refuses to compute until you fill them in
+> `tools/dnd4e_tables.json` from your own books.
 
 ## The pitch
 

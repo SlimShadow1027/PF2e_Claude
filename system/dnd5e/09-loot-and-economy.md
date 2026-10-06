@@ -9,7 +9,7 @@
 > it goes beyond them. `python3 tools/dnd5e.py sources` counts those separately from the quoted
 > rules. If you own the 2024 DMG, use its tables and record the deviation in `RULES_DELTAS.md`.
 >
-> This is the largest gap between the two rulesets in this framework. The Pathfinder side has an
+> This is the largest gap between this ruleset and Pathfinder in this framework. The Pathfinder side has an
 > exact per-level allotment with item counts and item levels; here there is a floor and a pacing
 > judgement. Say so to the player if treasure pacing comes up.
 

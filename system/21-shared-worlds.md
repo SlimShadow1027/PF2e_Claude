@@ -9,12 +9,16 @@ as it does otherwise; nothing about this layer becomes mandatory.
 > The short version: the chronicle is dated and terse, the history is prose and imprecise, the
 > per-ruleset account is thorough and may name the rules, and the legends are wrong on purpose.
 >
-> **A world is system-neutral.** Campaigns running either ruleset can be set in the same world, and
-> the shared layer records what happened rather than anyone's numbers. Everything in this document
-> applies to both. **If a world has campaigns in both games, read
+> **A world is system-neutral.** Campaigns running any of the three rulesets can be set in the
+> same world, and the shared layer records what happened rather than anyone's numbers. Everything
+> in this document applies to all of them. **If a world has campaigns in more than one game, read
 > `23-cross-system-worlds.md` as well** — it covers the one thing this document does not: what
 > crosses between the rulesets and what must not. In short: events, people, places, debts and
 > reputations cross; levels, DCs, stat blocks and treasure do not.
+>
+> Above worlds there is one more optional layer: `worlds/UNIVERSE.md`, for places that share a
+> cosmology and nothing local. A campaign on another plane or in another age can be the same
+> universe without sharing a faction, a river or a year. `python3 tools/world.py universe`.
 
 A shared world lets a second campaign happen in the aftermath of the first: the same continent,
 the same factions, and your previous character remembered as a name people invoke. **Campaign

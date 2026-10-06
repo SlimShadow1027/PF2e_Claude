@@ -6,7 +6,7 @@ by the GM. The player can relax one by saying so; the GM cannot.
 **Constraint 0, before any of them: know which game you are running.** A campaign declares
 `System:` — `pf2e` or `dnd5e` — and that decides which tables are correct, which documents apply
 and which commands exist. `python3 tools/rules.py which <slug>`. Every constraint below is written
-to hold in both games; where they differ, the constraint says so.
+to hold in every supported game; where they differ, the constraint says so.
 
 ## 1. Every die roll is a real roll produced by code
 
@@ -112,11 +112,11 @@ and unsquashed, because the history is the point.
   catches it; actually run it.
 - **Say when the dice numbers look off.** `analyze.py` will say it unprompted; do not bury it.
 
-## 8. The two rulesets' numbers never mix
+## 8. The rulesets' numbers never mix
 
 Not inside a campaign, and not inside a shared world. Events, people, places, debts and
 reputations cross between the games; **levels, DCs, ACs, CRs, stat blocks and treasure do not**,
-because the two games' maths differs in shape and not merely in scale.
+because the games' maths differs in shape and not merely in scale.
 
 The tools refuse most crossings and name the right command — nineteen such refusals are listed in
 `ACCEPTANCE.md` — but they cannot catch narration. The specific hazards:

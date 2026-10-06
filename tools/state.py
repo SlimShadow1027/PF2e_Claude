@@ -355,24 +355,31 @@ def apply_damage(data: dict[str, Any], who: str, amount: int, *, from_crit: bool
     if not was_down and hp["current"] > 0:
         return notes
 
-    # What 0 HP means is the single biggest difference between the two games, so the
+    # What 0 HP means is the single biggest difference between the three games, so the
     # ruleset decides and this function only carries the instruction out.
-    #   PF2e  dying 1 (or 2 from a crit), plus the wounded value; dying 4 is death.
-    #   D&D   unconscious and making Death Saves; massive damage kills outright.
+    #   PF2e   dying 1 (or 2 from a crit), plus the wounded value; dying 4 is death.
+    #   D&D 24 unconscious and making Death Saves; massive damage kills outright.
+    #   D&D 4e dying with hit points that keep falling below zero; death at negative
+    #          bloodied, or at the third death saving throw failure.
     instruction = rs(data).on_zero_hp(
         pc, from_crit=from_crit, overflow=overflow, already_down=was_down)
     notes += instruction.get("notes", [])
     action = instruction.get("action")
+    # A ruleset may need a field of its own written back — 4e's below-zero total is the
+    # only one so far, and it has to survive between one hit and the next.
+    for field, value in (instruction.get("set") or {}).items():
+        pc[field] = value
 
     if action == "dying":
         notes += set_dying(data, key, int(instruction["value"]),
                            reason=instruction.get("reason", ""))
     elif action == "down":
-        pc.setdefault("death_saves", {"successes": 0, "failures": 0, "stable": False})
-        pc["death_saves"]["stable"] = False
+        pc.setdefault("death_saves", dict(blank_death_saves(data)))
+        if "stable" in pc["death_saves"]:
+            pc["death_saves"]["stable"] = False
     elif action == "death-save-failures":
-        notes += death_save_record(data, key, failures=int(instruction["value"]),
-                                   reason=instruction.get("reason", ""))
+        notes += record_death_save_failures(data, key, int(instruction["value"]),
+                                            reason=instruction.get("reason", ""))
     elif action == "dead":
         notes += mark_dead(data, key, reason=instruction.get("reason", ""))
     return notes
@@ -395,13 +402,15 @@ def apply_healing(data: dict[str, Any], who: str, amount: int) -> list[str]:
     notes.append(f"{pc['name']} HP {hp['current']}/{hp['max']}")
     if hp["current"] >= 1:
         instruction = rs(data).on_healed_from_zero(pc)
+        for field, value in (instruction.get("set") or {}).items():
+            pc[field] = value
         if instruction.get("action") == "dying":
             notes += set_dying(data, key, int(instruction["value"]),
                                reason=instruction.get("reason", ""))
         elif instruction.get("action") == "reset-death-saves":
-            pc["death_saves"] = {"successes": 0, "failures": 0, "stable": False}
-            notes.append(f"{pc['name']}: Death Save counters reset "
-                         f"({instruction.get('reason', 'regained Hit Points')})")
+            pc["death_saves"] = dict(blank_death_saves(data))
+            notes.append(f"{pc['name']}: {death_save_word(data)} counters reset "
+                         f"({instruction.get('reason', 'regained hit points')})")
     return notes
 
 
@@ -421,6 +430,29 @@ def set_hp(data: dict[str, Any], who: str, current: int | None, maximum: int | N
         raise StateError("temporary HP cannot be negative")
     hp["current"], hp["max"], hp["temp"] = new_cur, new_max, new_temp
     return [f"{pc['name']} HP {new_cur}/{new_max}" + (f" (+{new_temp} temp)" if new_temp else "")]
+
+
+def blank_death_saves(data: dict[str, Any]) -> dict[str, Any]:
+    """The death-save record this ruleset keeps, or `{}` for one that keeps none.
+
+    PF2e counts dying instead, D&D 2024 counts three successes and three failures with a
+    Stable flag, and 4e counts failures only. Reading the shape off the ruleset keeps
+    `state.json` from carrying fields the game at the table does not have.
+    """
+    return dict(getattr(rs(data), "BLANK_DEATH_SAVES", {}) or {})
+
+
+def death_save_word(data: dict[str, Any]) -> str:
+    return "Death Saving Throw" if system_of(data) == "dnd5e" else "death saving throw"
+
+
+def record_death_save_failures(data: dict[str, Any], who: str, n: int,
+                               *, reason: str = "") -> list[str]:
+    """Add death-save failures, through whichever ruleset's clock this campaign runs."""
+    sid = system_of(data)
+    if sid == "dnd4e":
+        return death_save_record_4e(data, who, failures=n, reason=reason)
+    return death_save_record(data, who, failures=n, reason=reason)
 
 
 def set_dying(data: dict[str, Any], who: str, value: int, *, reason: str = "") -> list[str]:
@@ -626,6 +658,261 @@ def attune(data: dict[str, Any], who: str, item: str, *, remove: bool = False) -
     return [f"{pc['name']} attunes to {item} → {len(items)}/{cap}"]
 
 
+# --------------------------------------------------------------------------------------
+# D&D 4e: healing surges, Second Wind, action points, powers, and a death clock of its own
+# --------------------------------------------------------------------------------------
+
+
+def _need_4e(data: dict[str, Any], what: str) -> None:
+    if system_of(data) != "dnd4e":
+        raise _wrong_game(data, what, "dnd4e")
+
+
+def death_save_record_4e(data: dict[str, Any], who: str, *, failures: int = 0,
+                         natural: int | None = None, reason: str = "") -> list[str]:
+    """Record a 4e death saving throw: failures only, three of them being death.
+
+    4e's clock counts in one direction. A roll of 10 or more is not a success that
+    accumulates — it is simply not a failure — so there is no success counter to keep. A
+    natural 20 lets the character spend a healing surge and act, which this reports and
+    `surge spend` then applies.
+    """
+    _need_4e(data, "death saves")
+    import dnd4e
+
+    key, pc = find_character(data, who)
+    if failures < 0:
+        raise StateError("death saving throw failures do not go down; `heal` clears them")
+    if int((pc.get("hp") or {}).get("current", 1)) > 0 and not int(pc.get("hp_below_zero", 0)):
+        raise StateError(
+            f"{pc['name']} is on {pc['hp']['current']} hit points and is not dying — "
+            f"a 4e death saving throw is made only while dying"
+        )
+    ds = pc.setdefault("death_saves", {"failures": 0})
+    ds.pop("successes", None)   # in case a sheet was migrated from the 2024 shape
+    ds.pop("stable", None)
+    ds["failures"] = int(ds.get("failures", 0)) + int(failures)
+    notes = [f"{pc['name']}: death saving throw failures {ds['failures']}/"
+             f"{dnd4e.DEATH_SAVE_FAILURES}" + (f" ({reason})" if reason else "")]
+    if natural == dnd4e.DEATH_SAVE_SURGE_ON:
+        notes.append(
+            f"⚠ natural 20 — {pc['name']} may spend a healing surge and act; "
+            f"apply it with `surge spend {key}`"
+        )
+    if ds["failures"] >= dnd4e.DEATH_SAVE_FAILURES:
+        notes += mark_dead(data, key, reason=f"{dnd4e.DEATH_SAVE_FAILURES} death saving "
+                                             f"throw failures in one encounter")
+    return notes
+
+
+def death_save_roll_4e(data: dict[str, Any], who: str, slug: str) -> list[str]:
+    """Roll a real 4e death saving throw through roll.py and write down what it said."""
+    _need_4e(data, "death saves")
+    key, pc = find_character(data, who)
+    ds = pc.get("death_saves") or {}
+    res = subprocess.run(
+        [sys.executable, str(Path(__file__).resolve().parent / "roll.py"), "death-save",
+         "--campaign", slug, "--system", "dnd4e",
+         "--actor", pc.get("name", key),
+         "--failures", str(int(ds.get("failures", 0))),
+         "--json", "--quiet"],
+        capture_output=True, text=True,
+    )
+    if res.returncode != 0:
+        raise StateError(f"the death saving throw could not be rolled: {res.stderr.strip()}")
+    rolled = json.loads(res.stdout)[0]
+    out = [rolled["line"]]
+    natural = rolled.get("natural")
+    incurred = int((rolled.get("extra") or {}).get("failures_incurred", 0))
+    out += death_save_record_4e(data, key, failures=incurred, natural=natural,
+                                reason="rolled death saving throw")
+    return out
+
+
+def hp_below_set(data: dict[str, Any], who: str, value: int) -> list[str]:
+    """Set how far below zero a dying 4e character's hit points have fallen.
+
+    `damage` keeps this itself; the command exists for the case where the GM is correcting
+    the number rather than applying a hit.
+    """
+    _need_4e(data, "below-zero hit points")
+    import dnd4e
+
+    key, pc = find_character(data, who)
+    if value < 0:
+        raise StateError("pass the depth as a positive number: `hp-below <who> 7` means −7 "
+                         "hit points")
+    hp_max = int((pc.get("hp") or {}).get("max", 0))
+    pc["hp_below_zero"] = int(value)
+    threshold = dnd4e.death_threshold(hp_max)
+    notes = [f"{pc['name']}: {-int(value)} hit points (death threshold {threshold})"]
+    if hp_max and value and -value <= threshold:
+        notes += mark_dead(data, key, reason=f"{-value} hit points, at or past the death "
+                                             f"threshold of {threshold}")
+    return notes
+
+
+def surge_spend(data: dict[str, Any], who: str, n: int = 1) -> list[str]:
+    """Spend healing surges. The hit points they restore are applied with `heal`."""
+    _need_4e(data, "healing surges")
+    import dnd4e
+
+    _, pc = find_character(data, who)
+    surges = pc.setdefault("healing_surges", {"max": 0, "used": 0})
+    left = int(surges.get("max", 0)) - int(surges.get("used", 0))
+    if n > left:
+        raise StateError(f"{pc['name']} has {left} healing surge(s) left and cannot spend {n}")
+    surges["used"] = int(surges.get("used", 0)) + int(n)
+    hp_max = int((pc.get("hp") or {}).get("max", 0))
+    value = dnd4e.surge_value(hp_max)
+    notes = [
+        f"{pc['name']} spends {n} healing surge(s) → "
+        f"{int(surges['max']) - int(surges['used'])}/{surges['max']} left"
+    ]
+    if hp_max:
+        notes.append(
+            f"A surge is worth a quarter of maximum hit points: {value} each, {value * n} in "
+            f"all. Apply it with `heal {who} {value * n}`."
+        )
+    else:
+        notes.append("No maximum hit points recorded, so the surge value is unknown — set "
+                     "maximum HP first.")
+    return notes
+
+
+def surge_set(data: dict[str, Any], who: str, maximum: int | None, used: int | None) -> list[str]:
+    _need_4e(data, "healing surges")
+    _, pc = find_character(data, who)
+    surges = pc.setdefault("healing_surges", {"max": 0, "used": 0})
+    if maximum is not None:
+        if maximum < 0:
+            raise StateError("a healing surge pool cannot be negative")
+        surges["max"] = int(maximum)
+    if used is not None:
+        if used < 0:
+            raise StateError("surges used cannot be negative")
+        if used > int(surges.get("max", 0)):
+            raise StateError(f"{used} used is more than the pool of {surges.get('max', 0)}")
+        surges["used"] = int(used)
+    return [f"{pc['name']}: healing surges {int(surges['max']) - int(surges['used'])}/"
+            f"{surges['max']} left"]
+
+
+def second_wind(data: dict[str, Any], who: str, *, reset: bool = False) -> list[str]:
+    """Use Second Wind, which spends a surge and grants a defence bonus for the round."""
+    _need_4e(data, "Second Wind")
+    import dnd4e
+
+    key, pc = find_character(data, who)
+    if reset:
+        pc["second_wind_used"] = False
+        return [f"{pc['name']}: Second Wind available again"]
+    if pc.get("second_wind_used"):
+        raise StateError(f"{pc['name']} has already used Second Wind this encounter — "
+                         f"a short rest restores it")
+    surges = pc.setdefault("healing_surges", {"max": 0, "used": 0})
+    if int(surges.get("max", 0)) - int(surges.get("used", 0)) < 1:
+        raise StateError(f"{pc['name']} has no healing surge left to spend on Second Wind")
+    pc["second_wind_used"] = True
+    notes = surge_spend(data, key, 1)
+    notes.insert(0, f"{pc['name']} uses Second Wind")
+    notes.append("Second Wind also grants a bonus to all defences until the start of their "
+                 "next turn — record it as a condition if it matters.")
+    return notes
+
+
+def action_point_spend(data: dict[str, Any], who: str, n: int = 1) -> list[str]:
+    """Spend an action point for an extra action. One per encounter, by the rules."""
+    _need_4e(data, "action points")
+    _, pc = find_character(data, who)
+    have = int(pc.get("action_points", 0))
+    if have < n:
+        raise StateError(f"{pc['name']} has {have} action point(s) and cannot spend {n}")
+    pc["action_points"] = have - n
+    return [f"{pc['name']} spends {n} action point → {pc['action_points']} left",
+            "Only one action point may be spent per encounter, and spending one gives an "
+            "extra action this turn."]
+
+
+def action_point_set(data: dict[str, Any], who: str, value: int) -> list[str]:
+    _need_4e(data, "action points")
+    _, pc = find_character(data, who)
+    if value < 0:
+        raise StateError("action points cannot be negative")
+    pc["action_points"] = int(value)
+    return [f"{pc['name']}: {value} action point(s)"]
+
+
+def milestone_reach(data: dict[str, Any], who: str | None = None) -> list[str]:
+    """Record a milestone, which grants an action point.
+
+    A milestone is every second encounter completed without an extended rest, so it is a
+    party-wide event unless a single character is named.
+    """
+    _need_4e(data, "milestones")
+    pcs = data.get("pcs") or {}
+    if who:
+        key, pc = find_character(data, who)
+        targets = {key: pc}
+    else:
+        targets = pcs
+    if not targets:
+        raise StateError("no characters to credit a milestone to")
+    notes = []
+    for _, pc in targets.items():
+        pc["milestones"] = int(pc.get("milestones", 0)) + 1
+        pc["action_points"] = int(pc.get("action_points", 0)) + 1
+        notes.append(f"{pc['name']}: milestone {pc['milestones']} → "
+                     f"{pc['action_points']} action point(s)")
+    return notes
+
+
+def power_use(data: dict[str, Any], who: str, name: str, *, release: bool = False) -> list[str]:
+    """Mark an encounter or daily power used, or hand it back.
+
+    At-will powers are not tracked — they have no expenditure to record.
+    """
+    _need_4e(data, "powers")
+    _, pc = find_character(data, who)
+    powers = pc.setdefault("powers", {"encounter": [], "daily": []})
+    for bucket in ("encounter", "daily"):
+        for entry in powers.get(bucket) or []:
+            if str(entry.get("name", "")).lower() == name.lower():
+                if release:
+                    entry["used"] = False
+                    return [f"{pc['name']}: {entry['name']} ({bucket}) is available again"]
+                if entry.get("used"):
+                    raise StateError(
+                        f"{pc['name']} has already used {entry['name']} ({bucket}) — "
+                        + ("a short rest restores it" if bucket == "encounter"
+                           else "an extended rest restores it")
+                    )
+                entry["used"] = True
+                return [f"{pc['name']} uses {entry['name']} ({bucket} power)"]
+    known = ", ".join(
+        f"{e.get('name')} [{b}]" for b in ("encounter", "daily") for e in (powers.get(b) or [])
+    ) or "none recorded"
+    raise StateError(
+        f"{pc['name']} has no encounter or daily power called {name!r} recorded "
+        f"(has: {known}) — add it with `power add`. At-will powers are not tracked."
+    )
+
+
+def power_add(data: dict[str, Any], who: str, name: str, bucket: str) -> list[str]:
+    _need_4e(data, "powers")
+    _, pc = find_character(data, who)
+    kind = str(bucket).strip().lower()
+    if kind not in ("encounter", "daily"):
+        raise StateError("a tracked power is either 'encounter' or 'daily'; at-will powers "
+                         "have nothing to track")
+    powers = pc.setdefault("powers", {"encounter": [], "daily": []})
+    entries = powers.setdefault(kind, [])
+    if any(str(e.get("name", "")).lower() == name.lower() for e in entries):
+        raise StateError(f"{pc['name']} already has {name!r} recorded as a {kind} power")
+    entries.append({"name": name, "used": False})
+    return [f"{pc['name']}: {name} recorded as a {kind} power"]
+
+
 def parse_duration(spec: str | None) -> dict[str, Any]:
     if not spec:
         return {"kind": "until-removed", "remaining": None}
@@ -684,7 +971,7 @@ def condition_add(
         if c["name"] == slug:
             if slug in valued:
                 # The stronger value wins; a condition does not stack with itself in
-                # either ruleset (PF2e condition entries; SRD 5.2 "Condition").
+                # the rulesets that have one (PF2e condition entries; SRD 5.2 "Condition").
                 if value is not None and value > int(c.get("value") or 0):
                     c["value"] = value
                     c["duration"] = dur
@@ -802,16 +1089,78 @@ def focus_refocus(data: dict[str, Any], who: str, n: int = 1) -> list[str]:
     return [f"{pc['name']} Refocuses → {f['current']}/{cap}"]
 
 
-#: Pathfinder calls a spell's tier its rank; D&D calls it its level. Same slot, same
-#: storage, different word at the table — so the word follows the campaign.
+def xp_threshold_note(data: dict[str, Any], total: int) -> list[str]:
+    """Whether this XP total has reached a level, in whichever way this ruleset counts.
+
+    The three disagree completely. Pathfinder is a flat amount per level with a counter that
+    **resets**; both D&D editions keep a **cumulative** total that never resets and read it
+    against a threshold table. Hardcoding either one would mis-advise two of the three
+    campaigns, so this asks the ruleset.
+    """
+    mod = rs(data)
+    level = int((data.get("party") or {}).get("level", 1) or 1)
+    doc = ("system/dnd5e/11-leveling-up.md" if mod.SYSTEM_ID == "dnd5e"
+           else "system/dnd4e/11-leveling-up.md" if mod.SYSTEM_ID == "dnd4e"
+           else "system/11-leveling-up.md")
+    try:
+        cumulative = bool(mod.xp_is_cumulative())
+    except Exception:
+        return []
+    try:
+        need = mod.xp_to_level(level + 1)
+    except Exception as exc:
+        # 4e's advancement table is owner-supplied, so "I cannot tell you" is a real answer
+        # and is more use than a threshold borrowed from another ruleset.
+        return [f"(cannot say whether that is a level-up: {exc})"]
+    if need is None:
+        return [f"level {level} is the top of this ruleset's scale; no further threshold"]
+    if cumulative:
+        if int(total) < int(need):
+            return [f"next level at {need:,} cumulative ({int(need) - int(total):,} to go)"]
+        # A big award can cross more than one threshold, so say which level the total
+        # actually reaches rather than only the next one up, and quote THAT level's threshold.
+        reached, at = level + 1, int(need)
+        try:
+            best = int(mod.level_for_xp(int(total)))
+            if best > reached:
+                reached, at = best, int(mod.xp_to_level(best) or need)
+        except Exception:
+            pass
+        more = (f" — {reached - level} levels at once, so re-derive every number at each step"
+                if reached > level + 1 else "")
+        return [f"⚠ {int(total):,} cumulative XP reaches level {reached} (its threshold is "
+                f"{at:,}){more} ({doc}). The total is cumulative and is NOT reset."]
+    if int(total) >= int(need):
+        return [f"⚠ {need:,} XP reached — level up ({doc}), then subtract {need:,}"]
+    return [f"next level at {need:,} ({int(need) - int(total):,} to go); "
+            f"the counter resets on levelling"]
+
+
+#: Pathfinder calls a spell's tier its rank; D&D 2024 calls it its level. Same slot, same
+#: storage, different word at the table — so the word follows the campaign. 4e has no slots
+#: at all, which `require_slots` refuses rather than letting the word stand in for the rule.
 SLOT_WORD = {"pf2e": "rank", "dnd5e": "level"}
+
+#: Rulesets with no spell-slot machinery. 4e's powers are at-will, encounter or daily, and
+#: a slot table would be a different game's structure wearing 4e's names.
+NO_SPELL_SLOTS = ("dnd4e",)
 
 
 def slot_word(data: dict[str, Any]) -> str:
     return SLOT_WORD.get(system_of(data), "rank")
 
 
+def require_slots(data: dict[str, Any]) -> None:
+    sid = system_of(data)
+    if sid in NO_SPELL_SLOTS:
+        hint = _hint(data, "slots")
+        raise StateError(
+            f"{rules.short_of(sid)} has no spell slots." + (f" {hint}" if hint else "")
+        )
+
+
 def slots_use(data: dict[str, Any], who: str, rank: str, n: int = 1) -> list[str]:
+    require_slots(data)
     _, pc = find_character(data, who)
     word = slot_word(data)
     slots = pc.setdefault("spell_slots", {})
@@ -947,8 +1296,15 @@ def item_container(data: dict[str, Any], owner: str | None) -> tuple[str, list[d
     return pc["name"], pc.setdefault("items", [])
 
 
-#: How each ruleset measures what an item weighs, and which field holds it.
-ENCUMBRANCE_FIELD = {"pf2e": ("bulk", "--bulk", "Bulk"), "dnd5e": ("weight", "--weight", "pounds")}
+#: How each ruleset measures what an item weighs, and which field holds it. Both D&D
+#: editions count pounds; only Pathfinder uses Bulk. The field is what `state.json` stores,
+#: so an item recorded under one ruleset reads correctly under the other D&D edition and
+#: is refused by name under Pathfinder.
+ENCUMBRANCE_FIELD = {
+    "pf2e": ("bulk", "--bulk", "Bulk"),
+    "dnd5e": ("weight", "--weight", "pounds"),
+    "dnd4e": ("weight", "--weight", "pounds"),
+}
 
 
 def item_add(
@@ -972,13 +1328,15 @@ def item_add(
         raise StateError(f"cannot add {qty} of an item")
     sid = system_of(data)
     field, flag, unit = ENCUMBRANCE_FIELD[sid]
-    other = [v for k, v in ENCUMBRANCE_FIELD.items() if k != sid][0]
     given = {"bulk": bulk, "weight": weight}
-    if given[other[0]] is not None:
-        raise StateError(
-            f"{other[1]} measures {other[2]}, which is the other ruleset's unit — this is a "
-            f"{rules.short_of(sid)} campaign, so use {flag} ({unit})"
-        )
+    # Any unit that is not this ruleset's own is refused by name. Keyed on the field rather
+    # than the ruleset, so the two D&D editions sharing pounds is not a special case.
+    for other_field, other_flag, other_unit in ENCUMBRANCE_FIELD.values():
+        if other_field != field and given.get(other_field) is not None:
+            raise StateError(
+                f"{other_flag} measures {other_unit}, which is another ruleset's unit — this "
+                f"is a {rules.short_of(sid)} campaign, so use {flag} ({unit})"
+            )
     value = given[field]
     where, items = item_container(data, owner)
     for it in items:
@@ -1144,9 +1502,13 @@ def blank_combatant(name: str, side: str, system: str | None = None, **kw: Any) 
     if mod.SYSTEM_ID == "pf2e":
         c["dying"] = 0 if not kw.get("ref") else None
     else:
-        c["base_speed"] = c.get("speed", 30)
-        c["death_saves"] = (None if kw.get("ref")
-                            else {"successes": 0, "failures": 0, "stable": False})
+        # Both D&D editions keep a death clock on the combatant; its shape comes from the
+        # ruleset, because 4e counts failures only and 2024 counts successes and Stable too.
+        c["base_speed"] = c.get("speed", 30 if mod.SYSTEM_ID == "dnd5e" else 6)
+        blank = dict(getattr(mod, "BLANK_DEATH_SAVES", {}) or {})
+        c["death_saves"] = None if kw.get("ref") else blank
+        if mod.SYSTEM_ID == "dnd4e" and not kw.get("ref"):
+            c["hp_below_zero"] = 0
     return c
 
 
@@ -1242,13 +1604,14 @@ def encounter_next(data: dict[str, Any]) -> list[str]:
     e["turn_index"] = idx
     nxt = live[idx]
     mod = rs(data)
-    if mod.SYSTEM_ID == "dnd5e":
-        # Dash raised the Speed for one turn only; put it back before the reset.
+    if mod.SYSTEM_ID in ("dnd5e", "dnd4e"):
+        # Dash (2024) and a run action (4e) raised the Speed for one turn only; put it back
+        # before the reset.
         if nxt.get("base_speed") is not None:
             nxt["speed"] = nxt["base_speed"]
     have = mod.reset_turn(nxt)
     notes.append(f"{nxt['name']}'s turn (round {e['round']}), {have}")
-    if mod.SYSTEM_ID == "dnd5e" and int((combatant_hp(data, nxt) or {}).get("current", 1)) == 0:
+    if mod.SYSTEM_ID in ("dnd5e", "dnd4e") and int((combatant_hp(data, nxt) or {}).get("current", 1)) == 0:
         ref = nxt.get("ref")
         target = None
         if ref:
@@ -1359,7 +1722,6 @@ def encounter_status(data: dict[str, Any]) -> list[str]:
         hp = combatant_hp(data, c)
         hp_s = f"{hp['current']}/{hp['max']}" if hp else "?"
         conds: list[dict[str, Any]] = []
-        dying = 0
         flags: list[str] = []
         if c.get("ref"):
             try:
@@ -1369,15 +1731,13 @@ def encounter_status(data: dict[str, Any]) -> list[str]:
                 conds = [{"name": cs_note}]
             else:
                 conds = pc.get("conditions", [])
-                dying = int(pc.get("dying", 0))
                 flags = mod.tracked_condition_flags(pc)
         else:
             conds = c.get("conditions") or []
-            dying = int(c.get("dying") or 0)
             flags = mod.tracked_condition_flags(c)
+        # The separately-tracked fields come only from the ruleset's own flags. Rendering
+        # `dying` again here printed it twice in the column the GM reads every turn.
         cs = ", ".join(f"{x['name']}{' ' + str(x['value']) if x.get('value') else ''}" for x in conds)
-        if dying:
-            cs = f"dying {dying}" + (f", {cs}" if cs else "")
         cs = ", ".join(flags + ([cs] if cs else []))
         mark = "→" if i == int(e.get("turn_index", 0)) else " "
         cells = "".join(f"{v:<{w}} " for v, (_, w) in zip(mod.combatant_action_cells(c), cols))
@@ -1783,7 +2143,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--title", default="")
     p.add_argument("--transparency", default="standard")
     p.add_argument("--system", default=None,
-                   help="ruleset: pf2e or dnd5e (also '5.5e'). Required for a new campaign.")
+                   help="ruleset: pf2e, dnd5e (also '5.5e') or dnd4e (also '4e'). "
+                        "Required for a new campaign.")
     p.add_argument("--force", action="store_true")
 
     sub.add_parser("migrate", help="bring state.json forward to the current schema and re-render")
@@ -1812,6 +2173,10 @@ def build_parser() -> argparse.ArgumentParser:
     g.add_argument("--initiative", type=int, default=None, help="initiative modifier")
     g.add_argument("--hit-die", type=int, default=None, choices=[6, 8, 10, 12])
     g.add_argument("--size", default=None)
+    g = p.add_argument_group("D&D 4e")
+    g.add_argument("--surges", type=int, default=None,
+                   help="the class's healing surges per day, from its class entry; the "
+                        "Constitution modifier is added to it here")
 
     p = sub.add_parser("damage")
     p.add_argument("who")
@@ -1887,16 +2252,21 @@ def build_parser() -> argparse.ArgumentParser:
     r = q.add_parser("reset")
     r.add_argument("who")
 
-    p = sub.add_parser("death-save", help="D&D: record Death Saving Throw results")
+    p = sub.add_parser("death-save",
+                       help="both D&D editions: record death saving throw results "
+                            "(2024 counts successes too; 4e counts failures only)")
     q = p.add_subparsers(dest="sub", required=True)
     r = q.add_parser("record", help="add successes and/or failures from rolled saves")
     r.add_argument("who")
-    r.add_argument("--successes", type=int, default=0)
+    r.add_argument("--successes", type=int, default=0,
+                   help="D&D 2024 only; 4e has no success counter")
     r.add_argument("--failures", type=int, default=0)
+    r.add_argument("--natural", type=int, default=None,
+                   help="4e: the natural die result, so a 20 reports the healing surge")
     r.add_argument("--reason", default="")
-    r = q.add_parser("roll", help="roll a real Death Saving Throw and apply it")
+    r = q.add_parser("roll", help="roll a real death saving throw and apply it")
     r.add_argument("who")
-    r = q.add_parser("stabilise", help="a successful DC 10 Wisdom (Medicine) check")
+    r = q.add_parser("stabilise", help="D&D 2024: a successful DC 10 Wisdom (Medicine) check")
     r.add_argument("who")
     r = q.add_parser("reset", help="clear the counters (healing does this automatically)")
     r.add_argument("who")
@@ -1949,12 +2319,69 @@ def build_parser() -> argparse.ArgumentParser:
     r = q.add_parser("list")
     r.add_argument("who")
 
-    p = sub.add_parser("short-rest", help="D&D: a one-hour Short Rest")
+    p = sub.add_parser("surge", help="D&D 4e: healing surges, the per-day healing pool")
+    q = p.add_subparsers(dest="sub", required=True)
+    r = q.add_parser("spend")
+    r.add_argument("who")
+    r.add_argument("n", nargs="?", type=int, default=1)
+    r = q.add_parser("set")
+    r.add_argument("who")
+    r.add_argument("--max", dest="maximum", type=int, default=None)
+    r.add_argument("--used", type=int, default=None)
+    r = q.add_parser("list")
+    r.add_argument("who", nargs="?", default=None)
+
+    p = sub.add_parser("second-wind",
+                       help="D&D 4e: spend a surge and take a defence bonus, once per encounter")
+    q = p.add_subparsers(dest="sub", required=True)
+    r = q.add_parser("use")
+    r.add_argument("who")
+    r = q.add_parser("reset", help="a short rest restores it; this is the manual form")
+    r.add_argument("who")
+
+    p = sub.add_parser("action-point", help="D&D 4e: action points, one spend per encounter")
+    q = p.add_subparsers(dest="sub", required=True)
+    r = q.add_parser("spend")
+    r.add_argument("who")
+    r.add_argument("n", nargs="?", type=int, default=1)
+    r = q.add_parser("set")
+    r.add_argument("who")
+    r.add_argument("value", type=int)
+
+    p = sub.add_parser("milestone",
+                       help="D&D 4e: every second encounter without an extended rest, which "
+                            "grants an action point")
+    p.add_argument("--who", default=None, help="one character, or omit for the whole party")
+
+    p = sub.add_parser("power", help="D&D 4e: encounter and daily powers (at-will is not tracked)")
+    q = p.add_subparsers(dest="sub", required=True)
+    r = q.add_parser("add")
+    r.add_argument("who")
+    r.add_argument("name")
+    r.add_argument("bucket", choices=["encounter", "daily"])
+    r = q.add_parser("use")
+    r.add_argument("who")
+    r.add_argument("name")
+    r = q.add_parser("restore", help="hand a power back, e.g. after a rewind")
+    r.add_argument("who")
+    r.add_argument("name")
+    r = q.add_parser("list")
+    r.add_argument("who")
+
+    p = sub.add_parser("hp-below",
+                       help="D&D 4e: how far below zero a dying character has fallen "
+                            "(damage keeps this itself; this is the correction)")
+    p.add_argument("who")
+    p.add_argument("value", type=int, help="the depth as a positive number: 7 means -7 HP")
+
+    p = sub.add_parser("short-rest",
+                       help="D&D 2024: a one-hour Short Rest. D&D 4e: five minutes")
     p.add_argument("--who", default=None, help="limit the rest to one character")
 
     sub.add_parser("daily-prep",
                    help="a night's rest: PF2e daily preparations, or a D&D Long Rest")
-    sub.add_parser("long-rest", help="D&D's name for daily-prep")
+    sub.add_parser("long-rest", help="D&D 2024's name for daily-prep")
+    sub.add_parser("extended-rest", help="D&D 4e's name for daily-prep: six hours")
 
     p = sub.add_parser("gold")
     q = p.add_subparsers(dest="sub", required=True)
@@ -1971,7 +2398,7 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--bulk", default=None,
                    help="PF2e: '1', '2', 'L' for light, '-' for negligible")
     r.add_argument("--weight", default=None,
-                   help="D&D: weight in pounds, e.g. 55 or '1/2'")
+                   help="both D&D editions: weight in pounds, e.g. 55 or '1/2'")
     r.add_argument("--kind", default="gear", choices=["gear", "permanent", "consumable", "ammunition", "container"])
     r.add_argument("--charges", type=int, default=None)
     r.add_argument("--level", type=int, default=None)
@@ -2056,11 +2483,18 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--hp", type=int, default=0)
     r.add_argument("--position", default=None)
     r.add_argument("--squad", default=None)
-    r.add_argument("--level", type=int, default=None, help="PF2e: creature level")
-    r.add_argument("--cr", default=None, help="D&D: Challenge Rating, e.g. 1/4")
-    r.add_argument("--speed", type=int, default=None, help="D&D: movement allowance in feet")
+    r.add_argument("--level", type=int, default=None,
+                   help="PF2e and D&D 4e: creature level")
+    r.add_argument("--cr", default=None, help="D&D 2024: Challenge Rating, e.g. 1/4")
+    r.add_argument("--speed", type=int, default=None,
+                   help="D&D 2024: movement allowance in feet. D&D 4e: in squares")
     r.add_argument("--bonus-action", action="store_true",
-                   help="D&D: this combatant has a feature granting a Bonus Action")
+                   help="D&D 2024: this combatant has a feature granting a Bonus Action")
+    r.add_argument("--role", default=None,
+                   help="D&D 4e: artillery, brute, controller, lurker, minion, "
+                        "skirmisher or soldier")
+    r.add_argument("--rank", default=None,
+                   help="D&D 4e: standard, elite, solo or minion (a minion has 1 HP)")
     r.add_argument("--id", default=None)
     r.add_argument("--notes", default="")
     q.add_parser("next")
@@ -2122,10 +2556,10 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
         system = args.system or rules.declared_in_campaign_md(slug)
         if not system:
             raise StateError(
-                "a new campaign must say which game it runs: pass --system pf2e or "
-                "--system 5.5e (or put a `System:` line in CAMPAIGN.md first). Nothing "
-                "defaults here, because a state written under the wrong ruleset carries "
-                "the wrong fields from its first line."
+                "a new campaign must say which game it runs: pass --system pf2e, "
+                "--system 5.5e or --system 4e (or put a `System:` line in CAMPAIGN.md "
+                "first). Nothing defaults here, because a state written under the wrong "
+                "ruleset carries the wrong fields from its first line."
             )
         data = blank_state(slug, args.title, args.transparency, system=system)
         save(slug, data)
@@ -2173,8 +2607,8 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
                      if getattr(args, a, None) is not None]
             wrong += [n for n, v in (("--save", args.save), ("--passive-perception", args.passive_perception),
                                      ("--initiative", args.initiative), ("--hit-die", args.hit_die),
-                                     ("--size", args.size)) if v]
-        else:
+                                     ("--size", args.size), ("--surges", args.surges)) if v]
+        elif sid == "dnd5e":
             import dnd5e
             abil = {a: getattr(args, a) for a in dnd5e.ABILITIES}
             scores = {a: (v if v is not None else 10) for a, v in abil.items()}
@@ -2202,11 +2636,53 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
                 "hit_dice": {"die": die, "max": int(args.level), "used": 0},
             })
             wrong = [n for n, v in (("--fort", args.fort), ("--ref", args.ref), ("--will", args.will),
-                                    ("--perception", args.perception), ("--str-mod", args.str_mod))
+                                    ("--perception", args.perception), ("--str-mod", args.str_mod),
+                                    ("--surges", args.surges))
                      if v]
+        else:
+            import dnd4e
+            scores = {a: (getattr(args, a, None) or 10) for a in dnd4e.ABILITIES}
+            # In 4e, Fortitude / Reflex / Will are defence NUMBERS like AC, not the save
+            # modifiers the same three flags mean in Pathfinder.
+            if args.surges is None:
+                surges = 0
+            else:
+                surges = dnd4e.surges_per_day(args.surges, scores["con"])
+            pc.update({
+                "abilities": scores,
+                "strength": scores["str"],
+                "defences": {"ac": args.ac, "fortitude": args.fort,
+                             "reflex": args.ref, "will": args.will},
+                "half_level": int(args.level) // 2,
+                "initiative_mod": (args.initiative if args.initiative is not None
+                                   else dnd4e.ability_modifier(scores["dex"])),
+                "speed": args.speed if args.speed is not None else 6,
+                "healing_surges": {"max": surges, "used": 0},
+            })
+            wrong = [n for n, v in (("--perception", args.perception),
+                                    ("--str-mod", args.str_mod),
+                                    ("--save", args.save),
+                                    ("--passive-perception", args.passive_perception),
+                                    ("--hit-die", args.hit_die),
+                                    ("--size", args.size)) if v]
         data.setdefault("pcs", {})[key] = pc
         out = [f"added {args.name} ({args.kind}, level {args.level}, {args.hp} HP) as `{key}` "
                f"— {rs(data).SYSTEM_SHORT} sheet"]
+        if sid == "dnd4e":
+            import dnd4e
+            if not int((pc.get("healing_surges") or {}).get("max", 0)):
+                out.append(
+                    "⚠ no healing surge pool set. It is the class's own surges-per-day plus the "
+                    "Constitution modifier, and the class number is not open content — pass "
+                    "`--surges <class value>` or set the pool with `surge set`. Surges are 4e's "
+                    "attrition clock, so a pool of 0 makes the character unhealable."
+                )
+            if args.hp:
+                out.append(
+                    f"A healing surge is worth {dnd4e.surge_value(args.hp)} hit points; "
+                    f"bloodied at {args.hp // 2}; death at "
+                    f"{dnd4e.death_threshold(args.hp)} hit points."
+                )
         if wrong:
             out.append(f"⚠ ignored {', '.join(sorted(set(wrong)))}: "
                        f"not {rs(data).SYSTEM_SHORT} fields")
@@ -2304,23 +2780,32 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
         return [f"{pc['name']}: focus {f['current']}/{f['max']}"], True, data
 
     if cmd == "slots":
+        require_slots(data)
+        word = slot_word(data)
         if sub == "use":
             return slots_use(data, args.who, args.rank, args.n), True, data
         if sub == "set":
             _, pc = find_character(data, args.who)
             pc.setdefault("spell_slots", {})[str(args.rank)] = {"max": args.max, "used": 0}
-            return [f"{pc['name']}: rank {args.rank} — {args.max} slot(s)"], True, data
+            return [f"{pc['name']}: {word} {args.rank} — {args.max} slot(s)"], True, data
         _, pc = find_character(data, args.who)
         for e in pc.get("spell_slots", {}).values():
             e["used"] = 0
         return [f"{pc['name']}: all slots restored"], True, data
 
-    if cmd in ("daily-prep", "long-rest"):
+    if cmd in ("daily-prep", "long-rest", "extended-rest"):
         if cmd == "long-rest" and system_of(data) != "dnd5e":
             raise _wrong_game(data, "long rest", "dnd5e")
+        if cmd == "extended-rest" and system_of(data) != "dnd4e":
+            raise _wrong_game(data, "extended rest", "dnd4e")
         return daily_prep(data), True, data
 
     if cmd == "short-rest":
+        if system_of(data) == "dnd4e":
+            import dnd4e
+            who = getattr(args, "who", None)
+            out = dnd4e.short_rest(data, who if who in (data.get("pcs") or {}) else None)
+            return out, True, data
         if system_of(data) != "dnd5e":
             raise _wrong_game(data, "short rest", "dnd5e")
         import dnd5e
@@ -2344,18 +2829,39 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
         return out, True, data
 
     if cmd == "death-save":
+        four = system_of(data) == "dnd4e"
         if sub == "record":
+            if four:
+                if args.successes:
+                    raise StateError(
+                        "a 4e death saving throw has no success counter — 10 or better is "
+                        "simply not a failure, and a natural 20 lets the character spend a "
+                        "healing surge. Record only failures."
+                    )
+                return death_save_record_4e(data, args.who, failures=args.failures,
+                                            natural=args.natural,
+                                            reason=args.reason), True, data
             return death_save_record(data, args.who, successes=args.successes,
                                      failures=args.failures, reason=args.reason), True, data
         if sub == "stabilise":
+            if four:
+                raise StateError(
+                    "4e has no Stable state — a dying character keeps making death saving "
+                    "throws until they are healed or the third failure kills them. Healing "
+                    "any amount ends dying: use `heal`."
+                )
             return death_save_stabilise(data, args.who), True, data
         if sub == "reset":
-            if system_of(data) != "dnd5e":
+            if system_of(data) not in ("dnd5e", "dnd4e"):
                 raise _wrong_game(data, "death saves", "dnd5e")
             _, pc = find_character(data, args.who)
-            pc["death_saves"] = {"successes": 0, "failures": 0, "stable": False}
-            return [f"{pc['name']}: Death Save counters reset"], True, data
+            pc["death_saves"] = dict(blank_death_saves(data))
+            if four:
+                pc["hp_below_zero"] = 0
+            return [f"{pc['name']}: {death_save_word(data)} counters reset"], True, data
         if sub == "roll":
+            if four:
+                return death_save_roll_4e(data, args.who, slug), True, data
             if system_of(data) != "dnd5e":
                 raise _wrong_game(data, "death saves", "dnd5e")
             key, pc = find_character(data, args.who)
@@ -2383,6 +2889,60 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
                 out += death_save_record(data, key, successes=succ, failures=fail,
                                          reason="rolled Death Saving Throw")
             return out, True, data
+
+    if cmd == "surge":
+        if sub == "spend":
+            return surge_spend(data, args.who, args.n), True, data
+        if sub == "set":
+            return surge_set(data, args.who, args.maximum, args.used), True, data
+        _need_4e(data, "healing surges")
+        import dnd4e
+        pcs = ([find_character(data, args.who)] if args.who
+               else list((data.get("pcs") or {}).items()))
+        out = []
+        for _, pc in pcs:
+            sg = pc.get("healing_surges") or {}
+            hp_max = int((pc.get("hp") or {}).get("max", 0))
+            out.append(
+                f"{pc['name']}: {int(sg.get('max', 0)) - int(sg.get('used', 0))}/"
+                f"{sg.get('max', 0)} healing surges"
+                + (f", {dnd4e.surge_value(hp_max)} hit points each" if hp_max else "")
+                + ("" if not pc.get("second_wind_used") else ", Second Wind already used")
+            )
+        return out or ["no characters"], False, data
+
+    if cmd == "second-wind":
+        return second_wind(data, args.who, reset=sub == "reset"), True, data
+
+    if cmd == "action-point":
+        if sub == "spend":
+            return action_point_spend(data, args.who, args.n), True, data
+        return action_point_set(data, args.who, args.value), True, data
+
+    if cmd == "milestone":
+        return milestone_reach(data, args.who), True, data
+
+    if cmd == "power":
+        if sub == "add":
+            return power_add(data, args.who, args.name, args.bucket), True, data
+        if sub == "use":
+            return power_use(data, args.who, args.name), True, data
+        if sub == "restore":
+            return power_use(data, args.who, args.name, release=True), True, data
+        _need_4e(data, "powers")
+        _, pc = find_character(data, args.who)
+        powers = pc.get("powers") or {}
+        out = [f"{pc['name']}:"]
+        for bucket in ("encounter", "daily"):
+            for e in powers.get(bucket) or []:
+                out.append(f"  {e.get('name')} [{bucket}] — "
+                           + ("spent" if e.get("used") else "available"))
+        if len(out) == 1:
+            out.append("  no encounter or daily powers recorded (at-will powers are not tracked)")
+        return out, False, data
+
+    if cmd == "hp-below":
+        return hp_below_set(data, args.who, args.value), True, data
 
     if cmd == "exhaustion":
         if sub == "set":
@@ -2510,8 +3070,7 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
             raise StateError("XP cannot be negative")
         party["xp"] = new
         notes = [f"party XP: {new}"]
-        if new >= 1000:
-            notes.append("⚠ 1000 XP reached — level up (system/11-leveling-up.md), then subtract 1000")
+        notes += xp_threshold_note(data, new)
         return notes, True, data
 
     if cmd == "level":
@@ -2548,7 +3107,17 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
             return encounter_start(data, args.name, args.objective, args.map_slug), True, data
         if sub == "add":
             extra: dict[str, Any] = {}
-            if system_of(data) == "dnd5e":
+            sid = system_of(data)
+            role = getattr(args, "role", None)
+            rank = getattr(args, "rank", None)
+            if sid != "dnd4e" and (role or rank):
+                bad = [f for f, v in (("--role", role), ("--rank", rank)) if v]
+                raise StateError(
+                    f"{', '.join(bad)} name D&D 4e's monster roles and ranks, and this is a "
+                    f"{rules.short_of(sid)} campaign. Put the creature's role in --notes "
+                    f"instead; neither sibling ruleset keys any rule off it."
+                )
+            if sid == "dnd5e":
                 extra = {
                     "speed": args.speed if args.speed is not None else 30,
                     "bonus_action": 1 if args.bonus_action else 0,
@@ -2556,9 +3125,36 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
                 }
                 if args.level is not None:
                     raise StateError(
-                        "--level is Pathfinder's creature scale; a D&D creature has a Challenge "
-                        "Rating. Pass --cr instead (e.g. --cr 1/4)."
+                        "--level is Pathfinder's and 4e's creature scale; a D&D 2024 creature "
+                        "has a Challenge Rating. Pass --cr instead (e.g. --cr 1/4)."
                     )
+            elif sid == "dnd4e":
+                import dnd4e
+                if args.cr is not None:
+                    raise StateError(
+                        "--cr is D&D 2024's creature scale; a 4e monster has a level and a "
+                        "role. Pass --level, and --role / --rank for its shape."
+                    )
+                if args.bonus_action:
+                    raise StateError(
+                        "--bonus-action is a D&D 2024 concept. 4e's near equivalent is the "
+                        "minor action, which every combatant already has — the tracker's "
+                        "`min` column."
+                    )
+                if role and role.lower() not in dnd4e.MONSTER_ROLES + dnd4e.PC_ROLES:
+                    raise StateError(
+                        f"{role!r} is not a 4e role (monsters: "
+                        f"{', '.join(dnd4e.MONSTER_ROLES)}; characters: "
+                        f"{', '.join(dnd4e.PC_ROLES)})"
+                    )
+                if rank and rank.lower() not in dnd4e.MONSTER_RANKS:
+                    raise StateError(f"{rank!r} is not a 4e rank "
+                                     f"({', '.join(dnd4e.MONSTER_RANKS)})")
+                extra = {
+                    "speed": args.speed if args.speed is not None else 6,
+                    "role": role.lower() if role else None,
+                    "rank": (rank or "standard").lower(),
+                }
             elif args.cr is not None or args.bonus_action or args.speed is not None:
                 bad = [f for f, v in (("--cr", args.cr), ("--bonus-action", args.bonus_action),
                                       ("--speed", args.speed)) if v]
@@ -2569,11 +3165,17 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
                     f"for a creature's level, and Stride costs an action rather than drawing on "
                     f"a movement allowance"
                 )
-            return encounter_add(
+            out = encounter_add(
                 data, args.name, args.side, ref=args.ref, initiative=args.initiative, hp=args.hp,
                 position=args.position, squad=args.squad, level=args.level, id=args.id,
                 notes=args.notes, **extra,
-            ), True, data
+            )
+            if sid == "dnd4e" and (rank or "").lower() == "minion" and args.hp not in (0, 1):
+                out.append(
+                    f"⚠ a 4e minion has exactly 1 hit point and takes no damage from a missed "
+                    f"attack; {args.hp} was recorded. Set it with `hp` if that was not intended."
+                )
+            return out, True, data
         if sub == "next":
             return encounter_next(data), True, data
         if sub == "status":

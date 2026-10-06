@@ -143,7 +143,7 @@ judgeable:
   who still has HP.
 - **Conditions with expired durations still listed.**
 - A valued condition with no value; an unvalued one with a value; a condition name that is not a
-  condition in the campaign's ruleset — the two games' condition lists overlap in name and differ
+  condition in the campaign's ruleset — the games' condition lists overlap in name and differ
   in effect, so a condition from the wrong list is a real error rather than a typo.
 - A tracked-separately value present both as a field and as a list entry — dying, wounded or
   doomed in Pathfinder, Exhaustion in D&D. Two copies of the number

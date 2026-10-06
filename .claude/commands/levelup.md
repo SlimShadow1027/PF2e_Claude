@@ -25,6 +25,11 @@ python3 tools/pf2e.py treasure --level <new level> --party-size <N>
 # D&D 2024 — XP is cumulative, and treasure is a framework convention rather than a table
 python3 tools/dnd5e.py advancement --xp <total>
 python3 tools/dnd5e.py treasure --level <new level> --party-size <N>
+
+# D&D 4e — 30 levels in three tiers; XP is cumulative AND the award is divided by party size.
+# Both tables are owner-supplied and will say so if unfilled.
+python3 tools/dnd4e.py advancement
+python3 tools/dnd4e.py treasure --level <new level> --party-size <N>
 ```
 
 A character behind that curve is a treasure-pacing problem (`system/09-loot-and-economy.md`), not
@@ -43,7 +48,8 @@ This is a natural pause, so also offer the difficulty check-in from
 `system/20-player-flags.md`.
 
 Use the checklist for **this campaign's ruleset**: `system/11-leveling-up.md` for Pathfinder,
-`system/dnd5e/11-leveling-up.md` for D&D. The two differ on when a level happens (a flat 1,000
+`system/dnd5e/11-leveling-up.md` or `system/dnd4e/11-leveling-up.md` for D&D. They differ on
+when a level happens (a flat 1,000
 XP that resets, versus a cumulative threshold that does not) and on what a level moves — in D&D a
 Proficiency Bonus increase at 5, 9, 13 or 17 changes eight or ten numbers at once, which is the
 step most often missed.

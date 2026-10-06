@@ -37,16 +37,16 @@ Nothing in this framework can reproduce a past roll, which is the point.
 | `4d6kh3` | keep the best three |
 | `1d20r1` | reroll a 1 once, keep the second result |
 
-Exploding dice are not supported. Neither ruleset uses them.
+Exploding dice are not supported. No supported ruleset uses them.
 
 ---
 
 ## The outcome is computed by the tool, never by the GM
 
-**This section is the one place in this document where the two rulesets differ, and they differ
+**This section is the one place in this document where the rulesets differ, and they differ
 a lot.** `roll.py` reads the campaign's `System:` and applies that game's rule; pass `--system`
-to override it for one roll. The arithmetic lives in `pf2e.resolve` and `dnd5e.resolve`, each
-with its own `Source:` note, so neither game's answer is recalled from memory.
+to override it for one roll. The arithmetic lives in `pf2e.resolve`, `dnd5e.resolve` and
+`dnd4e.resolve`, each with its own `Source:` note, so no game's answer is recalled from memory.
 
 ### Pathfinder: four degrees, and the natural-20 shift on everything
 
@@ -94,6 +94,37 @@ command names the kind of test, and the kind of test decides the rule.
 > Source: SRD 5.2, "D20 Tests" → "Attack Rolls" → "Rolling 20 or 1" —
 > `python3 tools/dnd5e.py sources` (`crit_rule`).
 
+### D&D 4e: pass or fail, attacks crit, and "saving throw" means something else
+
+- **Meet or beat the target number** and it succeeds. No ladder, as in D&D 2024.
+- A **natural 20 on an attack roll** hits automatically and is a critical hit; a **natural 1**
+  misses automatically. Checks and saves are unaffected.
+- **The attacker rolls against a static defence** — AC, Fortitude, Reflex or Will. The defender
+  never rolls. So what the other two games call a save is, here, the attacker's roll against
+  Fortitude, Reflex or Will.
+- **A 4e "saving throw" is an effect-ending roll**: a flat d20 against **10**, made at the end
+  of your turn against each "save ends" effect. No ability modifier, no level term.
+  `roll.py save` on a 4e campaign forces the target to 10 whatever DC is passed, because a 4e
+  save has no other target number and honouring a wrong one silently would be worse than
+  correcting it.
+- **Half the character's level** is added to attack rolls, all four defences, all skill checks
+  and initiative. Put it in the expression; the tool does not know the character's level.
+
+```
+🎲 Verrin — Longsword: 1d20+9 → [18] +9 = 27 vs AC 18 → HIT
+🎲 Verrin — save vs ongoing fire: 1d20 → [8] = 8 vs flat DC 10 → FAILURE
+🎲 Verrin — Death saving throw → 1/3 failures: 1d20 → [8] = 8 vs flat DC 10 → FAILURE
+```
+
+**4e has no two-dice swing under any name.** `--advantage` and `--disadvantage` are **refused**
+on a 4e campaign: combat advantage is a flat **+2 to the attack roll**, so it goes in the
+expression (`1d20+9+2`) where the log can show the real arithmetic.
+
+> Source: there is none to cite. D&D 4e has no open-content release, so everything in this
+> section is stated in this framework's own words and is marked "believed correct,
+> unverifiable" — `python3 tools/dnd4e.py sources`. `system/dnd4e/README.md` explains why, and
+> `LICENSE_NOTES.md` has the full statement.
+
 ---
 
 ## Output shape
@@ -113,11 +144,21 @@ works differs by ruleset, and the line says which was applied:**
 |---|---|
 | **Pathfinder** | the **whole roll** doubles, modifiers included. `(1d8+4) x2 → [6] +4 = 10 x2 = 20` |
 | **D&D 2024** | the **dice** double and the modifier is added once. `2d8+4 → [6,3] +4 = 13 (critical) — dice doubled from 1d8+4` |
+| **D&D 4e** | the dice are **maximised** and nothing is rolled. `12+5 → +17 = 17 (critical) — maximum damage, dice not rolled (2d6+5 maximised to 12+5)` |
 
-The D&D case rewrites the expression and **rolls the extra die for real** rather than multiplying
-a number that was already rolled — *"roll the attack's damage dice twice"* is an instruction to
-roll, and the audit log shows both faces. A term that keeps highest or lowest dice is refused
-rather than guessed at.
+Three rulesets, three different answers to the same question, which is why the rule lives with
+the ruleset and not with the dice.
+
+The D&D 2024 case rewrites the expression and **rolls the extra die for real** rather than
+multiplying a number that was already rolled — *"roll the attack's damage dice twice"* is an
+instruction to roll, and the audit log shows both faces.
+
+The 4e case is the opposite and the line says so explicitly: a 4e critical deals maximum damage,
+so **no die is thrown at all** and the output does not pretend one was. Extra dice from a
+high-crit weapon or a critical-only power **are** rolled — roll them as a separate damage roll,
+because they are not maximised.
+
+In all three, a term that keeps highest or lowest dice is refused rather than guessed at.
 
 Private and secret rolls print the full detail to the log and a redacted line to chat:
 
@@ -212,16 +253,26 @@ python3 tools/state.py --campaign X recovery kaelen
 # PF2e: a Hero Point reroll (fortune)
 python3 tools/roll.py fortune "1d20+13" --dc 21 --label "Hero Point reroll" --actor Kaelen --campaign X
 
-# D&D: an attack roll, which is the only kind that can crit
+# Both D&D editions: an attack roll, which is the only kind that can crit
 python3 tools/roll.py attack "1d20+7" --ac 15 --actor Thorne --campaign X --label "Longsword"
 
-# D&D: a check with Advantage
+# D&D 2024: a check with Advantage (refused on a 4e campaign — 4e has no two-dice swing)
 python3 tools/roll.py check "1d20+5" --dc 15 --advantage --label "Stealth" --campaign X
 
-# D&D: a Death Saving Throw at 0 HP
+# D&D 4e: combat advantage is a flat +2, so it goes in the expression
+python3 tools/roll.py attack "1d20+9+2" --ac 18 --label "Longsword (combat advantage)" --campaign X
+
+# D&D 4e: a saving throw ENDS an effect, and is always a flat d20 vs 10
+python3 tools/roll.py save "1d20" --dc 10 --label "save vs ongoing fire (5)" --campaign X
+
+# Either D&D edition: a death saving throw at 0 HP. The semantics differ — 2024 counts
+# successes as well as failures; 4e counts failures only — and roll.py applies the right one.
 python3 tools/roll.py death-save --failures 1 --actor Thorne --campaign X
 # or, to roll it AND apply the result to state in one step:
 python3 tools/state.py --campaign X death-save roll thorne
+
+# D&D 4e: a critical, which MAXIMISES the dice rather than doubling anything
+python3 tools/roll.py damage "2d6+5" --crit --type fire --label "Flaming burst crit" --campaign X
 
 # a random table
 python3 tools/roll.py table system/16-random-tables.md "Urban Rumors" --campaign X
@@ -250,7 +301,7 @@ applied:
 
 ### The two dice, under two names
 
-`2d20kh1` and `2d20kl1` are the same operation in both games:
+`2d20kh1` and `2d20kl1` are the same operation in the two rulesets that have it:
 
 | Pathfinder | D&D 2024 |
 |---|---|

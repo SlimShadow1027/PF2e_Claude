@@ -4,9 +4,9 @@ A small vocabulary the player can type at any time. **Honour these without argum
 confirmation, no defending the scene, no asking why. They are the player's controls, not
 requests.
 
-Most of them are shared between the two rulesets. The resource commands are not, because the
+Most of them are shared between the rulesets. The resource commands are not, because the
 resources are not — `## Per-ruleset commands` at the bottom lists each game's own, and the tools
-refuse the other game's and name the right one.
+refuse another game's and name the right one.
 
 | The player types | The GM does |
 |---|---|
@@ -184,3 +184,23 @@ mistyped command is a one-line correction rather than a wrong number written to 
 
 **Say the limit when it bites.** A player asking to attune a fourth item wants to know which of the
 three they would have to give up, not that the command failed.
+
+### D&D 4e
+
+| The player types | The GM does |
+|---|---|
+| `surge` | Report the pool, or spend one: a quarter of maximum hit points, applied with `heal`. `state.py surge spend`. **Report the pool unprompted after every fight** — it is the real attrition clock, not the hit point total. |
+| `second wind` | Spend a surge as a standard action, once per encounter, plus a bonus to all defences until the start of their next turn. `state.py second-wind use`. |
+| `action point` | Spend one for an **extra action**. Not a reroll. One spend per encounter. `state.py action-point spend`. |
+| `milestone` | Credit the milestone every second encounter without an extended rest, which grants an action point. `state.py milestone`. |
+| `power` | Use, restore or list an encounter or daily power. At-will powers are not tracked. `state.py power use <who> "<name>"`. |
+| `short rest` | **Five minutes.** Encounter powers and Second Wind back; hit points do **not** return by themselves. `state.py short-rest`. |
+| `extended rest` | Six hours, one per 24 hours. Hit points and the surge pool full, dailies back, death-save failures cleared. `state.py extended-rest`. |
+| `death save` | Roll the flat d20 against 10 and record it. **Failures only** — there is no success counter and no Stable state. A natural 20 lets them spend a surge and act. `state.py death-save roll <who>`. |
+
+**Say the surge count, every time.** In a solo 4e campaign with no leader in the party, the surge
+pool is the whole attrition story and the player cannot decide whether to press on without it.
+
+**`long rest`, `inspiration`, `hero point`, `hit dice`, `attune`, `concentration` and `slots` are
+all refused** on a 4e campaign, each naming 4e's own answer instead. That is the tools doing their
+job; relay the named alternative rather than the refusal.

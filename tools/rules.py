@@ -1,16 +1,23 @@
 #!/usr/bin/env python3
-"""rules.py — which game's numbers a campaign runs on, and the parts both games share.
+"""rules.py — which game's numbers a campaign runs on, and the parts every game shares.
 
-This framework runs two rulesets:
+This framework runs three rulesets:
 
     pf2e    Pathfinder Second Edition (Remaster)  — tables in tools/pf2e.py
     dnd5e   Dungeons & Dragons 2024 ("5.5e")      — tables in tools/dnd5e.py
+    dnd4e   Dungeons & Dragons 4th Edition        — structure in tools/dnd4e.py, numbers
+                                                    supplied by the owner (no open content)
 
 A campaign declares one in `state.json` (`"system"`) and in `CAMPAIGN.md` (`System:`).
 Campaigns created before the second ruleset existed declare neither, and are read as
 `pf2e` — that is the only reason a default exists. **New campaigns always write the field.**
 
-Three things live here rather than in either ruleset, because they belong to neither:
+The three are not equal in what they can ship. PF2e is ORC and D&D 2024 has an SRD under
+CC-BY-4.0, so both carry their tables here. **4e has no open-content release at all**, so
+`dnd4e.py` carries procedure and refuses to compute until the campaign's owner fills in
+`tools/dnd4e_tables.json` from books they own. See `LICENSE_NOTES.md`.
+
+Three things live here rather than in any ruleset, because they belong to none:
 
 1.  **The registry.** `load("5.5e")` returns the `dnd5e` module. Aliases resolve here so
     that no caller has to know how the player spelled it.
@@ -22,8 +29,9 @@ Three things live here rather than in either ruleset, because they belong to nei
     engine is here; each ruleset registers the calendars it ships with, and a world may
     define its own in `worlds/<slug>/CALENDAR.md`.
 
-Also here: `scope_band`, the only honest form of cross-system translation. See
-`system/23-cross-system-worlds.md` for why levels do not convert and scope does.
+Also here: `scope_band`, the only honest form of cross-system translation. It is the one
+piece of machinery that has to understand a 30-level ruleset and a 20-level one at once.
+See `system/23-cross-system-worlds.md` for why levels do not convert and scope does.
 
 Standard library only.
 """
@@ -57,6 +65,18 @@ SYSTEMS: dict[str, dict[str, Any]] = {
         "aliases": (
             "dnd5e", "dnd5.5e", "dnd-5.5e", "5.5e", "55e", "dnd2024", "dnd-2024",
             "5e2024", "5e-2024", "dnd5e2024", "5e", "dnd", "d&d", "dd5e",
+        ),
+    },
+    "dnd4e": {
+        "module": "dnd4e",
+        "name": "Dungeons & Dragons 4th Edition",
+        "short": "D&D 4e",
+        # Not a licence this framework can use. The GSL permitted no Open Game Content and
+        # is no longer offered, so nothing of 4e's text or tables is reproducible here.
+        "licence": "none — no open content; tables are owner-supplied",
+        "aliases": (
+            "dnd4e", "dnd-4e", "4e", "dnd4", "dnd-4", "d&d4e", "d&d4", "dd4e",
+            "4th", "4ed", "dnd4th", "fourth", "dnd2008",
         ),
     },
 }
@@ -310,22 +330,50 @@ register_calendar(
 _YEAR_DAYS_CACHE: dict[str, int] = {}
 
 
+def load_all_world_calendars() -> list[str]:
+    """Register every calendar any world defines. Returns the names that failed to load.
+
+    Called on a cache miss rather than at import, so the common case costs nothing. A
+    campaign's `state.json` stores a calendar **by name**, and `world.py link` writes a
+    world-defined name into it — so any tool that formats a date has to be able to find
+    that calendar without being told which world it came from. Doing it here means no
+    caller has to remember.
+    """
+    problems: list[str] = []
+    worlds = repo_root() / "worlds"
+    if not worlds.exists():
+        return problems
+    for d in sorted(worlds.iterdir()):
+        if not d.is_dir() or not (d / "CALENDAR.md").exists():
+            continue
+        try:
+            load_world_calendar(d.name)
+        except RulesError as exc:
+            problems.append(f"worlds/{d.name}/CALENDAR.md: {exc}")
+    return problems
+
+
 def _calendars_for(name: str) -> dict[str, Any]:
-    """Resolve a calendar name, importing the rulesets once if it is not registered yet."""
+    """Resolve a calendar name: the registry, then the rulesets, then the worlds."""
     key = str(name or "generic").lower()
     if key in CALENDARS:
         return CALENDARS[key]
     load_all()  # a ruleset registers its calendars at import time
     if key in CALENDARS:
         return CALENDARS[key]
+    broken = load_all_world_calendars()  # then whatever the worlds define
+    if key in CALENDARS:
+        return CALENDARS[key]
+    extra = (" One world's calendar could not be read: " + "; ".join(broken)) if broken else ""
     raise RulesError(
         f"no calendar named {name!r} is registered "
-        f"(have: {', '.join(sorted(CALENDARS))}); define it in the world's CALENDAR.md"
+        f"(have: {', '.join(sorted(CALENDARS))}); define it in the world's CALENDAR.md "
+        f"between the CALENDAR-BEGIN and CALENDAR-END markers.{extra}"
     )
 
 
 # A machine-readable calendar block in a world's CALENDAR.md, so one shared world keeps one
-# calendar across both rulesets. Everything outside the fence stays prose for the GM.
+# calendar across every ruleset. Everything outside the fence stays prose for the GM.
 _CAL_BLOCK = re.compile(
     r"<!--\s*CALENDAR-BEGIN\s*-->\s*```json\s*(?P<body>.*?)```\s*<!--\s*CALENDAR-END\s*-->",
     re.DOTALL | re.IGNORECASE,
@@ -410,7 +458,7 @@ def advance_time(t: dict[str, Any], minutes: int) -> dict[str, Any]:
 _INTERVAL_RE = re.compile(
     r"(\d+(?:\.\d+)?)\s*(rounds?|minutes?|mins?|hours?|hrs?|days?|weeks?|months?)", re.IGNORECASE
 )
-# A round is 6 seconds in both rulesets: PF2e Player Core 'Rounds' and D&D 2024
+# A round is 6 seconds in all three rulesets: PF2e Player Core 'Rounds' and D&D 2024
 # 'Combat' ("Each round represents 6 seconds in the game world").
 _UNIT_MINUTES = {
     "round": 1 / 6,
@@ -476,6 +524,9 @@ SCOPE_NAMES = [b for b, _ in SCOPE_BANDS]
 _SCOPE_LEVELS: dict[str, list[tuple[int, int, str]]] = {
     "dnd5e": [(1, 4, "local"), (5, 10, "regional"), (11, 16, "national"), (17, 20, "worldly")],
     "pf2e": [(1, 4, "local"), (5, 10, "regional"), (11, 16, "national"), (17, 20, "worldly")],
+    # 4e runs to 30, so its bands are wider and do not line up level-for-level with the
+    # other two. That is the point: a band is a statement about reach, not about a number.
+    "dnd4e": [(1, 5, "local"), (6, 10, "regional"), (11, 20, "national"), (21, 30, "worldly")],
 }
 
 SCOPE_SOURCES: dict[str, str] = {
@@ -493,6 +544,16 @@ SCOPE_SOURCES: dict[str, str] = {
         "same 1-4 / 5-10 / 11-16 / 17-20 split, chosen so that one shared world can describe a "
         "character's reach without naming a ruleset. It is not a published rule and it is not a "
         "claim that a PF2e level 7 and a D&D level 7 character are equivalent in play."
+    ),
+    "dnd4e": (
+        "THIS FRAMEWORK'S OWN CONVENTION, informed by a published structure it may not quote. "
+        "4e does band its 30 levels, into three tiers of ten — Heroic, Paragon, Epic — and the "
+        "books describe each tier's reach in those terms. There is no open-content release of "
+        "that text, so the four bands above are this framework's own mapping onto its own "
+        "shared scale: the Heroic tier split at 5 into 'local' and 'regional', the Paragon "
+        "tier read whole as 'national', and the Epic tier as 'worldly'. A 4e level is a "
+        "different quantity from a 20-level ruleset's level and does not translate; only the "
+        "band crosses."
     ),
 }
 
@@ -546,18 +607,21 @@ def translate_level(level: int, *, source: str, target: str) -> dict[str, Any]:
         "target_levels": [low, high],
         "same_system": src == tgt,
         "refuses": [
-            "converting a stat block: a CR 5 monster and a level 5 PF2e creature are not the "
-            "same creature, and neither set of numbers survives being carried across",
+            "converting a stat block: a CR 5 D&D 2024 monster, a level 5 PF2e creature and a "
+            "level 5 D&D 4e monster are three different creatures, and none of their numbers "
+            "survive being carried across",
             "converting a character sheet: rebuild the character in the target ruleset from "
             "their story, and let the numbers land where that ruleset puts them",
-            "converting treasure piece for piece: the two economies are not the same shape",
+            "converting treasure piece for piece: the three economies are not the same shape, "
+            "and the coin ratios themselves differ (1 pp is 10 gp in two of them and 100 in "
+            "the third)",
         ],
         "source_note": SCOPE_SOURCES[src],
     }
 
 
 # --------------------------------------------------------------------------------------
-# Provenance across both rulesets
+# Provenance across every ruleset
 # --------------------------------------------------------------------------------------
 
 
@@ -679,16 +743,28 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.cmd == "calendars":
         load_all()
+        # Also register whatever the worlds define, so that "check it with `rules.py
+        # calendars`" — which is what a world's CALENDAR.md tells you to do — actually
+        # shows the calendar you just wrote.
+        problems = load_all_world_calendars()
         for name, cal in sorted(CALENDARS.items()):
             days = sum(d for _, d in cal["months"])
             print(f"{name}: {len(cal['months'])} months, {days} days/year, "
                   f"{len(cal['weekdays'])}-day week, era {cal['era'] or '(none)'}")
             if cal.get("source"):
                 print(f"    {cal['source']}")
-        return 0
+        for note in problems:
+            print(f"\n⚠ {note}")
+        return 1 if problems else 0
 
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    # Re-enter through the *imported* module rather than calling main() here. Run as a
+    # script, this file is `__main__`, while every ruleset does `import rules` — so the
+    # calendars a ruleset registers at import land in a different module object from the
+    # one the CLI is reading, and `calendars` printed only the placeholder.
+    import rules as _rules
+
+    raise SystemExit(_rules.main())

@@ -16,6 +16,8 @@ then read out of `CHECKPOINT.md`:
   doomed; D&D's death-save counters and Exhaustion level.
 - Conditions with their values and remaining durations.
 - **Pathfinder:** Hero Points, Focus Points and whether Refocus is available, spell slots by rank.
+- **D&D 4e:** healing surges left (the real attrition clock — say this one every time),
+  Second Wind available, action points, milestones, which encounter and daily powers are spent.
 - **D&D 2024:** Heroic Inspiration, Hit Dice left, Concentration, attunements used of three,
   spell slots by level.
 - Consumables with counts, ammunition, item charges.

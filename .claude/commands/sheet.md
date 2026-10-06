@@ -14,6 +14,8 @@ Two sources, and say which each number came from:
   slots used, items with charges — plus whichever of these the ruleset has:
   **Pathfinder** dying/wounded/doomed, Hero Points, Focus Points;
   **D&D 2024** death saves, Hit Dice, Exhaustion, Heroic Inspiration, Concentration, attunement.
+  **D&D 4e** four defences, healing surges, Second Wind, action points, milestones, encounter
+  and daily powers, death-save failures, and how far below zero the hit points have fallen.
 
 ```
 python3 tools/state.py --campaign <slug> get pcs.<key>

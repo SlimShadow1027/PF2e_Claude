@@ -1380,7 +1380,8 @@ def cmd_sources(args: argparse.Namespace) -> int:
           f"rather than a published rule:")
     for k in CONVENTION_TABLES:
         print(f"    - {k}")
-    print("\nFor the other ruleset's provenance: python3 tools/dnd5e.py sources")
+    print("\nFor the other rulesets' provenance: python3 tools/dnd5e.py sources, "
+          "python3 tools/dnd4e.py sources")
     return 0
 
 
@@ -1620,7 +1621,7 @@ def validate_character(pc: dict[str, Any], name: str, current_hp: int, max_hp: i
     if int(f.get("current", 0)) < 0:
         out.append(("error", f"{name}: negative Focus Points"))
 
-    # Fields that belong to the other ruleset have no business on this sheet.
+    # Fields that belong to another ruleset have no business on this sheet.
     for stray in ("death_saves", "hit_dice", "exhaustion", "heroic_inspiration", "attunement"):
         if pc.get(stray) is not None:
             out.append(("error", f"{name}: has a `{stray}` field, which is a D&D 2024 concept — "

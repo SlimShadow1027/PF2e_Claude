@@ -98,13 +98,13 @@ _src(
 
 #: A campaign with no named setting gets the placeholder calendar from rules.py. The SRD
 #: publishes no calendar, so this file does not invent one; a setting's calendar belongs in
-#: the world's CALENDAR.md, where both rulesets read it.
+#: the world's CALENDAR.md, where every ruleset reads it.
 DEFAULT_CALENDAR = "generic"
 _src(
     "calendar",
     "SRD 5.2 publishes no calendar, no month names and no era, so this ruleset registers none. "
     "A campaign defaults to the placeholder calendar in tools/rules.py (twelve 30-day months). A "
-    "named setting's calendar goes in `worlds/<slug>/CALENDAR.md`, which both rulesets read — see "
+    "named setting's calendar goes in `worlds/<slug>/CALENDAR.md`, which every ruleset reads — see "
     "`python3 tools/rules.py calendars`. The month names of published D&D settings are not SRD "
     "material and are deliberately not reproduced here.",
     convention=True,
@@ -241,7 +241,7 @@ _src(
     "row by row for all twenty levels: \"When your XP total equals or exceeds a number in the "
     "Experience Points column, you reach the corresponding level.\" The totals are CUMULATIVE and "
     "the counter is not reset on levelling — which is the opposite of Pathfinder's flat 1,000 "
-    "per level, so the two games' XP numbers are not interchangeable. Cross-checked value for "
+    "per level, so the three rulesets' XP numbers are not interchangeable. Cross-checked value for "
     "value against " + FOUNDRY + " (DND5E.CHARACTER_EXP_LEVELS), which matches exactly. The "
     "level 20+ feat rule (one feat per 30,000 XP above 355,000) is in the same section's 'Bonus "
     "Feats at Level 20' sidebar and is implemented by `xp_to_level` returning None past 20.",
@@ -689,7 +689,7 @@ _src(
     "city\", \"cities\" and \"wondrous locations\" but publishes no settlement-size table, so the "
     "village/town/city/metropolis/wondrous buckets here are this framework's. The parallel "
     "Pathfinder table (`python3 tools/pf2e.py settlement`) is also a convention, and a shared "
-    "world's GAZETTEER.md records both so either ruleset can shop in the same market.",
+    "world's GAZETTEER.md records one column per ruleset so each can shop in the same market.",
     convention=True,
 )
 
@@ -981,6 +981,11 @@ RESOURCE_HINTS = {
 # --------------------------------------------------------------------------------------
 # Dropping to 0 HP
 # --------------------------------------------------------------------------------------
+
+
+#: The shape of the death-save record in this ruleset: three successes and three failures,
+#: plus Stable. 4e counts failures only, so `state.py` reads this rather than assuming.
+BLANK_DEATH_SAVES: dict[str, Any] = {"successes": 0, "failures": 0, "stable": False}
 
 
 def on_zero_hp(pc: dict[str, Any], *, from_crit: bool = False, overflow: int = 0,
@@ -1861,7 +1866,7 @@ def validate_character(pc: dict[str, Any], name: str, current_hp: int, max_hp: i
         if str(lvl) not in [str(i) for i in range(1, 10)]:
             out.append(("error", f"{name}: spell slot level {lvl!r} — D&D spell levels run 1 to 9"))
 
-    # Fields that belong to the other ruleset have no business on this sheet.
+    # Fields that belong to another ruleset have no business on this sheet.
     for stray in ("hero_points", "focus", "dying", "wounded", "doomed", "str_mod", "perception"):
         if pc.get(stray) is not None:
             out.append(("error", f"{name}: has a `{stray}` field, which is a Pathfinder concept — "

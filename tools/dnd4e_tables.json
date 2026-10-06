@@ -1,0 +1,94 @@
+{
+  "_README": [
+    "D&D 4e has NO open-content release. The Game System License forbade reproducing rules",
+    "text, tables and even monster stat blocks, the 4e 'SRD' was only an index of terms and",
+    "templates rather than the rules, and the GSL is no longer offered. So unlike pf2e.py",
+    "(ORC) and dnd5e.py (CC-BY-4.0), this framework CANNOT ship 4e's numeric tables.",
+    "",
+    "Every value below is null until YOU type it in from books you own. The tools refuse to",
+    "compute rather than guessing: an unfilled table produces an error naming the table and",
+    "where to read it, not a plausible number.",
+    "",
+    "  python3 tools/dnd4e.py tables      # what is filled and what is not",
+    "  python3 tools/dnd4e.py sources     # the provenance discipline for this ruleset",
+    "",
+    "Fill only what you need. A campaign that never leaves the heroic tier needs levels 1-10",
+    "of three tables and nothing else. `tables --missing` lists what the command you just ran",
+    "actually wanted.",
+    "",
+    "This file is yours. It holds values transcribed from your own books for your own use,",
+    "and it is listed in .gitignore's spirit if you would rather not commit it — see",
+    "LICENSE_NOTES.md, 'Fourth edition'."
+  ],
+
+  "character_xp": {
+    "_source": "Player's Handbook, the Character Advancement table — the cumulative XP to reach each level",
+    "_shape": "level (1-30) -> cumulative XP required",
+    "_note": "Fill as far as your campaign will reach. Level 1 is 0.",
+    "values": {}
+  },
+
+  "monster_xp_by_level": {
+    "_source": "Monster Manual / Dungeon Master's Guide, the Experience Point Rewards table",
+    "_shape": "monster level (1-33) -> XP for a standard monster of that level",
+    "_note": "Standard monsters only. The role multipliers go in `monster_role_multipliers`.",
+    "values": {}
+  },
+
+  "monster_role_multipliers": {
+    "_source": "Dungeon Master's Guide, how elite, solo and minion monsters count against a budget",
+    "_shape": "role -> multiplier applied to the standard XP for that level",
+    "values": {
+      "standard": null,
+      "elite": null,
+      "solo": null,
+      "minion": null
+    }
+  },
+
+  "encounter_budget_per_character": {
+    "_source": "Dungeon Master's Guide, building an encounter — the XP budget for one character of a given level",
+    "_shape": "party level (1-30) -> XP budget per character for a standard encounter",
+    "_note": "4e's standard encounter is level-appropriate by default; difficulty is usually tuned by raising or lowering the encounter's level relative to the party rather than by a separate budget column. If your books give difficulty columns, use `encounter_budget_columns` instead and leave this null.",
+    "values": {}
+  },
+
+  "encounter_budget_columns": {
+    "_source": "Dungeon Master's Guide, if your printing gives more than one difficulty column",
+    "_shape": "difficulty name -> {party level -> XP budget per character}",
+    "values": {}
+  },
+
+  "dc_by_level": {
+    "_source": "Rules Compendium or DMG, the Difficulty Class by Level table. NOTE this table was REVISED by errata — check which printing you are using and record it in `_printing` below",
+    "_shape": "level (1-30) -> {easy, moderate, hard}",
+    "_printing": null,
+    "values": {}
+  },
+
+  "treasure_parcels": {
+    "_source": "Dungeon Master's Guide, the treasure parcels for a level",
+    "_shape": "level (1-30) -> a list of parcel descriptions, each a string you write",
+    "_note": "4e hands out treasure as a numbered set of parcels per level rather than a lump sum. Transcribe the parcel list for the levels you are running, or write your own and say so.",
+    "values": {}
+  },
+
+  "magic_item_prices": {
+    "_source": "Player's Handbook / Adventurer's Vault, the Magic Item Prices by Level table",
+    "_shape": "item level (1-30) -> market price in gp",
+    "values": {}
+  },
+
+  "monster_benchmarks": {
+    "_source": "Dungeon Master's Guide, the monster statistics by level table",
+    "_shape": "level -> {ac, fortitude, reflex, will, hp_per_level, attack, damage}",
+    "_note": "Only needed if you build monsters from benchmarks rather than using published ones. A published monster's own stat block is always preferred — see rule 4 of the charter.",
+    "values": {}
+  },
+
+  "_meta": {
+    "filled_by": null,
+    "books_used": null,
+    "printing_notes": null
+  }
+}

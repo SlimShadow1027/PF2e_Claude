@@ -5,23 +5,31 @@
 A **framework** for running tabletop games: tooling, procedures, and the tables needed to run the
 procedures. It is not a rulebook and it is not a substitute for one.
 
-It supports **two rulesets, published under two different licences**, and that distinction runs
-through everything below:
+It supports **three rulesets under three completely different licensing situations**, and that
+distinction runs through everything below:
 
 | Ruleset | Rules published under | This repository's material from it |
 |---|---|---|
 | Pathfinder Second Edition (Remaster) | the **ORC License** | `tools/pf2e.py`, the numbered `system/` docs |
 | Fifth edition, 2024 revision | **CC-BY-4.0**, as SRD 5.2 | `tools/dnd5e.py`, `system/dnd5e/` |
+| Fourth edition | **nothing. There is no open-content release** | `tools/dnd4e.py`, `system/dnd4e/` — **procedure only; every number is owner-supplied** |
 
-**The two licences are not interchangeable and this repository does not mix them.** ORC-licensed
-material cannot be relicensed as CC-BY-4.0, nor the reverse. Every table, quotation and rule
-statement in this repository sits in exactly one of the two sections below, and nothing has been
-merged, blended or derived across them. That is a legal constraint as well as a design one, and it
-is part of why `system/23-cross-system-worlds.md` is strict about what crosses between the games:
-the shared `worlds/` layer holds events and people, which belong to neither publisher, and holds
-no rules text from either.
+**The licences are not interchangeable and this repository does not mix them.** ORC-licensed
+material cannot be relicensed as CC-BY-4.0, nor the reverse, and neither can absorb material from
+the third. Every table, quotation and rule statement in this repository sits in exactly one of the
+sections below, and nothing has been merged, blended or derived across them. That is a legal
+constraint as well as a design one, and it is part of why `system/23-cross-system-worlds.md` is
+strict about what crosses between the games: the shared `worlds/` layer holds events and people,
+which belong to no publisher, and holds no rules text from any of them.
 
-## What it never contains, for either game
+**Fourth edition is the asymmetric case, and it is the one to understand before using it.** The
+licence Wizards of the Coast offered for 4e — the Game System License — permitted no Open Game
+Content at all; it licensed a compatibility logo and an index of game terms and templates (the
+so-called "4e SRD"), not the rules. It is also no longer offered. So for 4e this repository ships
+**no numeric table of any kind**, and the tools refuse to compute rather than guessing. The
+"Fourth edition" section below is the full statement.
+
+## What it never contains, for any of the three
 
 - **No stat blocks.** `templates/bestiary/_CREATURE_TEMPLATE.md` is an empty form with a required
   `Source:` line. Every creature actually used in a campaign is written into
@@ -34,7 +42,8 @@ no rules text from either.
 
 What it *does* contain is a small number of **game mechanics** — mathematical relationships and
 short rule statements — needed for the tooling to compute anything, plus one block of quoted
-condition text per ruleset. Each game's is itemised in its own section below.
+condition text for each of the two rulesets that have an open source to quote. Each game's is
+itemised in its own section below. **For 4e there is no quoted text at all.**
 
 ---
 
@@ -209,31 +218,129 @@ many are this framework's own convention rather than a published rule.
 
 ---
 
-# Both
+# Fourth edition — no open content, and what this framework does about it
+
+## The situation
+
+**There is no open-content release of D&D 4th Edition, and there never was.**
+
+The licence Wizards of the Coast offered for 4e was the **Game System License**. It was not an
+open-content licence in the sense the OGL and the ORC License are. It licensed the use of a
+compatibility logo and a small index of game terms and templates — what people loosely call "the
+4e SRD" — on terms that **permitted no Open Game Content**: not spells, not classes, not feats,
+and **not monster stat blocks**. The GSL is also no longer offered.
+
+Fourth edition therefore has:
+
+- **no open text to quote**, and
+- **no open text to verify against.**
+
+That second one matters as much as the first. The other two rulesets in this repository were built
+by reading an open source and then cross-checking every number against a second, independent
+open implementation (Archives of Nethys against Foundry VTT's PF2e system; SRD 5.2 against
+Foundry VTT's dnd5e system). Neither step is available for 4e.
+
+## What this framework does instead
+
+It splits procedure from numbers, and treats them completely differently.
+
+| | Where it lives | Status |
+|---|---|---|
+| **Procedure and structure** | `tools/dnd4e.py`, `system/dnd4e/` | Stated in this framework's **own words**. Nothing quoted. Marked in `sources` as a mechanic with no open source, meaning **believed correct, unverifiable** |
+| **Every numeric table** | `tools/dnd4e_tables.json` — **ships empty** | Nothing at all. The tools **refuse to compute** and name the book and table to read from |
+
+Game mechanics — the mathematical relationships and procedures of a game — are not themselves
+copyrightable; the **expression** of them is. So this framework states how 4e works in sentences
+it wrote itself, and quotes nothing. That is a narrower and more cautious position than the one
+it takes with the other two rulesets, where an open licence explicitly permits reproduction.
+
+The nine tables it will not ship are:
+
+| Table | Read it from |
+|---|---|
+| `character_xp` | *Player's Handbook*, Character Advancement |
+| `monster_xp_by_level` | Monster Manual / *Dungeon Master's Guide*, Experience Point Rewards |
+| `monster_role_multipliers` | *Dungeon Master's Guide*, how elites, solos and minions count |
+| `encounter_budget_per_character` | *Dungeon Master's Guide*, building an encounter |
+| `encounter_budget_columns` | *Dungeon Master's Guide*, if your printing gives difficulty columns |
+| `dc_by_level` | Rules Compendium or DMG — **revised by errata; record the printing** |
+| `treasure_parcels` | *Dungeon Master's Guide*, the parcels for a level |
+| `magic_item_prices` | *Player's Handbook* / *Adventurer's Vault*, Magic Item Prices by Level |
+| `monster_benchmarks` | *Dungeon Master's Guide*, monster statistics by level |
+
+```
+python3 tools/dnd4e.py tables     # what is filled and what is not
+python3 tools/dnd4e.py sources    # every statement, with its marking
+```
+
+A heroic-tier campaign needs three of the nine. Everything else in the framework — rolling, state,
+conditions, the encounter tracker, rests, surges, the living history — works without any of them.
+
+## What this means for you
+
+**`tools/dnd4e_tables.json` is yours.** When you fill it in, you are transcribing, for your own
+use, tables out of books you own. That is a private copy for personal use, which is a very
+different act from this repository redistributing them — and it is why the file ships empty rather
+than ships filled and asks you to delete it.
+
+If you **redistribute** a filled copy of that file, you are redistributing 4e content, and that is
+your decision and your exposure, not this framework's. The file's `_meta.books_used` field exists
+so your own campaign can record its provenance; it is not a licence.
+
+Nothing in `tools/dnd4e.py` or `system/dnd4e/` is Wizards of the Coast's text. This framework is
+not published, endorsed or approved by Wizards of the Coast, and no trademark is licensed to it.
+The edition's name is used only to say which rules a campaign is running, which is the one thing a
+GM has to know before rolling anything.
+
+## What this repository does NOT contain from fourth edition
+
+Everything. More precisely:
+
+- **No numeric table of any kind.** This is the difference from the other two sections, and it is
+  absolute.
+- **No class, race, power, feat, ritual, magic item, paragon path or epic destiny text.**
+- **No stat blocks**, and no monster benchmark numbers to check one against.
+- **No calendar and no setting material.** 4e's published settings are not open content; the
+  month names of any of them are deliberately not reproduced. A 4e campaign uses the `generic`
+  placeholder calendar or defines one in its world's `CALENDAR.md`.
+- **No adventure content, artwork, maps or trade dress.**
+- **No quoted rule text**, not even the conditions — which the other two sections both include,
+  and which is the clearest single illustration of the asymmetry.
+
+---
+
+# All three
 
 ## This framework's own contributions
 
 The Python tooling, the procedures in `system/`, the templates, the slash commands, the improv and
 oracle tables in `system/16-random-tables.md`, the difficulty presets, the solo levers that are
-marked as homebrew, the cross-system scope bands and the shared-world layer are this repository's
-own work, and are offered under whatever licence the repository owner chooses to apply. Nothing in
-them is Paizo's or Wizards'.
+marked as homebrew, the cross-system scope bands, the shared-world layer and the living-history
+layer are this repository's own work, and are offered under whatever licence the repository owner
+chooses to apply. Nothing in them is Paizo's or Wizards'. **Everything in `tools/dnd4e.py` and
+`system/dnd4e/` is also this framework's own prose**, for the reason the Fourth edition section
+gives.
 
 Specifically **this framework's, not anyone's published rule**, and labelled as such in place:
 
 | This framework's | Where it says so |
 |---|---|
-| The four difficulty presets, for both rulesets | `system/03-*` and `system/dnd5e/03-*` |
+| The four difficulty presets, for all three rulesets | `system/03-*`, `system/dnd5e/03-*`, `system/dnd4e/03-*` |
 | The oracle ladder and the "no, and" rung | `system/19-solo-oracle.md` |
-| The four scope bands as applied to **Pathfinder** levels (the D&D tiers behind them are published) | `python3 tools/rules.py bands` |
+| The four scope bands as applied to **Pathfinder** levels (D&D 2024's tiers behind them are published) | `python3 tools/rules.py bands` |
+| The four scope bands as applied to **4e's thirty** levels (its three tiers are published but not open, so the mapping is this framework's) | `python3 tools/rules.py bands --system dnd4e` |
+| **Every statement about 4e**, since there is no open source to quote or verify against | `python3 tools/dnd4e.py sources` — 18 of 20 entries |
+| 4e's five encounter-rating labels, since 4e publishes no budget-to-difficulty mapping | `python3 tools/dnd4e.py sources` (`encounter_rating`) |
 | D&D treasure pacing by tier, and the settlement-size buckets | `python3 tools/dnd5e.py sources` |
-| Rolling initiative ties off with dice in D&D, where the published rule is that the GM decides | `roll.py init` prints both |
+| Rolling initiative ties off with dice in both D&D editions, where the published rule leaves them to the GM | `roll.py init` prints both |
 | The random-encounter cadence and the morale rule | `system/dnd5e/06-*`, `system/dnd5e/10-*` |
 | The `generic` placeholder calendar | `python3 tools/rules.py calendars` |
 
-`python3 tools/pf2e.py sources` and `python3 tools/dnd5e.py sources` each count these separately
-from the published tables, so the line between what is quoted and what is invented stays visible
-rather than being a matter of trust.
+`python3 tools/pf2e.py sources`, `python3 tools/dnd5e.py sources` and
+`python3 tools/dnd4e.py sources` each count these separately from the published tables, so the
+line between what is quoted, what is stated and what is invented stays visible rather than being a
+matter of trust. The 4e one is worth running once for its own sake: it says, at the top, that this
+ruleset's provenance is weaker than its siblings' and why.
 
 Where this framework invents a rule rather than quoting one, it says so — in `RULES_DELTAS.md` for a
 campaign's house rules, and inline in `system/` for the framework's own conventions (the wounded
@@ -249,6 +356,10 @@ look something up.
 - For fifth edition: the 2024 Player's Handbook, Dungeon Master's Guide and Monster Manual. The
   DMG in particular fills a real gap here, since its treasure tables are not open content and this
   framework paces treasure by convention in their absence.
+- **For fourth edition this is not advice, it is a requirement.** The Player's Handbook and
+  Dungeon Master's Guide are the only places the numbers exist; without them the encounter,
+  advancement, DC and treasure maths will not compute at all, and the tools will keep saying so.
+  The Rules Compendium is worth having for the revised DC table.
 
 SRD 5.2 is free, covers the player-facing core rules in full, and is enough to run a campaign in
 this framework without buying anything: <https://www.dndbeyond.com/srd>. Archives of Nethys

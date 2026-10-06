@@ -318,6 +318,41 @@ def double_damage_dice(expr: str) -> str:
     return new
 
 
+def maximise_damage_dice(expr: str) -> str:
+    """Replace every dice term with its maximum, leaving flat modifiers alone.
+
+    This is D&D 4th Edition's critical-hit rule written as an expression rewrite: a
+    critical hit in 4e deals maximum damage rather than rolling anything extra, so
+    `2d6+5` becomes `12+5`. The three rulesets this framework runs disagree completely
+    here — Pathfinder doubles the whole roll, D&D 2024 doubles the dice and adds the
+    modifier once, and 4e rolls nothing at all — which is why the rule lives with the
+    ruleset and not with the dice.
+
+    Stated as a mechanic rather than quoted: 4e has no open-content release, so nothing
+    of its text is reproduced here. Extra dice from a high-crit weapon or a critical-only
+    power are rolled separately and added — pass them as their own damage roll, because
+    those dice **are** rolled and must not be maximised.
+
+    A term carrying a keep-highest or keep-lowest modifier is refused rather than guessed
+    at, for the same reason doubling one is.
+    """
+    text = str(expr).replace(" ", "")
+    if re.search(r"d\d+k[hl]", text, re.IGNORECASE):
+        raise DiceError(
+            f"cannot mechanically maximise {expr!r}: it keeps highest/lowest dice, and the "
+            f"maximum of that is a judgement call — write the maximised expression instead"
+        )
+
+    def top(m: re.Match[str]) -> str:
+        n = int(m.group(1) or 1)
+        return str(n * int(m.group(2)))
+
+    new, count = _DICE_TERM_RE.subn(top, text)
+    if count == 0:
+        raise DiceError(f"{expr!r} has no dice to maximise")
+    return new
+
+
 def _rewrite_d20(expr: str, replacement: str) -> str:
     text = str(expr).replace(" ", "")
     new, n = re.subn(r"(?<![\dkhl])1?d20(?!\d)", replacement, text, count=1, flags=re.IGNORECASE)
@@ -535,9 +570,14 @@ class Roll:
             if self.crit:
                 tail += " (critical)"
                 undoubled = self.extra.get("undoubled_expr")
+                unmaxed = self.extra.get("unmaximised_expr")
                 if undoubled:
-                    # D&D: the dice themselves were doubled, so name what was rolled instead.
+                    # D&D 2024: the dice themselves were doubled, so name what was rolled.
                     tail += f" — dice doubled from {undoubled}"
+                elif unmaxed:
+                    # D&D 4e: nothing was rolled at all, so say so rather than implying dice.
+                    tail += (f" — maximum damage, dice not rolled "
+                             f"({unmaxed} maximised to {self.extra.get('maximised_expr')})")
         elif self.dc is not None and self.degree is not None:
             default_vs = "AC" if (self.degree.test_kind == "attack" and self.system != "pf2e") else "DC"
             vs = self.extra.get("dc_label") or default_vs
@@ -553,7 +593,8 @@ class Roll:
             tail = f" vs DC {self.dc} → {'SUCCESS' if ok else 'FAILURE'}"
         if self.map_step:
             tail += f"  (MAP step {self.map_step})"
-        # The same two dice have two names. Print the one the table actually uses.
+        # The same two dice have two names. Print the one the table actually uses. 4e has
+        # no such mechanic at all, and `make_roll` refuses it rather than labelling it.
         swing = ("advantage", "disadvantage") if self.system != "pf2e" else ("fortune", "misfortune")
         if self.fortune:
             tail += f"  [{swing[0]}]"
@@ -631,6 +672,10 @@ class Roll:
             "dice": self.result.dice_json(),
             "line": self.public_line(),
         }
+        if self.extra:
+            # The per-ruleset fields a caller needs to act on the roll — the crit rule
+            # applied, the death-save counters after it, what the natural 20 permits.
+            d["extra"] = dict(self.extra)
         if self.logged_seq is not None:
             d["seq"] = self.logged_seq
         return d
@@ -666,6 +711,15 @@ def make_roll(
         raise DiceError("a roll cannot be both fortune and misfortune")
     sid = rules.canonical(system)
     rs = rules.load(sid)
+    if (fortune or misfortune) and sid == "dnd4e":
+        # 4e has no two-dice swing under any name. Its equivalents are flat numbers: a +2
+        # for combat advantage, a -2 for a penalty. Rolling 2d20 and keeping one would be
+        # another game's mechanic wearing 4e's label, so it is refused rather than renamed.
+        raise DiceError(
+            "D&D 4e has neither Advantage/Disadvantage nor fortune/misfortune — every swing "
+            "in 4e is a flat modifier. Combat advantage is +2 to the attack roll; put it in "
+            "the expression (`1d20+9+2`) so the log shows the real arithmetic."
+        )
     tk = test_kind or ("attack" if kind == "attack" else kind if kind in ("save", "flat") else "check")
 
     use = expr
@@ -676,13 +730,24 @@ def make_roll(
 
     extra = dict(extra or {})
 
-    if kind == "damage" and crit and sid != "pf2e":
+    if kind == "damage" and crit and sid == "dnd5e":
         # D&D 2024 rolls the damage DICE twice and adds the modifier once, so the extra
         # dice are genuinely rolled rather than being a doubled total.
         doubled = double_damage_dice(use)
         extra["crit_rule"] = "dice doubled, modifier added once (SRD 5.2 Critical Hits)"
         extra["undoubled_expr"] = use
         use = doubled
+
+    if kind == "damage" and crit and sid == "dnd4e":
+        # D&D 4e criticals deal MAXIMUM damage — nothing extra is rolled, so the dice are
+        # replaced by their highest faces before anything is thrown. High-crit weapons and
+        # critical-only powers add dice that genuinely are rolled; roll those separately.
+        maxed = maximise_damage_dice(use)
+        extra["crit_rule"] = ("maximum damage; no dice rolled (D&D 4e critical hits — "
+                              "mechanic, no open source to cite)")
+        extra["unmaximised_expr"] = use
+        extra["maximised_expr"] = maxed
+        use = maxed
 
     result = roll_expression(use)
 
@@ -808,6 +873,14 @@ TIE_RULES = {
         "instead, so the ordering is auditable rather than an unlogged GM choice. That "
         "substitution is this framework's convention, not the published rule; say so at the "
         "table, and override the order by hand if the player would rather decide.",
+    ),
+    "dnd4e": (
+        "rolled-off",
+        "Ties: in D&D 4e a tie on initiative is broken in favour of the higher initiative "
+        "modifier, and a tie on that too is decided by the DM. Stated as a mechanic — 4e has "
+        "no open-content release, so nothing of its text is quoted. This framework rolls "
+        "every remaining tie off with real dice rather than deciding unlogged, which is this "
+        "framework's convention and not the published rule; say so at the table.",
     ),
 }
 
@@ -1141,8 +1214,8 @@ def cmd_recovery(args: argparse.Namespace) -> list[Roll]:
     if sid != "pf2e":
         raise DiceError(
             f"a recovery check is a Pathfinder procedure, and this is a "
-            f"{rules.short_of(sid)} campaign. D&D 2024 has Death Saving Throws instead: "
-            f"`roll.py death-save --campaign {args.campaign or '<slug>'}`"
+            f"{rules.short_of(sid)} campaign. Both D&D editions make a death saving throw "
+            f"instead: `roll.py death-save --campaign {args.campaign or '<slug>'}`"
         )
     if args.dying < 1:
         raise DiceError("a recovery check is only made while dying 1 or worse")
@@ -1176,6 +1249,61 @@ def cmd_recovery(args: argparse.Namespace) -> list[Roll]:
     return [r]
 
 
+def _death_save_4e(args: argparse.Namespace) -> list[Roll]:
+    """A D&D 4e death saving throw: a flat d20 against 10, counting failures only.
+
+    Stated as a mechanic, with nothing quoted — 4e has no open-content release. Below 10
+    is a failure and the third failure before an extended rest is death; 10 or better
+    simply is not a failure, and nothing accumulates on it; a natural 20 lets the
+    character spend a healing surge and act. Unlike D&D 2024's version there is no
+    success counter and no Stable state, so this does not pretend to track either.
+    """
+    import dnd4e
+
+    expr = f"1d20{args.bonus:+d}" if args.bonus else "1d20"
+    if int(getattr(args, "successes", 0) or 0):
+        raise DiceError(
+            "a 4e death saving throw has no success counter — pass only --failures. "
+            "Ten or better is not a success that accumulates; it is simply not a failure."
+        )
+    r = make_roll(
+        "death-save",
+        expr,
+        dc=dnd4e.DEATH_SAVE_SUCCESS_DC,
+        label=args.label or "Death saving throw",
+        actor=args.actor,
+        secret=args.secret,
+        private=args.private,
+        transparency=args.transparency,
+        tags=list(args.tag) + ["death-save"],
+        system="dnd4e",
+        test_kind="death-save",
+        extra={"failures_before": int(getattr(args, "failures", 0) or 0),
+               "dc_label": "flat DC"},
+    )
+    out = dnd4e.resolve(r.result.total, dnd4e.DEATH_SAVE_SUCCESS_DC, r.result.natural,
+                        kind="death-save")
+    incurred = int(out.get("failures_incurred", 0 if out["success"] else 1))
+    fail = int(getattr(args, "failures", 0) or 0) + incurred
+    r.extra.update({
+        "failures_incurred": incurred,
+        "failures_after": fail,
+        "spends_a_surge": bool(out.get("spends_surge")),
+    })
+    r.label = (r.label or "") + f" → {fail}/{dnd4e.DEATH_SAVE_FAILURES} failures"
+    if out.get("spends_surge"):
+        r.label += " — natural 20: spend a healing surge and act"
+        r.extra["resolution"] = "may spend a healing surge"
+    elif fail >= dnd4e.DEATH_SAVE_FAILURES:
+        r.label += " — DEAD on the third failure"
+        r.extra["resolution"] = "dead"
+    elif out["success"]:
+        r.extra["resolution"] = "still dying, no failure incurred"
+    else:
+        r.extra["resolution"] = "still dying"
+    return [r]
+
+
 def cmd_death_save(args: argparse.Namespace) -> list[Roll]:
     """A D&D 2024 Death Saving Throw, with its own natural-20 and natural-1 rules.
 
@@ -1184,6 +1312,8 @@ def cmd_death_save(args: argparse.Namespace) -> list[Roll]:
     the expression is a bare d20 unless the table has a feature that says otherwise.
     """
     sid = _system_for(args)
+    if sid == "dnd4e":
+        return _death_save_4e(args)
     if sid != "dnd5e":
         raise DiceError(
             f"a Death Saving Throw is a D&D 2024 procedure, and this is a "
@@ -1266,11 +1396,16 @@ def cmd_init(args: argparse.Namespace) -> tuple[list[Roll], list[dict[str, Any]]
         # under a Pathfinder label it does not have.
         is_surprised = name in surprised
         if is_surprised and sid != "dnd5e":
+            instead = {
+                "pf2e": "In Pathfinder, an unaware creature is off-guard and the ambusher may "
+                        "get a free round",
+                "dnd4e": "In 4e, surprised creatures do not act in the surprise round at all "
+                         "and grant combat advantage until they do",
+            }.get(sid, "That ruleset handles surprise some other way")
             raise DiceError(
                 f"--surprised is a D&D 2024 rule (Disadvantage on the Initiative roll) and "
-                f"this is a {rules.short_of(sid)} campaign. In Pathfinder, an unaware "
-                f"creature is off-guard and the ambusher may get a free round — handle it in "
-                f"the fiction and the encounter tracker, not on the initiative roll."
+                f"this is a {rules.short_of(sid)} campaign. {instead} — handle it in the "
+                f"fiction and the encounter tracker, not on the initiative roll."
             )
         rolls.append(
             make_roll(

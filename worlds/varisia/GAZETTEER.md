@@ -1,7 +1,7 @@
 # Gazetteer
 
 Places, regions and settlements. A market is the one place where a world fact and a
-ruleset's numbers meet, so each settlement carries **both games' answers** and a campaign
+ruleset's numbers meet, so each settlement carries **one column per ruleset** and a campaign
 reads its own column.
 
 | Place | Type | Region | Item level (PF2e) | Buys up to (D&D) | One line |

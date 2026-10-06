@@ -130,3 +130,76 @@ pictures, because the GM can read positions back out of them.
   player decides to go alone.
 - **Treasure pacing is a convention here, not a table.** If it drifts, say so and fix it in the
   open; there is no published budget to appeal to.
+
+---
+
+# Added later: the third ruleset
+
+## What was left out of the 4e side, and why it is different from the other two
+
+**Everything numeric, permanently.** This is not a list of things deferred; it is the licence.
+D&D 4th Edition has no open-content release — the Game System License permitted no Open Game
+Content, not even stat blocks, and is no longer offered — so there is nothing to quote and
+nothing to verify against. `tools/dnd4e.py` ships **procedure stated in this framework's own
+words** and **not one number**.
+
+```
+python3 tools/dnd4e.py tables     # the nine tables you supply, and the book each comes from
+python3 tools/dnd4e.py sources    # every statement, with its marking
+```
+
+The nine owner-supplied tables are in `tools/dnd4e_tables.json`, which ships empty. The functions
+that need them refuse and name the book. **A heroic-tier campaign needs three of the nine.**
+`system/dnd4e/README.md` is the practical guide; `LICENSE_NOTES.md` is the legal statement;
+`DESIGN_NOTES.md` records why the refusal was chosen over a guessed table marked `⚠ UNVERIFIED`.
+
+Also deliberately absent:
+
+- **No monster benchmarks**, so nothing can sanity-check an unfamiliar stat block until you fill
+  that table.
+- **No quoted condition text**, which both other rulesets include. The clearest single
+  illustration of the asymmetry.
+- **No slowed automation** for a heavy load; the carry report names the heavy load and the
+  condition is the GM's call.
+- **No mark automation beyond storage.** `marked_by` is recorded; the penalty is applied by hand,
+  because what a mark does depends on who set it.
+- **No Essentials variant and no pre-errata DC table.** One 4e, with a `_printing` field to record
+  which DC table you transcribed.
+
+## Things to watch for once you are playing the 4e side
+
+- **The crit rule is the third answer, and muscle memory will give you one of the other two.**
+  Pathfinder doubles the whole roll; D&D 2024 doubles the dice; **4e maximises them and rolls
+  nothing.** `roll.py damage --crit` on a 4e campaign prints "maximum damage, dice not rolled" so
+  the line itself is the correction.
+- **Saying "advantage".** 4e has no two-dice swing under any name; combat advantage is a flat +2.
+  `roll.py` refuses `--advantage` and says to put the +2 in the expression. If you catch yourself
+  narrating advantage, you have slipped rulesets.
+- **"Saving throw" means something else here.** The defender never rolls in 4e — the attacker
+  rolls against a static Fortitude, Reflex or Will — and a saving throw is an **effect-ending**
+  roll against a flat 10. This is the most dangerous shared word in the framework, and nothing
+  catches it in narration.
+- **Hit points do not stop at zero.** A character dies at a negative total equal to their bloodied
+  value. `damage` tracks the depth and prints it against the threshold; look at the number rather
+  than assuming 0 is the floor.
+- **There is no Stable state.** Three failures and no successes. A dying 4e character keeps rolling
+  until they are healed or dead, and `death-save stabilise` is refused with that explanation.
+  In a solo campaign this is harsher than D&D 2024's version, where three successes buy time.
+- **The surge pool is the adventuring day, not the hit point total.** Say the surge count out loud
+  after every fight. A character on full hit points with one surge left is nearly done, and the
+  player cannot decide whether to press on without knowing it.
+- **No leader in the party means the day is short.** With one character and no healing ally,
+  Second Wind is the only in-combat healing and nothing refills surges but an extended rest.
+  Expect two or three encounters between rests where a full party manages four or five.
+- **A budget-legal fight can still be unfair.** 4e's budget is linear, so nothing warns you —
+  but four minions get four turns a round against a solo character's one, and every monster in the
+  room attacks the only target there is. Within the same budget, prefer **fewer and tougher**, and
+  avoid elites and solos against one character entirely.
+- **XP is divided by party size, so a solo character levels about five times faster** than
+  published pacing. Decide what to do about that before session one and write it in
+  `RULES_DELTAS.md`; changing it later feels like a punishment.
+- **Offer the reactions more often than feels necessary.** 4e has an immediate action once a
+  round, an opportunity action per other creature's turn, and immediate interrupts and reactions on
+  a great many powers. The tracker's `imm` and `rxn` columns make "you have none" backable; nothing
+  makes "I forgot to ask" recoverable.
+- **1 pp = 100 gp.** If a purse looks wrong after importing anything, this is why.

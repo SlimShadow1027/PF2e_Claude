@@ -2859,3 +2859,103 @@ PASS — 0 errors, 0 warning(s)
 - **Treasure pacing is a convention and has not been played long enough to judge.** Whether "check
   the floor at each level-up" produces a well-equipped character over twenty levels is not
   something a single acceptance run can show.
+
+---
+
+# Added later: the fourth-edition run
+
+Same bar as the 5.5e run above: the tooling exercised deliberately, with every refusal and every
+error recorded. The campaign built for it was `test_4e`, explicitly throwaway, and is **removed
+from the repository** at the end of the run — the same treatment `test-run`, `standalone-test` and
+`test_campaign` got.
+
+## What was exercised
+
+| | Result |
+|---|---|
+| `rules.py check` with three rulesets | all three implement all 22 contract names |
+| `state.py init --system 4e` | refuses without `--system`; writes `"system": "dnd4e"` |
+| `add-character` with four defences, abilities and a surge pool | surge pool computed as the class number plus the Constitution modifier (7 + 3 = 10); bloodied value, death threshold and surge value printed |
+| `add-character` with no `--surges` | warns in capitals that the character is unhealable |
+| `power add` / `power use` / `power list` | encounter power spent, then refused with "a short rest restores it" |
+| `damage` to 0 and past it | `hp_below_zero` tracked; "death at -19" reported against the threshold |
+| `damage` while dying | one death-save failure recorded, with the depth named |
+| `death-save roll` | rolled through `roll.py`, a flat d20 against 10, logged, failures only |
+| `death-save stabilise` | **refused** — 4e has no Stable state |
+| `second-wind use` | spends a surge, reports the amount for `heal`, names the defence bonus |
+| `heal` from dying | ends dying, clears the failures **and** clears the below-zero depth |
+| `surge list` / `surge set` | pool and per-surge value reported against current maximum HP |
+| `action-point spend`, `milestone` | action point spent; milestone granted one party-wide |
+| `encounter add` with `--role` and `--rank` | roles and ranks validated against 4e's own lists |
+| `encounter add --rank minion --hp 27` | warns that a minion has exactly 1 hit point |
+| the `std / mov / min / imm / rxn` tracker | each spent; a second standard refused; a second minor refused **and offered the trade-down** |
+| `encounter next` | per-turn reset, with the immediate action restored per round |
+| `short-rest` | 5 minutes; encounter powers and Second Wind back; says plainly that hit points do not return |
+| `extended-rest` | 6 hours; HP, surges, dailies, action point; death-save failures cleared |
+| `carry` | pounds, normal load and heavy load, from the Strength score |
+| `roll.py damage --crit` | **maximises** the dice: `2d6+5` → `12+5`, printed as "maximum damage, dice not rolled" |
+| `roll.py --advantage` | **refused**, naming combat advantage's flat +2 |
+| `roll.py init --surprised` | **refused**, naming 4e's own surprise rule |
+| `world.py link` into a world with its own calendar | adopted `verge` into `state.json` and seated the clock on `11 Falling 219 VR` |
+| `advance-time "3 days"` | advanced on the 8-span, 40-day Verge calendar |
+| `world.py narrative` | scaffolded `worlds/riven-verge/dnd4e/test_4e.md` |
+| `world.py history-add` ×3 | two chapters on the Verge, one on Varisia; both gated correctly |
+| `world.py as-of` at an earlier date | withheld the later chapter by span end |
+| `world.py universe` | both worlds registered in the Strand, with the one-way route |
+| `world.py convert --from dnd4e --to pf2e` | band and range, with the refusals listed |
+| `validate.py --all --repo` | 0 errors |
+| `dashboard.py` | 4e columns: Surges, AP, 2nd wind, Encounter powers, Daily powers |
+| `analyze.py` | death saving throws counted as failures only; the reroll section replaced with "4e has no reroll resource" |
+| the cross-ruleset refusals | `hero`, `inspiration`, `long-rest`, `hit-dice`, `attune`, `exhaustion`, `slots` and `--bulk` each refused by name, each naming 4e's own answer |
+
+## The owner-supplied table path was tested, then reverted
+
+Because a refusal that is never satisfied is only half the feature. Four tables were filled with
+**deliberately fake values** in a scratch copy, the maths was confirmed to compute, and the file
+was restored to empty:
+
+- `advancement` printed the filled levels and `(not filled)` for the rest.
+- `encounter --monster 1x4:standard 3x2:minion` priced each monster, totalled, rated the build
+  and divided the award by the party size.
+- `dc --level 3` printed the row **and the recorded printing**, which was the string
+  `FAKE VALUES — code-path test only` — confirming the errata field is surfaced with every answer.
+- `treasure --level 4` printed the parcel list as transcribed, labelled as the owner's list and
+  not a budget.
+- `state.py xp add` then said `⚠ 1,000 XP reached — level 2 … The total is cumulative and is NOT
+  reset`, which is 4e's rule and was previously Pathfinder's answer for every campaign (see below).
+
+`git diff tools/dnd4e_tables.json` was empty afterwards. **No 4e numbers are in the repository.**
+
+## Bugs this run found, all fixed
+
+Five, and each was invisible while there were only two rulesets. `DESIGN_NOTES.md` has the full
+write-ups; in brief:
+
+1. **`state.py xp add` applied Pathfinder's flat-1,000 rule to every campaign.** A 5.5e campaign at
+   1,000 XP was told to level up and subtract 1,000 — wrong twice over. Now delegated to the
+   ruleset's `xp_is_cumulative()` and `xp_to_level()`.
+2. **`ENCUMBRANCE_FIELD`'s "the other unit" lookup assumed exactly two rulesets**, so with three it
+   silently picked one of the two remaining. Now keyed on the field, not the ruleset.
+3. **`rules.py calendars` printed only the placeholder**, because run as a script `rules.py` is
+   `__main__` while every ruleset does `import rules` — two module objects, two registries.
+4. **A world-defined calendar crashed every tool that formatted a date**, with a traceback, right
+   after `world.py link` wrote it into `state.json`. This would have hit a Pathfinder or 5.5e
+   campaign in any world with its own calendar; it had never been tried.
+5. **The live-state validator failed the framework's own world template**, because `Position:` is
+   both a combatant's square and the field a world README uses to say where it sits.
+
+## What this run does not establish
+
+- **No 4e session has been played.** As with the 5.5e half.
+- **Nothing about 4e was cross-checked against anything**, and could not be: there is no open
+  content to verify against. Every mechanic is marked "believed correct, unverifiable" and the
+  `To verify before first play (4e side)` list in `DESIGN_NOTES.md` names the four worth checking
+  first.
+- **No real 4e table is in the repository**, so the encounter, advancement, DC and treasure maths
+  is unexercised against real values. The code path is proven; the numbers are the owner's.
+- **No 4e character was built from a real class entry.** The smoke-test character's defences,
+  powers and surge count were plausible numbers typed by hand, not read off a class table.
+- **The solo levers are untested in play.** 4e's budget is linear so nothing degenerates
+  arithmetically, which is exactly why the advice in
+  `system/dnd4e/03-difficulty-and-solo-levers.md` is about the shape of the fight rather than the
+  total — and that advice is reasoning, not a measurement.

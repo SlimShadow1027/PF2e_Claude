@@ -1,14 +1,14 @@
 # 23 — A world shared across rulesets
 
 Read `21-shared-worlds.md` first: everything in it still applies. This document covers the one
-case it does not, which is **a world with a Pathfinder campaign and a D&D campaign in it**.
+case it does not, which is **a world holding campaigns of more than one of the three rulesets**.
 
 That case is supported, and it is the reason the world layer is shaped the way it is. It is also
 the one place where getting it wrong is silent: a level written into a chronicle entry does not
 fail validation loudly the way a bad date does — it just misinforms a reader two campaigns later
 who has no way to know it was ever meaningless to them.
 
-The layer where the two games' campaigns each keep their *own* detailed history —
+The layer where each game's campaigns keep their *own* detailed history —
 `worlds/<world>/<system>/<campaign>.md` — is in `24-the-living-history.md`. It exists precisely
 so that the shared layer can stay imprecise without anyone losing the detail.
 
@@ -16,6 +16,7 @@ so that the shared layer can stay imprecise without anyone losing the detail.
 python3 tools/world.py systems <world>          # which rulesets play here, and the calendar
 python3 tools/world.py crossing                 # what crosses, and what does not
 python3 tools/world.py convert --level 7 --from pf2e --to dnd5e
+python3 tools/world.py convert --level 14 --from dnd4e --to pf2e
 python3 tools/rules.py bands                    # the scope bands, and which of them is published
 ```
 
@@ -25,9 +26,9 @@ python3 tools/rules.py bands                    # the scope bands, and which of 
 
 **The world records what happened. It never records anyone's numbers.**
 
-A world folder is system-neutral. Campaigns of either ruleset link to it, promote into it and
+A world folder is system-neutral. Campaigns of any ruleset link to it, promote into it and
 read from it, and nothing in it belongs to one game. That is not tidiness — it is the only
-version of a shared world that survives being read by two games with different maths.
+version of a shared world that survives being read by three games with different maths.
 
 ---
 
@@ -46,13 +47,14 @@ version of a shared world that survives being read by two games with different m
 
 | Does not cross | Why not |
 |---|---|
-| Character levels, one for one | A level is a position on one game's power curve. The curves differ in shape, not merely in scale. |
-| Stat blocks | A CR 5 monster and a level 5 Pathfinder creature are not the same creature, and neither set of numbers survives the trip. |
-| DCs | Pathfinder DCs rise with level; D&D's do not. "A DC 20 lock" is a different obstacle in each game, and in Pathfinder it is a different obstacle at level 2 than at level 15. |
-| ACs and attack bonuses | Bounded in one game, climbing in the other. |
-| Treasure, piece for piece | Pathfinder publishes a per-level allotment; D&D 2024's equivalent is not open content and its economy is shaped differently. Electrum exists in one game and not the other. |
-| Encounter budgets and XP | One budget is per party with a size adjustment and resets the counter each level; the other is per character and accumulates. |
-| Conditions, by name | Both games have *frightened*; only one of them has it as a value you count. Both have *invisible*; they do different things. |
+| Character levels, one for one | A level is a position on one game's power curve. The curves differ in shape, not merely in scale — and 4e's runs to **30**, so a "level 14 character" is mid-campaign there and near the end of one in either sibling. |
+| Stat blocks | A CR 5 D&D 2024 monster, a level 5 Pathfinder creature and a level 5 D&D 4e monster are three different creatures, and none of their numbers survive the trip. |
+| DCs | Pathfinder's and 4e's DCs rise with level; D&D 2024's do not. "A DC 20 lock" is a different obstacle in each game — and in the two that scale, a different obstacle at level 2 than at level 15. 4e's table was also revised by errata, so two 4e campaigns can disagree. |
+| ACs, defences and attack bonuses | Bounded in D&D 2024; climbing in Pathfinder; climbing in 4e with **half the level** added to four different defences at once. |
+| Treasure, piece for piece | Pathfinder publishes a per-level allotment; D&D 2024's equivalent is not open content; 4e hands out numbered **parcels** per level, and that table is not open content either. The economies are three different shapes — and the coin ratios themselves differ, since 1 pp is 10 gp in two of them and **100 gp** in 4e. Electrum exists in exactly one. |
+| Encounter budgets and XP | Three answers to the same question. Pathfinder's budget is per party with a size adjustment and the counter resets each level; D&D 2024's is per character and accumulates, with the award undivided; 4e's is per character and accumulates, and the award is **divided by party size**. |
+| Conditions, by name | All three have *frightened* or *prone*; only Pathfinder counts *frightened* as a value. 4e has *marked* and *dominated*, which neither sibling has, and *bloodied* is a real condition there where in D&D 2024 it is a flag with no effect. |
+| "Saving throw" | Not even the same **kind of roll**. In Pathfinder and D&D 2024 it is a defence roll. In 4e it is an **effect-ending** roll against a flat 10, and the defence roll does not exist — the attacker rolls against a static Fortitude, Reflex or Will. This is the most dangerous shared word in the framework. |
 
 ---
 
@@ -67,17 +69,34 @@ Four bands, named for the size of the thing a character can plausibly threaten o
 | `national` | a kingdom, a great city-state, a region; the doorstep of another plane |
 | `worldly` | the world itself, or the order of the planes |
 
-**In D&D these are published.** SRD 5.2's "Tiers of Play" gives levels 1–4 as threats to "local
-farmsteads or villages", 5–10 as "dangers that threaten cities and kingdoms", 11–16 as "threats to
-whole regions", and 17–20 as "the fate of the world or even the order of the multiverse". The SRD
-says in as many words that "these tiers don't have any rules associated with them" — they describe
-how big the stakes get, which is exactly and only what this framework uses them for.
+**In D&D 2024 these are published.** SRD 5.2's "Tiers of Play" gives levels 1–4 as threats to
+"local farmsteads or villages", 5–10 as "dangers that threaten cities and kingdoms", 11–16 as
+"threats to whole regions", and 17–20 as "the fate of the world or even the order of the
+multiverse". The SRD says in as many words that "these tiers don't have any rules associated with
+them" — they describe how big the stakes get, which is exactly and only what this framework uses
+them for.
 
 **In Pathfinder the mapping is this framework's own convention.** Pathfinder publishes no tier
 table: it has twenty levels and no banding of them. The same 1–4 / 5–10 / 11–16 / 17–20 split is
-used so that one world can describe reach without naming a ruleset. `python3 tools/rules.py bands`
-prints both statements with that distinction intact. It is **not** a claim that a Pathfinder level 7
-and a D&D level 7 character are equivalent in play. They are not.
+used so that one world can describe reach without naming a ruleset.
+
+**In 4e the structure is published and the mapping still is not.** 4e does band its **thirty**
+levels, into three tiers of ten — Heroic, Paragon, Epic — and the books describe each tier's reach
+in those terms. But 4e has no open-content release, so there is no text to quote and the mapping
+onto this framework's four bands is this framework's own: the Heroic tier split at 5 into `local`
+and `regional`, the Paragon tier read whole as `national`, the Epic tier as `worldly`.
+
+| Band | PF2e | D&D 2024 | D&D 4e |
+|---|---|---|---|
+| `local` | 1–4 | 1–4 | 1–5 |
+| `regional` | 5–10 | 5–10 | 6–10 |
+| `national` | 11–16 | 11–16 | 11–20 |
+| `worldly` | 17–20 | 17–20 | 21–30 |
+
+`python3 tools/rules.py bands` prints all three statements with that distinction intact. None of
+it is a claim that a level 7 in one game and a level 7 in another are equivalent in play. They
+are not, and the 4e column is the clearest demonstration: its `national` band is ten levels wide
+where the others' is six.
 
 ```
 $ python3 tools/world.py convert --level 7 --from pf2e --to dnd5e
@@ -93,7 +112,7 @@ is the useful half of its output.
 
 ## Writing an entry that survives both readers
 
-A chronicle entry is read by a campaign you have not written yet, possibly in the other game.
+A chronicle entry is read by a campaign you have not written yet, possibly in another game.
 Write it so that reader can use it.
 
 | Instead of | Write |
@@ -106,7 +125,7 @@ Write it so that reader can use it.
 
 Four questions to check an entry against:
 
-1. Would this sentence mean the same thing to someone playing the other game?
+1. Would this sentence mean the same thing to someone playing either of the other two games?
 2. Does any number in it come from a rulebook?
 3. Does it say how far the event reached?
 4. Could a GM two campaigns later build a scene from it without looking anything up?
@@ -124,23 +143,34 @@ in 4725 AR and a D&D campaign in 4728 AR sit on the same timeline and gate each 
 date.
 
 - Pathfinder ships the Golarion (Absalom Reckoning) calendar, and `tools/pf2e.py` cites it.
-- **SRD 5.2 publishes no calendar at all** — no months, no era. A D&D campaign therefore uses the
-  framework's placeholder (twelve 30-day months) unless its world says otherwise. The month names
-  of published D&D settings are not SRD material and this framework does not reproduce them.
-- A world may define its own in `CALENDAR.md` as a small JSON block, and then **both** rulesets
-  read its months and its era. `python3 tools/rules.py calendars` lists what is registered.
+- **SRD 5.2 publishes no calendar at all** — no months, no era. A D&D 2024 campaign therefore uses
+  the framework's placeholder (twelve 30-day months) unless its world says otherwise. The month
+  names of published D&D settings are not SRD material and this framework does not reproduce them.
+- **4e is the same, and for a stronger reason**: it has no open content at all, so its published
+  settings' calendars cannot be reproduced here either. A 4e campaign uses the placeholder or the
+  world's own.
+- A world may define its own in `CALENDAR.md` as a small JSON block, and then **every** ruleset
+  reads its months and its era. `python3 tools/rules.py calendars` lists what is registered,
+  including the ones the worlds define. `tools/world.py link` adopts a world's calendar into a
+  campaign's `state.json` and seats the clock on the start date, so it does not have to be set
+  by hand.
 
 For a cross-system world, declaring the calendar is worth doing explicitly even when it is a
-built-in, so there is a single written answer rather than two campaigns each assuming.
+built-in, so there is a single written answer rather than each campaign assuming.
 
 ---
 
 ## The gazetteer is the one place numbers are allowed
 
 A market is where a world fact and a ruleset's maths unavoidably meet: "what can I buy here" has a
-different shape in each game. `GAZETTEER.md` therefore carries **both** answers per settlement —
-Pathfinder's item level and D&D's highest purchasable rarity — and each campaign reads its own
-column.
+different shape in each game. `GAZETTEER.md` therefore carries **one column per ruleset** per
+settlement — Pathfinder's item level, D&D 2024's highest purchasable rarity, 4e's item level
+carried — and each campaign reads its own column.
+
+4e's column needs a decision rather than a lookup: it prices items by **level and market price**
+rather than by settlement size, and there is no published mapping from a town's population to
+what is on its shelf. Decide what item level each market carries, write it in the gazetteer, and
+stop deciding it again — see `system/dnd4e/09-loot-and-economy.md`.
 
 **Pick each column from the place as described. Do not derive one from the other.** A converted
 number would be a guess wearing a source's clothes, which is worse than a blank cell. Leave the
@@ -177,5 +207,5 @@ single-system version cannot do: **the same place, seen through a different set 
   one game's rules, retold by people who play by another's, is distorted before anyone embellishes.
 - A system the player wants to try does not cost them their world.
 
-What it is not good for is comparing the two games. If an entry starts reading like a conversion
+What it is not good for is comparing the games. If an entry starts reading like a conversion
 exercise, that is the signal to go back to what happened.

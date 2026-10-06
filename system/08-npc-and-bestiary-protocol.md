@@ -6,7 +6,7 @@
 > source, never freehand, and let the validator fail a file without a `Source:` line. What differs
 > is which books you are citing, whether a creature carries a **level** or a **Challenge Rating**,
 > and the shape of the stat block. A D&D creature's block and `CR` go in the same file format with
-> the same required fields. **Never carry a stat block between the two games** — a CR 5 monster and
+> the same required fields. **Never carry a stat block between the games** — a CR 5 monster and
 > a level 5 Pathfinder creature are not the same creature; see `23-cross-system-worlds.md`.
 
 Per the charter: **creature and NPC statistics come from published Pathfinder 2e Remaster

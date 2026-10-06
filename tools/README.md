@@ -15,6 +15,8 @@ install. Every tool runs as `python3 tools/<name>.py`.
 | **`rules.py`** | **Which game a campaign runs.** The ruleset registry, the Markdown field helpers, the calendar engine, and the cross-system scope translation. |
 | `pf2e.py` | **Pathfinder 2e** rules tables as data, each with a `Source:` line. Encounter budgets, treasure, DCs, the Golarion calendar. |
 | **`dnd5e.py`** | **D&D 2024** rules tables as data, same discipline. XP budgets, CR-to-XP, carrying capacity, travel, magic item rarity. |
+| **`dnd4e.py`** | **D&D 4e** procedure, stated in this framework's own words. **No tables** — 4e has no open content, so every number is owner-supplied and the functions refuse until it is. |
+| `dnd4e_tables.json` | The 4e numbers **you** transcribe from your own books. Ships empty, with a `_source` line per table naming where to read it. |
 | `new_campaign.py` | Scaffolds `campaigns/<slug>/` from `templates/`. Requires `--system`. |
 | `validate.py` | Catches mechanical drift. Run it when something feels off, and before a long session. |
 | `oracle.py` | Yes/no questions on a published likelihood ladder, scene checks, meaning tables, quantities. |
@@ -23,16 +25,22 @@ install. Every tool runs as `python3 tools/<name>.py`.
 | `analyze.py` | Reads the roll log back: fairness (public vs. private) and what the numbers say about play. |
 | `dashboard.py` | One offline, self-contained HTML file per campaign, regenerated at every checkpoint. |
 
-**Two rulesets.** A campaign declares one in `CAMPAIGN.md` (`System:`) and in `state.json`
+**Three rulesets.** A campaign declares one in `CAMPAIGN.md` (`System:`) and in `state.json`
 (`"system"`), and the shared tools dispatch on it:
 
 ```
 python3 tools/rules.py list                  # the rulesets, their aliases and their licences
 python3 tools/rules.py which <campaign>      # which one this campaign runs
-python3 tools/rules.py check                 # verify both satisfy the shared contract
+python3 tools/rules.py check                 # verify all three satisfy the shared contract
 python3 tools/rules.py bands                 # the cross-system scope bands
-python3 tools/rules.py calendars             # every registered calendar
+python3 tools/rules.py calendars             # every registered calendar, worlds' own included
 ```
+
+They are **not equal in what they can ship**. PF2e is ORC and D&D 2024 has an SRD under
+CC-BY-4.0, so both carry their tables here. **4e has no open-content release at all**, so
+`dnd4e.py` carries procedure and refuses to compute until `dnd4e_tables.json` is filled from
+books you own. `LICENSE_NOTES.md` has the statement; `system/dnd4e/README.md` has the practical
+consequence.
 
 A campaign written before the second ruleset existed declares neither and reads as `pf2e`; that
 is the only reason a default exists. `state.py init` and `new_campaign.py` both **refuse** to
@@ -40,12 +48,12 @@ create a campaign without one.
 
 Import graph, so a change stays predictable: `roll.py` depends on nothing but `rules.py` and
 `pf2e.py` for its outcome scales; `rules.py` imports the ruleset modules lazily, so there is no
-cycle; `pf2e.py` and `dnd5e.py` import `rules.py`; everything else imports those.
+cycle; `pf2e.py`, `dnd5e.py` and `dnd4e.py` import `rules.py`; everything else imports those.
 
 **The ruleset contract.** Each ruleset module provides the same set of names — conditions, coins,
 the resolution function, encounter budgets, the blank character and combatant fields, what happens
 at 0 HP, the carry report, the daily reset, the action economy and the render columns.
-`python3 tools/rules.py check` verifies both implement all of it, which is what keeps a
+`python3 tools/rules.py check` verifies all three implement all of it, which is what keeps a
 half-supported ruleset from failing quietly mid-session.
 
 ## `roll.py` — dice
@@ -186,6 +194,40 @@ python3 tools/dnd5e.py sources
 **this framework's own convention** rather than a published rule. The second number is not zero,
 because SRD 5.2 publishes no treasure-by-level table, no Earn Income equivalent and no calendar.
 Those gaps are named rather than filled from memory.
+
+## `dnd4e.py` — D&D 4e procedure, and no tables
+
+```
+python3 tools/dnd4e.py tables                  # START HERE: what is filled and what is not
+python3 tools/dnd4e.py mechanics               # 4e's shape, stated in this framework's words
+python3 tools/dnd4e.py sources                 # every statement, with its marking
+python3 tools/dnd4e.py advancement             # all 30 levels, their tiers and scope bands
+python3 tools/dnd4e.py encounter --party-level 3 --party-size 1
+python3 tools/dnd4e.py encounter --party-level 3 --party-size 1 --monster 1x4:soldier 3x2:minion
+python3 tools/dnd4e.py dc --level 5
+python3 tools/dnd4e.py treasure --level 4
+python3 tools/dnd4e.py settlement "Low Shoal"
+python3 tools/dnd4e.py resolve --total 24 --dc 18 --kind attack
+```
+
+**This module is shaped differently from its two siblings, on purpose.** D&D 4e has no
+open-content release — the Game System License permitted no Open Game Content, not even stat
+blocks, and is no longer offered — so there is nothing to quote and nothing to verify against.
+The split is:
+
+- **Procedure and structure**: stated in this framework's own words, in `dnd4e.py` and
+  `system/dnd4e/`. Marked in `sources` as a mechanic with no open source: *believed correct,
+  unverifiable*.
+- **Every numeric table**: in `dnd4e_tables.json`, which **ships empty**. `encounter`, `dc`,
+  `treasure`, `advancement` and `settlement` raise `TableMissing` and name the book and table.
+
+`sources` prints, at the top, that this ruleset's provenance is weaker than its siblings' and
+why. It reports 0 numeric tables shipped, which is the honest figure.
+
+`tables` is the command to run before a session. A heroic-tier campaign needs three of the nine:
+`character_xp`, `monster_xp_by_level` and `encounter_budget_per_character`. One has a trap in it —
+`dc_by_level` was revised by errata, so the file has a `_printing` field to record which version
+you transcribed, and `dc` prints it with every answer.
 
 ## `oracle.py`
 

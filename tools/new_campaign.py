@@ -55,6 +55,13 @@ SYSTEM_DEFAULTS: dict[str, dict[str, str]] = {
         "CALENDAR": "generic — SRD 5.2 publishes no calendar; name the setting's in intake, "
                     "or define one in the world's CALENDAR.md",
     },
+    "dnd4e": {
+        "SYSTEM": "dnd4e",
+        "SYSTEM_NAME": "Dungeons & Dragons 4th Edition",
+        "START_DATE": "1 Month 1 1",
+        "CALENDAR": "generic — 4e has no open-content calendar; name the setting's in intake, "
+                    "or define one in the world's CALENDAR.md",
+    },
 }
 
 
@@ -231,7 +238,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="new_campaign.py", description="Scaffold a new campaign folder.")
     ap.add_argument("title")
     ap.add_argument("--system", required=True,
-                    help="which game: pf2e or dnd5e (also '5.5e'). Required — nothing defaults, "
+                    help="which game: pf2e, dnd5e (also '5.5e') or dnd4e (also '4e'). "
+                         "Required — nothing defaults, "
                          "because a campaign scaffolded under the wrong ruleset carries the wrong "
                          "calendar, the wrong sheet and the wrong rules docs from its first file")
     ap.add_argument("--slug", default=None)
@@ -308,6 +316,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("  NOTE the start date and calendar above are placeholders: SRD 5.2 publishes no")
         print("  calendar, so intake should ask for the setting's or define one in the world's")
         print("  CALENDAR.md.")
+    elif system == "dnd4e":
+        print("  system/dnd4e/README.md  — READ THIS FIRST. 4e has no open-content release,")
+        print("                            so this framework ships procedure and NO numbers.")
+        print("  system/dnd4e/  — character creation, difficulty, combat, loot, downtime,")
+        print("                   levelling and the rules quick reference")
+        print("  the numbered docs at system/ root are the shared ones")
+        print()
+        print("  BEFORE THE FIRST SESSION, fill the tables you need from your own books:")
+        print("      python3 tools/dnd4e.py tables")
+        print("  A heroic-tier campaign needs three of the nine. Until they are filled, the")
+        print("  encounter, advancement, DC and treasure maths will refuse to compute and name")
+        print("  the book — which is deliberate, not a bug.")
+        print("  NOTE the start date and calendar above are placeholders for the same reason as")
+        print("  D&D 2024's: there is no open 4e calendar to ship.")
     else:
         print("  the numbered docs at system/ root")
 

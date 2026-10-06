@@ -577,7 +577,7 @@ bar for calling this non-breaking.
 ### 12. The licences are kept apart, deliberately
 
 ORC material and CC-BY-4.0 material cannot be relicensed into each other. Every table, quotation
-and rule statement sits in exactly one of `LICENSE_NOTES.md`'s two sections, and nothing was merged
+and rule statement sits in exactly one of `LICENSE_NOTES.md`'s per-ruleset sections, and nothing was merged
 or derived across them.
 
 This is part of why the shared `worlds/` layer holds events and people and no rules text from
@@ -616,3 +616,172 @@ these are places where a second pair of eyes is worth more than the cross-check 
   the encounter multiplier, backgrounds carrying the ability increases — the 2024 answer is the
   only one implemented, and `system/dnd5e/12-rules-quick-reference.md` ends with a list of the
   habits most likely to come across from elsewhere.
+
+---
+
+# D&D 4th Edition — the ruleset with no open content
+
+The third ruleset is in a different legal and epistemic position from the other two, and this
+section records what was decided about that and why, since none of it was obvious.
+
+## The constraint
+
+**There is no open-content release of D&D 4th Edition.** The licence Wizards of the Coast offered
+for it was the **Game System License**, which was not an open-content licence in the sense the OGL
+and the ORC License are: it licensed a compatibility logo and a short index of game terms and
+templates — the thing commonly called "the 4e SRD" — and **permitted no Open Game Content**, not
+spells, not classes, not feats, and not monster stat blocks. It is also no longer offered.
+
+So for 4e, both of the things that made the other two rulesets trustworthy are unavailable:
+
+1. There is **no open text to quote**, and
+2. there is **no open text to verify against**.
+
+The second matters as much as the first. The Pathfinder tables were read from Archives of Nethys
+and cross-checked against the Foundry VTT PF2e system; the D&D 2024 tables were read from a
+transcription of SRD 5.2 and cross-checked against Foundry's dnd5e module. Neither step exists
+here. There is no second independent source to disagree with the first.
+
+## What was decided
+
+**Split procedure from numbers and treat them completely differently.**
+
+- **Procedure and structure** are stated in this framework's own words, in `tools/dnd4e.py` and
+  `system/dnd4e/`. Game mechanics are not themselves copyrightable; the expression of them is. So
+  nothing is quoted, and every statement is marked in `sources` as a mechanic with no open source:
+  **believed correct, unverifiable**. `PROVENANCE` in `dnd4e.py` is the full wording, printed once
+  at the top of `sources` rather than appended to every entry, because an unread provenance note
+  is no provenance at all.
+- **Every numeric table is owner-supplied.** `tools/dnd4e_tables.json` ships with nine tables and
+  every value null or empty, each with a `_source` line naming the book and the table to read it
+  from. The functions that need them raise `TableMissing`, and the message names the book, the
+  shape the value should have, and the reason the tool will not guess.
+
+The alternative considered and rejected was to reconstruct the tables from memory and mark them
+`⚠ UNVERIFIED`, the way a handful of Pathfinder values were handled early on. That was rejected
+because the two cases are not alike: an unverified value read from an open source and flagged can
+be checked by anyone against that source, while a value recalled from memory with no source at all
+cannot be checked by anyone. In a framework whose first rule is *never write a number you did not
+roll*, shipping a guessed encounter budget is the same error one layer up — and the encounter
+budget is the difficulty dial, so a wrong one is silently wrong for the whole campaign.
+
+## What the refusal costs, honestly
+
+A 4e campaign cannot compute an encounter budget, an advancement threshold, a DC by level, a
+treasure parcel or an item price until the owner types the tables in. That is a real cost and it
+lands before session one rather than during it. The mitigations:
+
+- **`python3 tools/dnd4e.py tables`** lists exactly what is missing and what book each comes from,
+  so the job is bounded and visible rather than discovered one error at a time.
+- **A heroic-tier campaign needs three of the nine** — `character_xp`, `monster_xp_by_level` and
+  `encounter_budget_per_character`. Roughly twenty minutes of typing.
+- **Nothing else is blocked.** Rolling, state, conditions, the encounter tracker, surges, powers,
+  rests, death saves, the living history, the dashboard and the audit all work immediately.
+- The refusals are **actionable**, not bare. Each names the book, the table, the expected shape
+  and the field to put it in.
+
+## Things about 4e that surprised the implementation
+
+Recorded because each one broke an assumption the other two rulesets had quietly established.
+
+1. **Hit points do not stop at zero.** A 4e character dies at a negative total equal to their
+   bloodied value, so `state.json` needs a `hp_below_zero` field and `damage` has to carry the
+   overflow forward between hits. This is why `on_zero_hp` gained a `set` key in its returned
+   instruction — the ruleset now tells `state.py` which of its own fields to write, rather than
+   `state.py` knowing. Both siblings return no `set` and are unaffected.
+2. **The death clock counts in one direction only.** 4e has three failures and no successes: a
+   roll of 10 or better is not a success that accumulates, it is simply not a failure, and there is
+   no Stable state. Writing D&D 2024's `{successes, failures, stable}` shape into a 4e sheet would
+   have invented two fields the game does not have, so each ruleset now publishes a
+   `BLANK_DEATH_SAVES` and `state.py` reads it instead of assuming.
+3. **"Saving throw" is not the same kind of roll.** In Pathfinder and D&D 2024 it is a defence roll
+   the defender makes. In 4e the defender never rolls — the attacker rolls against a static
+   Fortitude, Reflex or Will — and a "saving throw" is an **effect-ending** roll against a flat 10.
+   `dnd4e.resolve` therefore forces the target number to 10 on a save whatever DC is passed, because
+   honouring a wrong one silently would be worse than correcting it. This is the most dangerous
+   shared word in the framework.
+4. **The critical rule is a third answer.** Pathfinder doubles the whole roll; D&D 2024 doubles the
+   dice; 4e **maximises** them and rolls nothing. `roll.py` gained `maximise_damage_dice`, and the
+   printed line says "maximum damage, dice not rolled" rather than implying a roll happened.
+5. **There is no two-dice swing under any name.** Combat advantage is a flat +2. `make_roll` now
+   refuses `fortune`/`misfortune` on a 4e campaign and says to put the +2 in the expression, so the
+   log shows the real arithmetic. `--surprised` on `roll.py init` is refused for the same reason
+   with a different answer: in 4e the surprised simply do not act in the surprise round.
+6. **XP is divided by the party size.** Three rulesets, three answers to the small-party problem:
+   Pathfinder shrinks the budget and awards the four-character figure undivided; D&D 2024 scales
+   the budget per character and awards the monsters' XP undivided; 4e scales the budget and
+   **divides the award**. A solo 4e character therefore banks a whole encounter's XP and levels
+   about five times faster than published pacing. `system/dnd4e/03-difficulty-and-solo-levers.md`
+   lays out the three ways to handle it; the tool implements the published rule and says so.
+7. **1 pp = 100 gp, not 10.** Both siblings use ten. A purse carried across rulesets is wrong even
+   where the coin names match.
+8. **Thirty levels, so the scope bands had to stretch.** 4e's three published tiers of ten do not
+   line up with the 1–4 / 5–10 / 11–16 / 17–20 split the other two share. The mapping chosen —
+   1–5 `local`, 6–10 `regional`, 11–20 `national`, 21–30 `worldly` — is **this framework's own**,
+   and `rules.py bands` says so at length: 4e's tiers are published but not open, so the mapping
+   onto this framework's bands could not be derived from quotable text.
+
+## Bugs this ruleset's existence exposed in the other two
+
+All five were real and all five are fixed. They are recorded because each was invisible while
+there were only two rulesets.
+
+1. **`state.py xp add` applied Pathfinder's flat-1,000 rule to every campaign.** A D&D 2024
+   campaign at 1,000 XP was told to "level up, then subtract 1000" — wrong twice over, since its
+   thresholds are cumulative and are not 1,000. Now delegated to `xp_is_cumulative()` and
+   `xp_to_level()`, and for 4e it says plainly that it cannot tell, because the table is
+   owner-supplied.
+2. **`ENCUMBRANCE_FIELD`'s "other ruleset" lookup assumed exactly two.** `item_add` computed
+   "the other unit" as `[v for k, v in ... if k != sid][0]`, which silently picks one of two
+   remaining entries once there are three. Now keyed on the field rather than the ruleset, so the
+   two D&D editions sharing pounds is not a special case.
+3. **`python3 tools/rules.py calendars` printed only the placeholder.** Run as a script, `rules.py`
+   is `__main__`, while every ruleset does `import rules` — so the calendars a ruleset registered
+   at import landed in a different module object from the one the CLI was reading. The `__main__`
+   guard now re-enters through the imported module.
+4. **A world-defined calendar crashed every tool that formatted a date.** `world.py link` writes a
+   world's calendar name into `state.json`, but nothing else registered world calendars, so the
+   next `state.py render` raised `RulesError: no calendar named 'verge' is registered` with a
+   traceback. `_calendars_for` now falls back to scanning the worlds before raising. This would
+   have hit a Pathfinder or D&D 2024 campaign in any world with its own calendar; it had simply
+   never been tried, because the one existing world names a built-in.
+5. **The live-state detector flagged the framework's own template.** `Position:` is both a
+   combatant's square and the field a world README uses to say where it sits in the universe, so
+   `validate.py` failed every world that filled the field in. The world declaration fields are now
+   exempt, matched on the whole line so a stray `position: B3` elsewhere is still caught.
+
+## To verify before first play (4e side)
+
+Shorter than the other two lists and more important, because **nothing here was cross-checked
+against anything**.
+
+1. **Every mechanic in `system/dnd4e/12-rules-quick-reference.md`**, against your own books. It is
+   stated from memory of the published rules and marked as unverifiable, which is exactly as
+   trustworthy as that sounds. The ones most worth checking because the most is built on them: the
+   healing surge value (a quarter of maximum hit points), the death threshold (negative bloodied
+   value), the flat save DC of 10, and the action trade-down rules.
+2. **Which printing of the DC-by-level table you have.** It was revised by errata and the two
+   versions differ materially. Record it in `dc_by_level._printing`; a campaign that mixes them
+   drifts invisibly.
+3. **The healing surge pool formula** — the class's own surges-per-day plus the Constitution
+   modifier. `surges_per_day()` refuses without the class number rather than defaulting, but the
+   addition itself is stated from memory.
+4. **The five encounter-rating labels** `rate_encounter` returns. They are flagged as this
+   framework's convention, because 4e tunes difficulty by encounter level rather than publishing a
+   budget-to-difficulty mapping — but whether they read usefully in play is not something an
+   acceptance run can show.
+
+## What this ruleset deliberately does not do
+
+- **It ships no numeric table, and it never will.** This is not a gap waiting to be filled by a
+  future commit; it is the licence.
+- **No class, race, power, feat, ritual, item, paragon path or epic destiny content.**
+- **No monster benchmark values**, so there is nothing to sanity-check an unfamiliar stat block
+  against until `monster_benchmarks` is filled.
+- **No quoted rule text, not even the conditions** — which both other rulesets include, and which
+  is the clearest single illustration of the asymmetry.
+- **No slowed automation for a heavy load.** The carry report names the heavy load; applying the
+  condition is the GM's call.
+- **No mark automation beyond storage.** `marked_by` is recorded on a combatant; the penalty is
+  applied by hand to the monster's roll, because what the mark does depends on who set it.
+- **No Essentials or pre-errata variants.** One 4e, and `_printing` to record which DC table.

@@ -136,7 +136,7 @@ def check_campaign(slug: str, r: Report) -> None:
             if int(e.get("used", 0)) < 0:
                 r.error(f"{name}: {slot_word} {rank} has negative slots used")
 
-        # The condition lists belong to the ruleset, and the two games' lists overlap in
+        # The condition lists belong to the ruleset, and the three games' lists overlap in
         # name while differing in effect — so checking a D&D sheet against Pathfinder's
         # list rejects `grappled` and accepts nothing it should.
         for c in pc.get("conditions") or []:
@@ -458,7 +458,7 @@ def check_world(wslug: str, r: Report) -> None:
                     f"{', '.join(rules.SCOPE_NAMES)}")
         elif not e.scope and cross:
             r.warn(f"chronicle entry {e.title!r} has no **Scope:** line — scope is the one field "
-                   f"that means anything to the other ruleset in this world")
+                   f"that means anything to another ruleset in this world")
 
     # A cross-system world needs one calendar, or its two campaigns cannot share a timeline.
     if cross:
@@ -495,7 +495,7 @@ def check_world(wslug: str, r: Report) -> None:
         ):
             if re.search(pat, blob, re.IGNORECASE):
                 r.warn(f"chronicle entry {e.title!r} mentions {what} — the shared layer records "
-                       f"what happened, not anyone's numbers, because the other ruleset's reader "
+                       f"what happened, not anyone's numbers, because another ruleset's reader "
                        f"cannot use them (`python3 tools/world.py crossing`)")
                 break
 
@@ -587,6 +587,7 @@ def check_world(wslug: str, r: Report) -> None:
         except (OSError, UnicodeDecodeError):
             continue
         lowered = text.lower()
+        is_world_readme = p.name == "README.md"
         for marker in wd.LIVE_STATE_MARKERS:
             for i, line in enumerate(lowered.splitlines(), start=1):
                 if marker not in line:
@@ -596,6 +597,10 @@ def check_world(wslug: str, r: Report) -> None:
                                            "would mean", "refuses", "live state")):
                     continue
                 if line.lstrip().startswith(("#", ">", "_")):
+                    continue
+                # `Position:` in a world README is where the world sits in the universe, not
+                # a combatant's square. Without this the shipped template fails its own check.
+                if is_world_readme and wd.is_world_declaration_line(line):
                     continue
                 r.error(f"{p.relative_to(repo_root())}:{i} looks like live state in the world layer "
                         f"({marker!r}) — hit points, coins, inventory, conditions and positions never "

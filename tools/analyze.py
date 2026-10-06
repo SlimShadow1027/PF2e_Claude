@@ -441,32 +441,63 @@ def play_block(records: list[dict[str, Any]]) -> list[str]:
     deaths = [r for r in records if r.get("kind") == "death-save"
               or "death-save" in (r.get("tags") or [])]
     if deaths:
-        L.append("### Death Saving Throws")
+        four = one_system == "dnd4e"
+        L.append("### Death saving throws")
         L.append("")
-        succ = sum(1 for r in deaths if (r.get("extra") or {}).get("successes_incurred"))
         twenties = sum(1 for r in deaths if r.get("natural") == 20)
         ones = sum(1 for r in deaths if r.get("natural") == 1)
-        L.append(f"- {len(deaths)} Death Saving Throw(s): {succ} succeeded, "
-                 f"{len(deaths) - succ} failed.")
-        if twenties:
-            L.append(f"- {twenties} natural 20(s), each of which restored 1 Hit Point outright.")
-        if ones:
-            L.append(f"- {ones} natural 1(s), each counting as two failures.")
-        resolved = [r for r in deaths if (r.get("extra") or {}).get("resolution") in ("dead", "stable")]
+        if four:
+            # 4e counts failures only: there is no success to accumulate, so the tally says
+            # what the rolls actually did rather than inventing a success column.
+            failed = sum(1 for r in deaths
+                         if (r.get("extra") or {}).get("failures_incurred"))
+            L.append(f"- {len(deaths)} death saving throw(s): {failed} were failures, "
+                     f"{len(deaths) - failed} held on without one.")
+            if twenties:
+                L.append(f"- {twenties} natural 20(s), each of which let the character spend a "
+                         f"healing surge and act.")
+        else:
+            succ = sum(1 for r in deaths if (r.get("extra") or {}).get("successes_incurred"))
+            L.append(f"- {len(deaths)} Death Saving Throw(s): {succ} succeeded, "
+                     f"{len(deaths) - succ} failed.")
+            if twenties:
+                L.append(f"- {twenties} natural 20(s), each of which restored 1 Hit Point "
+                         f"outright.")
+            if ones:
+                L.append(f"- {ones} natural 1(s), each counting as two failures.")
+        wanted = ("dead",) if four else ("dead", "stable")
+        resolved = [r for r in deaths if (r.get("extra") or {}).get("resolution") in wanted]
         if resolved:
             dead = sum(1 for r in resolved if (r.get("extra") or {}).get("resolution") == "dead")
-            L.append(f"- {len(resolved)} reached a resolution: {dead} death(s), "
-                     f"{len(resolved) - dead} stabilised.")
-        L.append("- The save takes no ability modifier, so this is as close to a raw d20 sample "
-                 "as the log holds — worth comparing against the fairness block above.")
+            if four:
+                L.append(f"- {dead} reached the third failure, which is death.")
+            else:
+                L.append(f"- {len(resolved)} reached a resolution: {dead} death(s), "
+                         f"{len(resolved) - dead} stabilised.")
+        L.append(("- In 4e this is a bare d20 against a flat 10, with no modifier of any kind, "
+                   if four else
+                   "- The save takes no ability modifier, ")
+                  + "so it is as close to a raw d20 sample as the log holds — worth comparing "
+                    "against the fairness block above.")
         L.append("")
 
-    reroll_name = {"pf2e": "Hero Points", "dnd5e": "Heroic Inspiration"}.get(one_system or "pf2e",
-                                                                             "Rerolls")
+    reroll_name = {"pf2e": "Hero Points", "dnd5e": "Heroic Inspiration",
+                   "dnd4e": "Action points"}.get(one_system or "pf2e", "Rerolls")
     hero = [r for r in records if "fortune" in (r.get("tags") or []) or r.get("kind") == "fortune"]
     L.append(f"### {reroll_name}")
     L.append("")
-    if hero:
+    if one_system == "dnd4e":
+        # 4e's comeback resource buys an extra action, not a die, so there is nothing in the
+        # dice log to audit. Saying so is more useful than an empty reroll tally.
+        L.append("- 4e has no reroll resource. An action point buys an **extra action**, not a "
+                 "second die, so a spend leaves nothing in the dice log — the audit trail for "
+                 "it is `state.json` and the checkpoint commits.")
+        if hero:
+            L.append(f"- ⚠ {len(hero)} keep-the-higher reroll(s) are nonetheless in this log. "
+                     f"4e has no such mechanic; check whether these were rolled under the "
+                     f"wrong ruleset.")
+        L.append("")
+    elif hero:
         L.append(f"- {len(hero)} keep-the-higher reroll(s) in the log. What each was spent on:")
         for r in hero[:20]:
             L.append(f"  - seq {r.get('seq')}: {r.get('label') or '(unlabelled)'} "
@@ -477,7 +508,8 @@ def play_block(records: list[dict[str, Any]]) -> list[str]:
     if one_system == "dnd5e":
         L.append("- Note that Heroic Inspiration rerolls **any** die and the new roll stands, so "
                  "a spend may show as an ordinary reroll rather than as two kept dice.")
-    L.append("")
+    if one_system != "dnd4e":
+        L.append("")
 
     oracle = [r for r in records if "oracle" in (r.get("tags") or [])]
     if oracle:
