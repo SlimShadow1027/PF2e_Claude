@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Quiet Between Empires — dashboard</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #f6f6f4;
+  --panel: #ffffff;
+  --panel-2: #f0f0ee;
+  --ink: #1b1b1a;
+  --ink-dim: #5c5c58;
+  --line: #d8d8d2;
+  --ok: #2f7d4f;
+  --warn: #b26a00;
+  --crit: #b3261e;
+  --down: #6b2321;
+  --accent: #3a4a7a;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131315;
+    --panel: #1c1c1f;
+    --panel-2: #24242a;
+    --ink: #ececea;
+    --ink-dim: #a0a09c;
+    --line: #34343a;
+    --ok: #5cc98a;
+    --warn: #e0a341;
+    --crit: #ef6f66;
+    --down: #b3554e;
+    --accent: #9fb0e6;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131315;
+  --panel: #1c1c1f;
+  --panel-2: #24242a;
+  --ink: #ececea;
+  --ink-dim: #a0a09c;
+  --line: #34343a;
+  --ok: #5cc98a;
+  --warn: #e0a341;
+  --crit: #ef6f66;
+  --down: #b3554e;
+  --accent: #9fb0e6;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  padding: 16px;
+}
+.wrap { max-width: 1100px; margin: 0 auto; }
+header { margin-bottom: 18px; }
+h1 { font-size: 1.35rem; margin: 0 0 2px; letter-spacing: -0.01em; }
+.gen { color: var(--ink-dim); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.gen strong { color: var(--ink); font-weight: 600; }
+h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em;
+     color: var(--ink-dim); margin: 26px 0 10px; font-weight: 700; }
+.grid { display: grid; gap: 12px; grid-template-columns: 1fr; }
+@media (min-width: 620px) { .grid.two { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 900px) { .grid.cards { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); } }
+.card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 12px 14px; min-width: 0;
+}
+.card h3 { margin: 0 0 8px; font-size: 1.02rem; display: flex; justify-content: space-between;
+           align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.card h3 .sub { font-size: 0.75rem; color: var(--ink-dim); font-weight: 400; }
+.bar { height: 12px; background: var(--panel-2); border-radius: 6px; overflow: hidden;
+       border: 1px solid var(--line); }
+.bar > span { display: block; height: 100%; }
+.bar .ok { background: var(--ok); }
+.bar .warn { background: var(--warn); }
+.bar .crit { background: var(--crit); }
+.bar .down { background: var(--down); }
+.bar .temp { background: var(--accent); opacity: 0.55; }
+.hpline { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums;
+          font-size: 0.85rem; margin: 5px 0 2px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(58px, 1fr)); gap: 6px;
+         margin-top: 10px; }
+.stat { background: var(--panel-2); border-radius: 7px; padding: 5px 6px; text-align: center; }
+.stat b { display: block; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.05em;
+             color: var(--ink-dim); }
+.tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.tag { font-size: 0.74rem; padding: 2px 7px; border-radius: 99px; background: var(--panel-2);
+       border: 1px solid var(--line); }
+.tag.bad { border-color: var(--crit); color: var(--crit); font-weight: 600; }
+.tag.dire { background: var(--crit); color: var(--panel); border-color: var(--crit); font-weight: 700; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+th, td { text-align: left; padding: 5px 7px; border-bottom: 1px solid var(--line);
+         vertical-align: top; }
+th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-dim); }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+tr.turn td { background: var(--panel-2); font-weight: 600; }
+.clock { font-variant-numeric: tabular-nums; }
+.seg { letter-spacing: 1px; font-size: 1.05rem; }
+pre { background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 10px; overflow-x: auto; font-size: 0.8rem; line-height: 1.35;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.muted { color: var(--ink-dim); }
+.scene p { margin: 6px 0; }
+footer { margin-top: 30px; color: var(--ink-dim); font-size: 0.78rem;
+         border-top: 1px solid var(--line); padding-top: 12px; }
+.mode { display: inline-block; padding: 1px 7px; border-radius: 99px; border: 1px solid var(--line);
+        background: var(--panel-2); font-size: 0.72rem; }
+.empty { color: var(--ink-dim); font-style: italic; font-size: 0.86rem; }
+</style>
+</head><body><div class="wrap">
+<header>
+<h1>The Quiet Between Empires</h1>
+<div class="gen">generated at <strong>2026-10-08T03:26:00Z</strong> from checkpoint <strong>001</strong> (intake complete) &middot; transparency <span class="mode">standard</span> &middot; session 0</div>
+<div class="gen">Read-only. Every edit goes through <code>tools/state.py</code>; <code>state.json</code> is the single source of truth.</div>
+</header>
+<h2>Party</h2>
+<p class="empty">No characters yet.</p>
+<h2>Inventory and money</h2>
+<div class="grid two">
+<div class="card"><h3>Purse</h3><div class="stats">
+<div class="stat"><b>0</b><span>pp</span></div>
+<div class="stat"><b>0</b><span>gp</span></div>
+<div class="stat"><b>0</b><span>sp</span></div>
+<div class="stat"><b>0</b><span>cp</span></div>
+</div>
+<p class="gen">Total value 0 cp &middot; XP 0 &middot; party level 1</p></div>
+<div class="card"><h3>Bulk</h3>
+<p class="empty">Nobody is carrying anything yet.</p>
+</div></div>
+<h2>Scene</h2>
+<div class="card scene">
+<p><strong>Where:</strong> unset</p>
+<p><strong>When:</strong> 1 Abadius 4725 AR, 08:00</p>
+<p class="empty">No situation paragraph recorded at the last checkpoint.</p>
+</div>
+<footer>
+Rendered by <code>tools/dashboard.py</code> from <code>campaigns/the-quiet-between-empires/state.json</code>. Regenerated at every checkpoint. Nothing on this page is fetched from the network, and nothing on it writes state.
+</footer>
+</div></body></html>
