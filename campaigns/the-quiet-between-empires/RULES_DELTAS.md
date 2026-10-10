@@ -100,8 +100,8 @@ It may **not** be spent on:
 **What it does to play, recorded so it is not a surprise later:** the free Stride is the large part.
 It means disengaging and re-engaging every round at no action cost, so a melee-only enemy that has
 to spend its whole turn closing will rarely get to act. Encounters are therefore built for a mobile
-character rather than against one — and the Mushfens supply difficult terrain and water honestly,
-as the setting rather than as a counter.
+character rather than against one — and mine-country supplies rubble, shafts, narrow galleries and
+vertical space honestly, as the setting rather than as a counter.
 
 ### Tactical postures offered each turn
 
@@ -178,3 +178,5 @@ change and not a math change.
 | 2026-10-10 | 18 Arodus -1000 AR | Information levers: Recall Knowledge as written (generous on success), enemy HP as wounded descriptors, fatal-plan flagging on | player |
 | 2026-10-10 | 18 Arodus -1000 AR | *List legal actions* replaced by a tactical-posture offer each turn (aggressive / defensive / task-focused) plus unused-feature reminders | player design; supersedes the one-option-per-turn preference carried from Third Beginnings |
 | 2026-10-10 | 18 Arodus -1000 AR | All 26 levers settled. Preset label set to `Custom` — the configuration matches no single preset | lever-by-lever walkthrough complete |
+| 2026-10-10 | 18 Arodus -1000 AR | Setting relocated from the Mushfens to mountains and dwarven mine-country; premise reworked to a Daedalus labyrinth with the entity as its deliberate author | player revision |
+| 2026-10-10 | 18 Arodus -1000 AR | `worlds/varisia/GAZETTEER.md` rows tagged by era so the date gate has something to filter | the file was undated and read in full at every date |

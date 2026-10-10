@@ -12,8 +12,8 @@
 - **Genre:** exploration and hexcrawl × dungeon crawl
 - **Tone:** grounded — competence matters, consequences stick
 - **Lethality:** death is on the table if the player pushes a bad situation
-- **Setting:** Golarion as published — Varisia, c. -1000 AR, in and around **what later ages
-  will call the Mushfens**. Era surroundings are established by this campaign, not cited; see
+- **Setting:** Golarion as published — Varisia, c. -1000 AR, in **mountain country and the dwarven
+  mines beneath it**. Era surroundings are established by this campaign, not cited; see
   `DESIGN_NOTES.md` and the note at the foot of this file.
 
 > `World:` names a folder under `worlds/`, or `none` for a standalone campaign. A campaign
@@ -26,22 +26,23 @@ _Not written yet. Intake ends with three one-page pitches; the player picks one 
 
 ## Premise and stakes
 
-**The Returning Road**, run as the pitch *What Walks the Thaw* — relocated to late summer, so
-what uncovers the roads is the **low water**, not a thaw.
+**The Shifting Deep** — the pitch *What Walks the Thaw* reworked onto a Daedalus-labyrinth frame.
+No thaw, no low water, no fen: mountains, mines, and a labyrinth that will not hold its shape.
 
-- **What is wrong with the world:** A buried Thassilonian road network is surfacing in the fen
-  margins. Causeways that were under peat and water are at grade again, intact, and they go
-  somewhere. In late summer the water drops and more of it shows.
-- **Who is causing it:** Two layers, and keeping them separate is the point.
-  - **The surfacing itself** — *pending: see the open question in `gm-private/secrets.md`.*
-  - **What uses it:** goblin bands, organised far past their own capacity by **something deep in
-    the earth** that is directing them. That being was unearthed by dwarven excavation at the tail
-    of the last great interhuman war. It toppled a city. Later histories recorded the city's fall
-    as a casualty of the war, and that version is the one in the record. A handful of dwarves, a
-    couple of elves, and almost nobody else knows otherwise — and they are dying off.
-- **What happens if nobody stops it:** The network completes and distance stops being a defence.
-  Holdings that survive on being a month from anywhere are eight days from a thing that has
-  already destroyed one city and been credited to a war for it.
+- **What is wrong with the world:** The mines, caverns and tunnels beneath the range are being
+  **reshaped**. Passages that were surveyed and mapped are not where the maps put them. Workings
+  connect that never connected. The reshaping began deep and is **moving upward**, toward the
+  mine-heads and the holdings above them.
+- **Who is causing it:** **The entity**, and deliberately — it is the author of the shifting, not
+  an opportunist exploiting it. Dwarven excavation broke into the Thassilonian ruin holding it at
+  the tail of the last great interhuman war, a few hundred years ago. Once loose it **toppled a
+  city**, and later histories recorded that city's fall as a casualty of the war. That version is
+  the one in the record. A handful of dwarves, a couple of elves, and almost nobody else knows
+  otherwise — and they are dying off. It now directs goblin bands organised far past their own
+  capacity, which is the symptom visible from the surface.
+- **What happens if nobody stops it:** The reshaping reaches the surface. The mines are what the
+  dwarven powers of this age rest on, and the labyrinth becomes the entity's body rather than its
+  prison. The holdings above are inside it before they know there is an inside.
 
 ## Protagonist framing
 
@@ -73,10 +74,10 @@ See `system/03-difficulty-and-solo-levers.md` for what each party shape does to 
 
 ## Themes to keep returning to
 
-- **Distance is the only defence anyone here has**, and it is being taken away by something
-  that does not know it is doing it.
-- **A road is not neutral.** It carries whatever uses it, in both directions, and nobody gets
-  to choose which.
+- **Distance is the only defence anyone here has**, and something that knows exactly what it is
+  doing is taking it away.
+- **A mapped place that stops being mapped.** The labyrinth's cruelty is bureaucratic: the survey
+  is correct, and the ground is wrong.
 - **The record is wrong, and the people who know are nearly gone.** A city's fall was filed
   under the war. The correction exists only in a few very old heads.
 - **The long-lived remember; the short-lived must act.** Dwarves and elves are the standing
@@ -96,8 +97,9 @@ See `system/03-difficulty-and-solo-levers.md` for what each party shape does to 
   is canon here beyond the shape of the idea.
 - **Working title** was *Varisia 4200 AR*; renamed to *The Quiet Between Empires* mid-intake,
   slug and all 22 files with it. The era then moved again, from 4200 AR to **-1000 AR**, and the
-  setting from the Varisian coast to the **Mushfens**, at the player's direction after the pitch
-  was chosen. The title survived both moves and is final.
+  setting from the Varisian coast to the **Mushfens**, and then again from the Mushfens to
+  **mountains and dwarven mine-country**, at the player's direction after the pitch was chosen.
+  The Mushfens are no longer part of this campaign. The title survived both moves and is final.
 - **Pitch chosen:** *What Walks the Thaw* (pitch 2 of 3), with three player revisions: late summer
   instead of 1 Abadius, the far older era above, and a directing intelligence behind the goblins
   in place of the pitch's unorganised bands. The pitch name is retired — there is no thaw in a

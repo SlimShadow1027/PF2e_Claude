@@ -17,7 +17,9 @@ contradicted but also are not treated as something the character has heard.
 | 1 | 18 Arodus -1000 AR | Dwarves and elves outnumber humans on this coast, and noticeably so. Humans are a present minority. | intake, Block 3 | known |
 | 2 | 18 Arodus -1000 AR | Halflings exist here only as a small scattering of settlements. | intake, Block 3 | known |
 | 3 | 18 Arodus -1000 AR | **Gnomes do not exist.** They have not yet been cast out of the fey realm. | intake, Block 3 | known |
-| 4 | 18 Arodus -1000 AR | A buried Thassilonian road network is surfacing in the fen margins, intact. Late-summer low water exposes more of it. | intake, Block 5 (premise) | GM-side truth |
+| 4 | 18 Arodus -1000 AR | The mines, caverns and tunnels beneath the range are being reshaped, and the reshaping is moving upward toward the surface. | intake, Block 5 (premise) | GM-side truth |
+| 11 | 18 Arodus -1000 AR | The entity beneath is the **author** of the shifting, deliberately — not an opportunist exploiting it. | intake, premise revision | GM-side truth |
+| 12 | 18 Arodus -1000 AR | The campaign is set in mountain and dwarven mine-country. The Mushfens are not part of it. | intake, setting revision | known |
 | 5 | 18 Arodus -1000 AR | Goblins are present but primitive — more savage and feral than their later-era presentation. | intake, Block 3 | known |
 | 6 | 18 Arodus -1000 AR | Dwarves and elves are the predominant and most influential peoples of the continent. Humans are recent, numerous and growing. | intake, era revision | known |
 | 7 | 18 Arodus -1000 AR | Humans were recently weakened by great wars among themselves, ended a few hundred years ago. | intake, era revision | known |

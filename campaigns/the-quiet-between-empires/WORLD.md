@@ -6,12 +6,13 @@ touched, plus anything that diverges locally.
 
 ## Where we are
 
-- **Region:** the wetlands that later ages will call **the Mushfens**, and their drier margins —
-  Varisia, c. -1000 AR. An age between powers: Thassilon fallen and buried, no successor, the
-  elder dwarven and elven polities dominant, and a large, recent, war-weakened human population
-  spread across holdings that are hard to reach on purpose.
+- **Region:** **mountains and the dwarven mine-country beneath them** — Varisia, c. -1000 AR.
+  An age between powers: Thassilon fallen and buried, no successor, the elder dwarven and elven
+  polities dominant, and a large, recent, war-weakened human population in holdings scattered
+  along the valleys and passes. The Mushfens are **not** part of this campaign.
 - **Home base:** _pending — settled at character creation along with the specific post the
-  protagonist's obligation attaches to._
+  protagonist's obligation attaches to. A mine-head, a pass-warden's station or a waystation on a
+  trade road through the range are the obvious candidates._
 
 ## Settlements
 
@@ -46,14 +47,16 @@ the miles-per-day column is marked unverified).
 
 ## Weather and season
 
-- **Climate:** warm freshwater wetland — peat, standing water, braided channels, biting insects,
-  fen-fever. Hard going on foot and worse for anything wheeled.
+- **Climate:** highland — thin air at altitude, hard winters, short growing season, and weather
+  that changes faster than it does below. Underground: cold, dry, and indifferent to all of it.
 - **Current season:** **late summer.** The campaign opens 18 Arodus, and the Golarion calendar
-  maps Arodus onto August — verified, see `python3 tools/pf2e.py sources` (`calendar`). Late summer
-  is the **low-water** season: the fen draws down, and what the water covered is walkable. That is
-  the premise's clock, not set dressing — when the rains return, the roads go back under.
-- Roll weather on `Weather — Temperate, Summer` in `system/16-random-tables.md`. There is no
-  wetland table; `Temperate, Summer` is the closest fit and is **unverified** for a fen.
+  maps Arodus onto August — verified, see `python3 tools/pf2e.py sources` (`calendar`). In mountain
+  country late summer is the **last reliably open season**: the high passes are passable now and
+  will not be once winter sets in. That is the campaign's clock — the thing beneath is extending
+  its reach upward, and the window for moving freely between holdings is closing on its own
+  schedule, not the entity's.
+- Roll weather on `Weather — Cold or Highland` in `system/16-random-tables.md` — a direct fit for
+  this region, unlike the wetland the campaign previously assumed.
 
 ## Local rules of the world
 

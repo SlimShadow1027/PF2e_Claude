@@ -46,14 +46,18 @@ Established by the player at intake, so it is theirs, not a GM invention:
 - **Now:** it directs the goblin bands using the surfacing causeways. The goblins are organised
   far past their own capacity, which is the visible symptom a player can notice early.
 
-### Open question — needs the player's answer before session 1
+### Resolved — the entity is the author
 
-**Is the road network surfacing because of this being, or independently of it?**
+Answered by the player: **the entity is deliberately reshaping the underground**, not exploiting a
+natural process. There is no second, will-less cause. The shifting began deep and is being pushed
+upward on purpose, toward the mine-heads and the holdings above.
 
-- *Because of it* — the being is reactivating the network, giving the campaign one causal chain
-  and one thing to stop.
-- *Independently* — the low water and the returning magic expose the causeways, and the being is
-  simply the first intelligence to understand what a road is for. Keeps the premise's original
-  "no will behind it" theme and makes the being an opportunist rather than an author.
+What that buys the campaign: one causal chain and one thing to stop. What it costs: the original
+premise's "no will behind it" theme is gone, and with it the idea that the campaign has no
+antagonist at its centre. It has one, and it is underground.
 
-`CAMPAIGN.md` records this as pending and must be updated once answered.
+### Setting relocation
+
+The fen is out. This is mountain and mine country — a **Daedalus labyrinth** that will not hold its
+shape, reached through dwarven workings that broke into a Thassilonian ruin. Nothing of the
+Mushfens framing survives: no low water, no thaw, no causeways.
