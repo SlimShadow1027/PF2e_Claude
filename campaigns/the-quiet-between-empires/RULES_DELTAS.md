@@ -89,6 +89,6 @@ change and not a math change.
 
 | Date (real) | In-world date | What changed | Why |
 |---|---|---|---|
-| 2026-10-06 | 1 Abadius 4200 AR | Campaign created with the Standard preset | intake |
-| 2026-10-08 | 1 Abadius 4200 AR | Party shape set to 1 PC + 1 sidekick | intake, Block 7 |
-| 2026-10-08 | 1 Abadius 4200 AR | Six levers corrected to match the `Standard` table in system/03 — Hero Points 1→2, weak-on-mooks off→on for 3+, retreat off→on, list-actions off→when stuck, flag-fatal-plans off→on, telegraph off→on | the scaffold's neutral defaults did not match the preset they were labelled with |
+| 2026-10-06 | 18 Arodus -1000 AR | Campaign created with the Standard preset | intake |
+| 2026-10-08 | 18 Arodus -1000 AR | Party shape set to 1 PC + 1 sidekick | intake, Block 7 |
+| 2026-10-08 | 18 Arodus -1000 AR | Six levers corrected to match the `Standard` table in system/03 — Hero Points 1→2, weak-on-mooks off→on for 3+, retreat off→on, list-actions off→when stuck, flag-fatal-plans off→on, telegraph off→on | the scaffold's neutral defaults did not match the preset they were labelled with |

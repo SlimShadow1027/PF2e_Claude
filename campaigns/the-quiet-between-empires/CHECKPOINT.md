@@ -4,15 +4,15 @@
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
 - Checkpoint: **001** intake complete
-- Rendered at: 2026-10-08T03:26:00Z
+- Rendered at: 2026-10-10T06:25:02Z
 - Session: 0 (not in session)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Standard**
 
 ## Scene
 
-- **Where:** unset
-- **When:** 1 Abadius 4725 AR, 08:00
+- **Where:** the Mushfens — margins, late-summer low water
+- **When:** 18 Arodus -1000 AR, 08:00
 
 _(no situation paragraph recorded yet)_
 

@@ -3,15 +3,18 @@
 - **Slug:** the-quiet-between-empires
 - **Created:** 2026-10-06
 - **World:** worlds/varisia
-- **Era:** deep past — 525 years before Third Beginnings
-- **Start date:** 1 Abadius 4200 AR
+- **Era:** one of the oldest ages of this world — after Thassilon fell and long before the
+  colonial charters. Roughly 5,725 years before *Third Beginnings*.
+- **Start date:** 18 Arodus -1000 AR (late summer)
 - **Shape:** sandbox — a region, some factions, no predetermined plot
 - **Expected level range:** 1–10
 - **Advancement:** fast — levels roughly every two sessions
 - **Genre:** exploration and hexcrawl × dungeon crawl
 - **Tone:** grounded — competence matters, consequences stick
 - **Lethality:** death is on the table if the player pushes a bad situation
-- **Setting:** Golarion as published — Varisia, c. 4200 AR (era surroundings established by this campaign; see DESIGN_NOTES.md)
+- **Setting:** Golarion as published — Varisia, c. -1000 AR, in and around **what later ages
+  will call the Mushfens**. Era surroundings are established by this campaign, not cited; see
+  `DESIGN_NOTES.md` and the note at the foot of this file.
 
 > `World:` names a folder under `worlds/`, or `none` for a standalone campaign. A campaign
 > with `World: none` behaves exactly as it does today — nothing about the shared layer
@@ -23,17 +26,22 @@ _Not written yet. Intake ends with three one-page pitches; the player picks one 
 
 ## Premise and stakes
 
-**The Returning Road.**
+**The Returning Road**, run as the pitch *What Walks the Thaw* — relocated to late summer, so
+what uncovers the roads is the **low water**, not a thaw.
 
-- **What is wrong with the world:** A buried Thassilonian road network is surfacing under the
-  hills on its own. Roads that were under forty feet of soil are at grade again, they are intact,
-  and they go somewhere.
-- **Who is causing it:** Nobody. There is no will behind it — a system is resuming. This is the
-  "magic returning" setting assumption taken literally, and it means the campaign has no
-  antagonist to defeat at the centre of it, only people reacting to it.
+- **What is wrong with the world:** A buried Thassilonian road network is surfacing in the fen
+  margins. Causeways that were under peat and water are at grade again, intact, and they go
+  somewhere. In late summer the water drops and more of it shows.
+- **Who is causing it:** Two layers, and keeping them separate is the point.
+  - **The surfacing itself** — *pending: see the open question in `gm-private/secrets.md`.*
+  - **What uses it:** goblin bands, organised far past their own capacity by **something deep in
+    the earth** that is directing them. That being was unearthed by dwarven excavation at the tail
+    of the last great interhuman war. It toppled a city. Later histories recorded the city's fall
+    as a casualty of the war, and that version is the one in the record. A handful of dwarves, a
+    couple of elves, and almost nobody else knows otherwise — and they are dying off.
 - **What happens if nobody stops it:** The network completes and distance stops being a defence.
-  Things that were kept a month apart are a day's walk from anyone's door. The scattered holdings
-  of this era survive on being hard to reach; the roads end that.
+  Holdings that survive on being a month from anywhere are eight days from a thing that has
+  already destroyed one city and been credited to a war for it.
 
 ## Protagonist framing
 
@@ -69,10 +77,13 @@ See `system/03-difficulty-and-solo-levers.md` for what each party shape does to 
   that does not know it is doing it.
 - **A road is not neutral.** It carries whatever uses it, in both directions, and nobody gets
   to choose which.
-- **No one to blame.** The premise has no antagonist at its centre, so every antagonist the
-  campaign produces is somebody reacting — reasonably, and badly.
-- **The long-lived remember; the short-lived must act.** Dwarves and elves outnumber humans
-  here, and someone alive saw the last time this happened.
+- **The record is wrong, and the people who know are nearly gone.** A city's fall was filed
+  under the war. The correction exists only in a few very old heads.
+- **The long-lived remember; the short-lived must act.** Dwarves and elves are the standing
+  powers and outnumber humans. The generation of them that saw the last great interhuman wars is
+  mostly dead, and took the truth with them on purpose.
+- **The elder powers made this.** Dwarven digging released it; dwarven and elven hands played
+  the human sides through the wars that followed. Humans are new here, numerous, and were used.
 - **Thassilon outlasted its own intent.** What is surfacing was built for a purpose nobody
   now living shares.
 
@@ -84,10 +95,16 @@ See `system/03-difficulty-and-solo-levers.md` for what each party shape does to 
   direction — "same premise, re-answered." It remains parked and uncommitted; nothing from it
   is canon here beyond the shape of the idea.
 - **Working title** was *Varisia 4200 AR*; renamed to *The Quiet Between Empires* mid-intake,
-  slug and all 22 files with it.
+  slug and all 22 files with it. The era then moved again, from 4200 AR to **-1000 AR**, and the
+  setting from the Varisian coast to the **Mushfens**, at the player's direction after the pitch
+  was chosen. The title survived both moves and is final.
+- **Pitch chosen:** *What Walks the Thaw* (pitch 2 of 3), with three player revisions: late summer
+  instead of 1 Abadius, the far older era above, and a directing intelligence behind the goblins
+  in place of the pitch's unorganised bands. The pitch name is retired — there is no thaw in a
+  late-summer fen; the campaign title stands alone.
 - **Unverified setting history.** This repo has no source for Golarion historical dates —
   `pf2e.py sources` verifies the calendar's month lengths and weekdays only. Which peoples
-  held which parts of Varisia in 4200 AR, and when gnomes left the fey realm, are **this
+  held which parts of Varisia in -1000 AR, and when gnomes left the fey realm, are **this
   campaign's own established setting**, not cited published fact. Treat accordingly and say
   "unverified" in play rather than sounding confident. See `DESIGN_NOTES.md`.
 - **Open item:** `worlds/varisia/GAZETTEER.md` is undated, so `world.py as-of` reads it in full

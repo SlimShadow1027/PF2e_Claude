@@ -5,12 +5,12 @@ The in-world calendar and what happened when. One row per notable day. Advance t
 the human-readable record of where that clock has been.
 
 - **Calendar:** golarion (Absalom Reckoning)
-- **Campaign began:** 1 Abadius 4200 AR
+- **Campaign began:** 18 Arodus -1000 AR
 - **Current in-world date:** see `CHECKPOINT.md` (rendered from `state.json`)
 
 | In-world date | Session | What happened |
 |---|---|---|
-| 1 Abadius 4200 AR | 0 | Campaign created. Nothing has happened yet. |
+| 18 Arodus -1000 AR | 0 | Campaign created. Nothing has happened yet. |
 
 ## Dates fixed in advance
 

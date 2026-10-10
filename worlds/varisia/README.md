@@ -7,7 +7,7 @@ A shared setting. Several campaigns can be set here, in different eras.
 | Campaign | Era / start date | Status |
 |---|---|---|
 | third-beginnings | 1 Abadius 4725 AR | active |
-| the-quiet-between-empires | 1 Abadius 4200 AR — deep past, 525 years earlier | active |
+| the-quiet-between-empires | 18 Arodus -1000 AR — one of the oldest ages, ~5,725 years earlier | active |
 
 ## What this world is
 

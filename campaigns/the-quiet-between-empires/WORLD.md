@@ -6,12 +6,12 @@ touched, plus anything that diverges locally.
 
 ## Where we are
 
-- **Region:** Varisia, c. 4200 AR — the long gap between Thassilon's fall and the colonial
-  charters, with no imperial authority on this coast in either direction. Scattered holdings
-  that survive on being hard to reach. Dwarven and elven settlement outweighs human; halfling
-  settlements are few; goblins are present and feral; gnomes do not exist yet.
-- **Home base:** _pending — each of the three intake pitches locates it differently, and
-  nothing is built until one is approved._
+- **Region:** the wetlands that later ages will call **the Mushfens**, and their drier margins —
+  Varisia, c. -1000 AR. An age between powers: Thassilon fallen and buried, no successor, the
+  elder dwarven and elven polities dominant, and a large, recent, war-weakened human population
+  spread across holdings that are hard to reach on purpose.
+- **Home base:** _pending — settled at character creation along with the specific post the
+  protagonist's obligation attaches to._
 
 ## Settlements
 
@@ -46,13 +46,14 @@ the miles-per-day column is marked unverified).
 
 ## Weather and season
 
-- **Climate:** temperate coastal
-- **Current season:** **winter.** The campaign opens 1 Abadius, and the Golarion calendar maps
-  Abadius onto January — verified, see `python3 tools/pf2e.py sources` (`calendar`). Starting a
-  hexcrawl in deep winter is a real constraint on travel, not set dressing; say so if you would
-  rather open in a kinder month.
-- Roll weather on `Weather — Temperate, Winter` or `Weather — Coastal or Nautical` in
-  `system/16-random-tables.md`.
+- **Climate:** warm freshwater wetland — peat, standing water, braided channels, biting insects,
+  fen-fever. Hard going on foot and worse for anything wheeled.
+- **Current season:** **late summer.** The campaign opens 18 Arodus, and the Golarion calendar
+  maps Arodus onto August — verified, see `python3 tools/pf2e.py sources` (`calendar`). Late summer
+  is the **low-water** season: the fen draws down, and what the water covered is walkable. That is
+  the premise's clock, not set dressing — when the rains return, the roads go back under.
+- Roll weather on `Weather — Temperate, Summer` in `system/16-random-tables.md`. There is no
+  wetland table; `Temperate, Summer` is the closest fit and is **unverified** for a fen.
 
 ## Local rules of the world
 
