@@ -52,10 +52,13 @@ Carried over from *Third Beginnings* at the player's agreement.
 - **Person:** second person
 - **Tense:** present
 - **Name the rules being applied:** when it matters
-- **Offer tactical suggestions:** **one option per turn** — a single thing worth considering,
-  never a full solve and never the decision
-- **Remind the player of available actions and feats:** folded into the one option per turn; a
-  full list on request, and `Standard` also lists legal actions when the player seems stuck
+- **Offer tactical suggestions:** **a posture menu each turn** — aggressive, defensive, and
+  task-focused (support the sidekick, advance a timed objective, retreat). Never the optimal line,
+  never the decision. **This supersedes the "one option per turn" preference carried over from
+  *Third Beginnings*,** which the player changed during the lever walkthrough.
+- **Remind the player of available actions and feats:** **yes, actively** — reminders for features
+  that have gone unused. The sheet is dual-class with free archetype and ancestry paragon, so
+  forgotten abilities are the likeliest failure mode rather than an edge case.
 
 ## Session rhythm
 

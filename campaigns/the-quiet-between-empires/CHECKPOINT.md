@@ -3,11 +3,11 @@
 > Rendered from `state.json` by `tools/state.py render`. **Do not hand-edit this file.**
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
-- Checkpoint: **001** intake complete
-- Rendered at: 2026-10-10T06:25:02Z
+- Checkpoint: **002** all 26 difficulty levers settled; era moved to -1000 AR Mushfens
+- Rendered at: 2026-10-10T18:57:06Z
 - Session: 0 (not in session)
 - Party level 1, 0 XP
-- Transparency mode: `standard` — difficulty preset: **Standard**
+- Transparency mode: `standard` — difficulty preset: **Custom**
 
 ## Scene
 
