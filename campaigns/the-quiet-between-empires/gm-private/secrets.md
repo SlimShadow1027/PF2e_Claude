@@ -12,7 +12,7 @@
 
 | Who | What they are actually doing | Who else knows | How the player could find out |
 |---|---|---|---|
-| | | | |
+| Kelda Vornshield | Lies by omission: **her survey chose where the dig broke through.** She presents herself as a witness, not as the hand that drew the line. | nobody living, she believes | dwarven survey records bearing her mark; another survivor; her own maps if read closely; carved survey marks at the breach |
 
 ## Planned reveals
 

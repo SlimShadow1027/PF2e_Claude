@@ -18,4 +18,4 @@ Deadlines and scheduled events the world is working toward, whether or not the p
 
 | In-world date | Event | Player knows? |
 |---|---|---|
-| | | |
+| c. -1350 AR | The dwarven dig breaks into the Thassilonian ruin; the entity is loosed; a city falls and is filed under the war | no |

@@ -3,8 +3,8 @@
 > Rendered from `state.json` by `tools/state.py render`. **Do not hand-edit this file.**
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
-- Checkpoint: **005** build decisions: HP 31, Calling stripped, breastplate in budget, hired by the Last Witness
-- Rendered at: 2026-10-11T14:31:59Z
+- Checkpoint: **006** Kelda Vornshield chosen as the Last Witness; breach c. -1350 AR; gear chosen; Gravity Weapon on infused blasts
+- Rendered at: 2026-10-11T19:25:54Z
 - Session: 0 (not in session)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Custom**

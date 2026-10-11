@@ -55,7 +55,24 @@ undecided and one item needs stripping first. Verified numbers from the export:
 - **HP 31** confirmed by the player.
 - **Breastplate** worn if it fits the 15 gp budget. It does: 8 gp, Bulk 2, Str +3 met by Str 18 so the −5 ft Speed penalty does not apply ([Player Core p.271](https://2e.aonprd.com/Armor.aspx?ID=47)).
 - **The post:** hired by the Last Witness as guard and guide into the depths of the range where the Labyrinth is rumoured to be.
-- **Open:** the rest of the gear; the Gravity Weapon question below.
+- **Gear — the suggested loadout, chosen 2026-10-11.** Prices from Player Core / GM Core via AoN.
+
+  | Item | Price | Bulk |
+  |---|---|---|
+  | Breastplate (worn) | 8 gp | 2 |
+  | Adventurer's Pack (backpack, bedroll, 10 chalk, flint and steel, 50 ft rope, 2 weeks' rations, soap, 5 torches, waterskin) | 1 gp 5 sp | 1 |
+  | Hooded lantern | 7 sp | L |
+  | Oil, 5 pints | 5 cp | — |
+  | Climbing kit | 5 sp | 1 |
+  | Grappling hook | 1 sp | L |
+  | Wooden shield | 1 gp | 1 |
+  | Crowbar | 5 sp | L |
+  | Signal whistle | 8 cp | — |
+  | Caltrops | 3 sp | L |
+  | **Spent** | **12 gp 7 sp 3 cp** | ~5 + 5 L |
+  | **Purse** | **2 gp 2 sp 7 cp** | |
+
+- **Gravity Weapon:** house-ruled to work with an Elemental Blast shaped by Weapon Infusion — `RULES_DELTAS.md`. **Open:** confirm Weapon Infusion is on the sheet.
 
 ### Gravity Weapon needs a weapon
 

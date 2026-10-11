@@ -5,7 +5,7 @@ attitude do not drift between sessions. Dead NPCs stay in the roster, marked dea
 
 | Name | Role | Faction | Disposition to the party | Status | Last seen (where / when) | File |
 |---|---|---|---|---|---|---|
-| | | | | | | |
+| Kelda Vornshield | the Last Witness; employer; GM-run sidekick | none now (retired clan archivist) | — not yet met in play | alive | — | `npcs/kelda-vornshield.md` |
 
 Disposition scale: `hostile` · `unfriendly` · `wary` · `indifferent` · `friendly` ·
 `helpful` · `devoted`
@@ -26,10 +26,10 @@ One line each so nobody starts sounding like everybody else.
 
 | Name | Vocabulary | Rhythm | Verbal tic |
 |---|---|---|---|
-| | | | |
+| Kelda Vornshield | long, ornamented sentences, courtly and condescending; surveyor's precision underneath | languid, theatrical, darkly funny | calls the protagonist by the wrong name — a human guide dead two centuries — and corrects herself late or not at all |
 
 
-## The Last Witness — sidekick, not yet built
+## The Last Witness — Kelda Vornshield (concept chosen 2026-10-11; numbers pending)
 
 **Chosen at intake as the campaign's GM-run sidekick.** An ancient dwarf or elf who was in the
 tunnel when dwarven digging broke into the Thassilonian ruin, at the tail of the last great

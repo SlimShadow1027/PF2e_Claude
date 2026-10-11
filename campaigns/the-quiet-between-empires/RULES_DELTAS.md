@@ -79,7 +79,22 @@ Anything here is this table's invention and is marked as such.
 |---|---|---|---|
 | **Versatile Action** | A fourth action each round, usable only as defined below | The player's own long-standing house rule, carried in from their other tables | easier — removes the opening-round setup tax and grants free repositioning |
 | **Crowd soft cap** | At most 2.5 × (number of allies) enemy initiative entries | Protects the action economy, which the XP budget does not | easier against crowds |
+| **Gravity Weapon on infused blasts** | An Elemental Blast shaped by Weapon Infusion counts as a weapon Strike for Gravity Weapon | Player's choice — the build has no weapon | slightly easier — +2 damage once a round at level 1 |
 | **Dual-class HP stacks** | A dual-class character gains **both** classes' HP per level, not the higher | Player's choice; published Dual Class grants only the higher | much easier — see the trajectory below |
+
+### Gravity Weapon on an infused Elemental Blast
+
+**Homebrew.** [Gravity Weapon](https://2e.aonprd.com/Spells.aspx?ID=1863) (Player Core p.383) applies
+to *"your first weapon Strike each round"*. [Elemental Blast](https://2e.aonprd.com/Actions.aspx?ID=2125)
+(Rage of Elements p.16) is an impulse attack, not a Strike, so as published they never meet.
+
+Here: **an Elemental Blast shaped by [Weapon Infusion](https://2e.aonprd.com/Feats.aspx?ID=4186)**
+(Rage of Elements p.21, free action, feat 1) **counts as a weapon Strike for Gravity Weapon.** The
+status bonus is twice the blast's damage dice, so +2 at level 1. Un-infused blasts get nothing.
+The rule needs Weapon Infusion on the sheet; without it the rule does nothing.
+
+[Precision](https://2e.aonprd.com/HuntersEdge.aspx?ID=5) needs no house rule. It triggers on *"the
+first time you hit your hunted prey"*, which any blast satisfies.
 
 ### Dual-class HP stacking
 
@@ -214,3 +229,4 @@ change and not a math change.
 | 2026-10-10 | 18 Arodus -1000 AR | `worlds/varisia/GAZETTEER.md` rows tagged by era so the date gate has something to filter | the file was undated and read in full at every date |
 | 2026-10-11 | 18 Arodus -1000 AR | Dual-class HP stacking adopted (homebrew): both classes' HP per level instead of the higher. Level 1 = 31, level 10 = 238 against 158 published | player's choice; components verified on AoN |
 | 2026-10-11 | 18 Arodus -1000 AR | Mythic benefits confirmed deferred — no Calling, no Rewrite Fate, no Mythic Points until level 2-3 | player |
+| 2026-10-11 | 18 Arodus -1000 AR | Gravity Weapon applies to an Elemental Blast shaped by Weapon Infusion (homebrew) | player's choice; the build carries no weapon |
