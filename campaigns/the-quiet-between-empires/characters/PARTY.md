@@ -41,7 +41,7 @@ undecided and one item needs stripping first. Verified numbers from the export:
 | Ancestry | Human, Versatile Human heritage |
 | Background | Waste Walker |
 | Str/Dex/Con/Int/Wis/Cha | 18 / 12 / 18 / 10 / 12 / 12 |
-| HP at level 1 | **19** — 8 ancestry + 10 class (the higher of Ranger 10 / Kineticist 8, per dual class) + 1 Toughness |
+| HP at level 1 | **31** — 8 ancestry + 10 Ranger + 8 Kineticist + 4 Con + 1 Toughness (dual-class HP stacking, homebrew — `RULES_DELTAS.md`). The export's 19 is the published higher-of-two figure and is superseded. |
 | AC | **18** — 10 + 3 trained + 1 Dex (capped) + 4 armor |
 | Saves | Expert Fort, Expert Reflex, **Trained** Will — correct: both classes are trained in Will at 1st; Kineticist's Will Expertise raises it at level 3 |
 | Perception | +4 |
@@ -49,7 +49,19 @@ undecided and one item needs stripping first. Verified numbers from the export:
 | Focus | 1 point, Gravity Weapon (via Natural Ambition → Initiate Warden) |
 | Languages | Common, Dwarven, Petran |
 
-### Two things to settle before this goes into state
+### Settled 2026-10-11
+
+- **Calling and Rewrite Fate stripped** from the build. They arrive with mythic at level 2–3.
+- **HP 31** confirmed by the player.
+- **Breastplate** worn if it fits the 15 gp budget. It does: 8 gp, Bulk 2, Str +3 met by Str 18 so the −5 ft Speed penalty does not apply ([Player Core p.271](https://2e.aonprd.com/Armor.aspx?ID=47)).
+- **The post:** hired by the Last Witness as guard and guide into the depths of the range where the Labyrinth is rumoured to be.
+- **Open:** the rest of the gear; the Gravity Weapon question below.
+
+### Gravity Weapon needs a weapon
+
+[Gravity Weapon](https://2e.aonprd.com/Spells.aspx?ID=1863) (Player Core p.383) applies to *"your first weapon Strike each round"*. [Elemental Blast](https://2e.aonprd.com/Actions.aspx?ID=2125) is an impulse attack, not a Strike, and [unarmed attacks are not weapons](https://2e.aonprd.com/Rules.aspx?ID=2191) (Player Core p.275). Without a weapon it does nothing. [Precision](https://2e.aonprd.com/HuntersEdge.aspx?ID=5) triggers on *"the first time you hit your hunted prey"*, so it **does** work with Elemental Blast.
+
+### Original two items (both now settled)
 
 1. **Strip the Calling and Rewrite Fate.** Mythic is set to arrive at level 2–3, not 1. Per
    [Mythic Progression](https://2e.aonprd.com/Rules.aspx?ID=3329), a Calling received after 1st

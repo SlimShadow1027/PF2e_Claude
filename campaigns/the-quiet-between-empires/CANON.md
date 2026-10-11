@@ -28,6 +28,7 @@ contradicted but also are not treated as something the character has heard.
 | 7 | 18 Arodus -1000 AR | Humans were recently weakened by great wars among themselves, ended a few hundred years ago. | intake, era revision | known |
 | 8 | 18 Arodus -1000 AR | Dwarven and elven interests aided and played multiple human sides through those wars. | intake, era revision | GM-side truth |
 | 9 | 18 Arodus -1000 AR | The generation of dwarves and elves who witnessed the last great interhuman wars is mostly dead. The last few are the only living witnesses to several risen and fallen human kingdoms. | intake, era revision | known |
+| 16 | 18 Arodus -1000 AR | The protagonist is **hired by the Last Witness** as guard and guide, to take them into the depths of the range where the Labyrinth is rumoured to be. | character creation, player | known |
 | 10 | 18 Arodus -1000 AR | Thassilon has already fallen and is buried. Nothing has risen to replace it on this coast. | intake, era revision | known |
 
 Visibility: `known` (the player heard it) · `GM-side truth` (true, not yet learned) ·

@@ -3,18 +3,18 @@
   "campaign": "the-quiet-between-empires",
   "title": "The Quiet Between Empires",
   "created_at": "2026-10-06T20:28:33Z",
-  "updated_at": "2026-10-11T01:34:47Z",
+  "updated_at": "2026-10-11T14:31:59Z",
   "transparency": "standard",
   "difficulty_preset": "Custom",
   "session_in_progress": false,
   "session_number": 0,
   "scene_count": 0,
-  "checkpoint_counter": 4,
+  "checkpoint_counter": 5,
   "last_checkpoint": {
-    "id": "004",
-    "name": "Maza-Khad named; Last Witness chosen as sidekick; dual-class HP stacking",
-    "at": "2026-10-11T01:34:47Z",
-    "slug": "maza-khad-named-last-witness-chosen-as-sidekick-dual-class-h"
+    "id": "005",
+    "name": "build decisions: HP 31, Calling stripped, breastplate in budget, hired by the Last Witness",
+    "at": "2026-10-11T14:31:59Z",
+    "slug": "build-decisions-hp-31-calling-stripped-breastplate-in-budget"
   },
   "time": {
     "calendar": "golarion",
