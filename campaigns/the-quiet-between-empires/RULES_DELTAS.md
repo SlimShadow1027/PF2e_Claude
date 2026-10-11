@@ -79,6 +79,38 @@ Anything here is this table's invention and is marked as such.
 |---|---|---|---|
 | **Versatile Action** | A fourth action each round, usable only as defined below | The player's own long-standing house rule, carried in from their other tables | easier — removes the opening-round setup tax and grants free repositioning |
 | **Crowd soft cap** | At most 2.5 × (number of allies) enemy initiative entries | Protects the action economy, which the XP budget does not | easier against crowds |
+| **Dual-class HP stacks** | A dual-class character gains **both** classes' HP per level, not the higher | Player's choice; published Dual Class grants only the higher | much easier — see the trajectory below |
+
+### Dual-class HP stacking
+
+**Homebrew.** Published Dual Class grants the **higher** of the two classes' HP per level. Here the
+character gains **both**.
+
+Verified components: [Ranger](https://2e.aonprd.com/Classes.aspx?ID=12) 10 + Con/level,
+[Kineticist](https://2e.aonprd.com/Classes.aspx?ID=23) 8 + Con/level,
+[Toughness](https://2e.aonprd.com/Feats.aspx?ID=5227) adds max HP equal to level, and
+[the HP rules](https://2e.aonprd.com/Rules.aspx?ID=2102) confirm those stack.
+
+| | Published dual class | This homebrew |
+|---|---|---|
+| Per level | 10 + 4 Con = **14** | 10 + 8 + 4 Con = **22** |
+| Level 1 total | 8 + 14 + 1 = **23** | 8 + 22 + 1 = **31** |
+| Level 10 total | 8 + 140 + 10 = **158** | 8 + 220 + 10 = **238** |
+
+**+80 HP by level 10, about 51% more.** For scale, 158 is already at the top of what a Con-heavy
+level-10 martial carries; 238 is in the HP range of a level 10–12 *creature*.
+
+**What it actually changes, and what it does not.** It makes the character very hard to *grind
+down* — attrition, chip damage and long fights stop being threats, and the dying rules become
+hard to reach. It does **not** protect against the two things that kill high-level PF2e characters:
+a critical-hit damage spike, and a failed save against an incapacitation or condition effect. So
+the result is a character who is nearly immune to erosion and exactly as vulnerable as before to
+one bad save.
+
+**Said once and then left alone:** this is the largest cushion in the configuration — larger than
+any safety-net lever the player declined, and it pulls against lethality 3, Hero Points at 1, and
+no death-consent. It is recorded, not argued with. `dial it up` moves the threat target if fights
+start feeling flat.
 
 ### The Versatile Action
 
@@ -180,3 +212,5 @@ change and not a math change.
 | 2026-10-10 | 18 Arodus -1000 AR | All 26 levers settled. Preset label set to `Custom` — the configuration matches no single preset | lever-by-lever walkthrough complete |
 | 2026-10-10 | 18 Arodus -1000 AR | Setting relocated from the Mushfens to mountains and dwarven mine-country; premise reworked to a Daedalus labyrinth with the entity as its deliberate author | player revision |
 | 2026-10-10 | 18 Arodus -1000 AR | `worlds/varisia/GAZETTEER.md` rows tagged by era so the date gate has something to filter | the file was undated and read in full at every date |
+| 2026-10-11 | 18 Arodus -1000 AR | Dual-class HP stacking adopted (homebrew): both classes' HP per level instead of the higher. Level 1 = 31, level 10 = 238 against 158 published | player's choice; components verified on AoN |
+| 2026-10-11 | 18 Arodus -1000 AR | Mythic benefits confirmed deferred — no Calling, no Rewrite Fate, no Mythic Points until level 2-3 | player |

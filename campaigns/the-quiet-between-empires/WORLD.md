@@ -6,7 +6,7 @@ touched, plus anything that diverges locally.
 
 ## Where we are
 
-- **Region:** **mountains and the dwarven mine-country beneath them** — Varisia, c. -1000 AR.
+- **Region:** **Maza-Khad / Lûth-Rais / the Bullhorns**, and the dwarven mine-country beneath them — Varisia, c. -1000 AR.
   An age between powers: Thassilon fallen and buried, no successor, the elder dwarven and elven
   polities dominant, and a large, recent, war-weakened human population in holdings scattered
   along the valleys and passes. The Mushfens are **not** part of this campaign.
@@ -28,7 +28,20 @@ UNVERIFIED — set these explicitly.
 
 | Place | Region | What it is | Been there? |
 |---|---|---|---|
-| | | | |
+| **Maza-Gund** / **Rhad-Lûth** / **the Labyrinth** | beneath the range | The shifting deep. Dwarven **Maza-Gund**; Elven **Rhad-Lûth**; humans call it the Labyrinth and leave it at that. The three names are not translations of each other, and what each people means by it is not the same thing. | no |
+
+**On the three names.** That humans have only a descriptive word for it, while both elder peoples
+have a proper name, is itself a fact about this age — humans are new here and inherited the place
+already named by others who are not telling them everything.
+
+**The range is named after the labyrinth, not the reverse.** Dwarven **Maza-Khad** shares its root
+with **Maza-Gund**; Elven **Lûth-Rais** with **Rhad-Lûth**. Humans call the peaks **the Bullhorns**
+and are describing a skyline. The elder peoples are describing a lid — which means they named the
+mountains already knowing what was under them.
+
+**The protagonist speaks Dwarven.** So this is not a secret kept by language: the name is legible
+to them from the first time they read it carved anywhere. What it *means* is a different question,
+and that one is open.
 
 ## Travel times
 
