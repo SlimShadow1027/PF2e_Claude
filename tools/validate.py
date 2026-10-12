@@ -106,10 +106,16 @@ def check_campaign(slug: str, r: Report) -> None:
         if mx <= 0:
             r.warn(f"{name}: maximum HP is {mx} — set it before play")
 
-        for field in ("hero_points", "dying", "wounded", "doomed", "level"):
+        for field in ("hero_points", "dying", "wounded", "doomed"):
             v = pc.get(field, 0)
             if isinstance(v, int) and v < 0:
                 r.error(f"{name}: {field} is negative ({v})")
+        # Published creatures go down to level -1 (NPC Core's commoners and scholars), so a
+        # GM-run sidekick or companion built on one may sit there. A PC never does.
+        lvl = pc.get("level", 0)
+        floor = 1 if pc.get("kind", "pc") == "pc" else -1
+        if isinstance(lvl, int) and lvl < floor:
+            r.error(f"{name}: level {lvl} is below {floor}")
         if int(pc.get("hero_points", 0)) > int(pc.get("hero_points_max", 3)):
             r.error(f"{name}: {pc.get('hero_points')} Hero Points, above the cap of {pc.get('hero_points_max')}")
         dying_limit = int(pc.get("dying_max", 4)) - int(pc.get("doomed", 0))
