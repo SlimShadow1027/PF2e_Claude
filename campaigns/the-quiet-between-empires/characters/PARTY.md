@@ -6,19 +6,22 @@ volatile — current HP, conditions, resources. When they disagree, `state.json`
 
 | Character | Level | Role | HP max | AC | Fort | Ref | Will | Perc | Speed | Key skills |
 |---|---|---|---|---|---|---|---|---|---|---|
-| | | | | | | | | | | |
+| Shavi Beifong | 1 | Ranger/Kineticist (earth) — guard and guide | 31 | 18 (20 shield raised) | +9 | +6 | +4 | +6 | 25 | Athletics +7; Survival, Nature, Stealth, Medicine, Intimidation, Acrobatics +4 |
+| Kelda Vornshield | −1 | the Last Witness — knowing | 13 | 13 | +3 | +5 | +9 | +7 (darkvision) | 20 | four Lores +13, Society +9 |
 
 ## Resources per character
 
 | Character | Hero Points | Focus | Spell slots | Signature consumables |
 |---|---|---|---|---|
-| | | | | |
+| Shavi Beifong | 1 | 1 (Gravity Weapon) | — | caltrops, 5 pints oil |
+| Kelda Vornshield | — | — | — | — |
 
 ## Who is run by whom
 
 | Character | Controlled by | Status |
 |---|---|---|
-| | player / GM | full PC / sidekick / companion / narrative-only |
+| Shavi Beifong | player | full PC |
+| Kelda Vornshield | GM | sidekick |
 
 ## Reactions available
 
@@ -27,10 +30,11 @@ most common way an automated GM quietly shortchanges a player.
 
 | Character | Reaction | Trigger | Notes |
 |---|---|---|---|
-| | | | |
+| Shavi Beifong | none at level 1 | — | shield can be raised; no Shield Block |
+| Kelda Vornshield | none | — | |
 
 
-## Character in progress — not yet in `state.json`
+## Build notes (character entered into `state.json` 2026-10-12 — full sheet `characters/shavi-beifong.md`)
 
 The player has a level-1 Pathbuilder build in flight. **Not added to state yet** — gear is
 undecided and one item needs stripping first. Verified numbers from the export:
