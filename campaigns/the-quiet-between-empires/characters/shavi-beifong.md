@@ -43,7 +43,7 @@ penalty applies.
 ## Speed and senses
 
 - **Speed:** 25 feet
-- **Senses:** none beyond normal vision. **No darkvision or low-light vision** — Shavi needs light underground.
+- **Senses:** **low-light vision** (Gloomseer). Dim light is no penalty; **darkness still is** — no darkvision, so the lantern stays essential.
 
 ## Attacks
 
@@ -79,13 +79,13 @@ penalty applies.
 | Survival | T | +4 | |
 | Thievery | U | +1 | |
 | Wastes Lore | T | +3 | Waste Walker |
-| Underground Lore | T | +3 | |
-| Warfare Lore | T | +3 | |
+| Underground Lore | T | +3 | **bonus Lore, homebrew** — on-theme grant, `RULES_DELTAS.md` |
 
 ## Feats and features
 
 - **Ancestry feats:** [Natural Ambition](https://2e.aonprd.com/Feats.aspx?ID=4478) → Initiate Warden.
-  Ancestry Paragon grants one more at level 1 — **not in the export summary; to confirm.**
+  [Gloomseer](https://2e.aonprd.com/Feats.aspx?ID=942) (Character Guide p.12, **legacy — no Remaster version
+  on AoN**): low-light vision. Prerequisite: Nidalese ethnicity — see `RULES_DELTAS.md`.
 - **Heritage general feat:** [Toughness](https://2e.aonprd.com/Feats.aspx?ID=5227) (Versatile Human)
 - **Class features — Ranger:** Hunt Prey (◆), Hunter's Edge: Precision
 - **Class features — Kineticist:** Kinetic Gate (single, earth), Kinetic Aura (10-ft emanation), Channel Elements (◆),
@@ -94,7 +94,9 @@ penalty applies.
   [Stepping Stones](https://2e.aonprd.com/Feats.aspx?ID=4223) (◆◆, Sustain)
 - **Class feats:** [Weapon Infusion](https://2e.aonprd.com/Feats.aspx?ID=4186) (Kineticist, free action);
   [Initiate Warden](https://2e.aonprd.com/Feats.aspx?ID=4862) (Ranger, via Natural Ambition).
-  Ranger's own level-1 class feat — **to confirm.**
+  [Monster Hunter](https://2e.aonprd.com/Feats.aspx?ID=4863) (Ranger, Player Core p.157): Recall Knowledge
+  about your prey as part of Hunt Prey; on a critical success, +1 circumstance to your next attack roll
+  against it, shared with any ally you tell. Once per day per creature.
 - **Skill feats:** Forager (Waste Walker)
 - **General feats:** Toughness
 - **Archetype feats:** none yet — Free Archetype begins at level 2
@@ -146,3 +148,4 @@ Shavi to take her into the depths of Maza-Khad, where the Labyrinth is rumoured 
 | Level | Date taken | What changed |
 |---|---|---|
 | 1 | 2026-10-12 | Character created — Pathbuilder export re-derived; Calling stripped; HP 31 (stacking); Perception +6 (expert) |
+| 1 | 2026-10-12 | Feats confirmed: Gloomseer, Monster Hunter. Warfare Lore dropped; Underground Lore kept as a bonus Lore |

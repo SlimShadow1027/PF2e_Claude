@@ -6,7 +6,7 @@ volatile — current HP, conditions, resources. When they disagree, `state.json`
 
 | Character | Level | Role | HP max | AC | Fort | Ref | Will | Perc | Speed | Key skills |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Shavi Beifong | 1 | Ranger/Kineticist (earth) — guard and guide | 31 | 18 (20 shield raised) | +9 | +6 | +4 | +6 | 25 | Athletics +7; Survival, Nature, Stealth, Medicine, Intimidation, Acrobatics +4 |
+| Shavi Beifong | 1 | Ranger/Kineticist (earth) — guard and guide | 31 | 18 (20 shield raised) | +9 | +6 | +4 | +6 (low-light) | 25 | Athletics +7; Survival, Nature, Stealth, Medicine, Intimidation, Acrobatics +4 |
 | Kelda Vornshield | −1 | the Last Witness — knowing | 13 | 13 | +3 | +5 | +9 | +7 (darkvision) | 20 | four Lores +13, Society +9 |
 
 ## Resources per character

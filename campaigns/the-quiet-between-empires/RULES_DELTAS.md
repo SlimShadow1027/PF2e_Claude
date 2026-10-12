@@ -81,6 +81,8 @@ Anything here is this table's invention and is marked as such.
 | **Crowd soft cap** | At most 2.5 × (number of allies) enemy initiative entries | Protects the action economy, which the XP budget does not | easier against crowds |
 | **Gravity Weapon on infused blasts** | An Elemental Blast shaped by Weapon Infusion counts as a weapon Strike for Gravity Weapon | Player's choice — the build has no weapon | slightly easier — +2 damage once a round at level 1 |
 | **Kelda's HP and Speed** | The sidekick's Court Historian base (NPC Core p.12, −1) runs at **13 HP** (not 7) and **20 ft** (not 25) | Player's derivation from dwarf ancestry: 10 + 4 − 1 Con; dwarf Speed | slightly easier — she survives one early hit; slower to evacuate |
+| **Bonus Lore: Underground** | Shavi is trained in Underground Lore outside the build's skill count | On-theme grant at the player's request; Warfare Lore dropped | negligible |
+| **Gloomseer prerequisite** | Gloomseer (Character Guide p.12, legacy) lists *Nidalese ethnicity* as a prerequisite | Taken by the player; how the prerequisite is met is open — Nidalese descent in the backstory, or waived | minor — low-light vision |
 | **Dual-class HP stacks** | A dual-class character gains **both** classes' HP per level, not the higher | Player's choice; published Dual Class grants only the higher | much easier — see the trajectory below |
 
 ### Gravity Weapon on an infused Elemental Blast
@@ -232,3 +234,4 @@ change and not a math change.
 | 2026-10-11 | 18 Arodus -1000 AR | Mythic benefits confirmed deferred — no Calling, no Rewrite Fate, no Mythic Points until level 2-3 | player |
 | 2026-10-11 | 18 Arodus -1000 AR | Gravity Weapon applies to an Elemental Blast shaped by Weapon Infusion (homebrew) | player's choice; the build carries no weapon |
 | 2026-10-12 | 18 Arodus -1000 AR | Kelda Vornshield built on Court Historian (NPC Core p.12, −1) with HP 13 and Speed 20 (homebrew) | player's derivation |
+| 2026-10-12 | 18 Arodus -1000 AR | Underground Lore granted as a bonus Lore (homebrew); Warfare Lore dropped. Gloomseer taken with its Nidalese prerequisite open | player |

@@ -3,8 +3,8 @@
 > Rendered from `state.json` by `tools/state.py render`. **Do not hand-edit this file.**
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
-- Checkpoint: **008** Shavi Beifong entered into state: sheet, gear, purse, focus
-- Rendered at: 2026-10-12T20:05:40Z
+- Checkpoint: **009** Shavi's feats confirmed: Gloomseer, Monster Hunter; Underground Lore as bonus Lore
+- Rendered at: 2026-10-12T20:13:42Z
 - Session: 0 (not in session)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Custom**
