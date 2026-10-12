@@ -80,6 +80,7 @@ Anything here is this table's invention and is marked as such.
 | **Versatile Action** | A fourth action each round, usable only as defined below | The player's own long-standing house rule, carried in from their other tables | easier — removes the opening-round setup tax and grants free repositioning |
 | **Crowd soft cap** | At most 2.5 × (number of allies) enemy initiative entries | Protects the action economy, which the XP budget does not | easier against crowds |
 | **Gravity Weapon on infused blasts** | An Elemental Blast shaped by Weapon Infusion counts as a weapon Strike for Gravity Weapon | Player's choice — the build has no weapon | slightly easier — +2 damage once a round at level 1 |
+| **Kelda's HP and Speed** | The sidekick's Court Historian base (NPC Core p.12, −1) runs at **13 HP** (not 7) and **20 ft** (not 25) | Player's derivation from dwarf ancestry: 10 + 4 − 1 Con; dwarf Speed | slightly easier — she survives one early hit; slower to evacuate |
 | **Dual-class HP stacks** | A dual-class character gains **both** classes' HP per level, not the higher | Player's choice; published Dual Class grants only the higher | much easier — see the trajectory below |
 
 ### Gravity Weapon on an infused Elemental Blast
@@ -230,3 +231,4 @@ change and not a math change.
 | 2026-10-11 | 18 Arodus -1000 AR | Dual-class HP stacking adopted (homebrew): both classes' HP per level instead of the higher. Level 1 = 31, level 10 = 238 against 158 published | player's choice; components verified on AoN |
 | 2026-10-11 | 18 Arodus -1000 AR | Mythic benefits confirmed deferred — no Calling, no Rewrite Fate, no Mythic Points until level 2-3 | player |
 | 2026-10-11 | 18 Arodus -1000 AR | Gravity Weapon applies to an Elemental Blast shaped by Weapon Infusion (homebrew) | player's choice; the build carries no weapon |
+| 2026-10-12 | 18 Arodus -1000 AR | Kelda Vornshield built on Court Historian (NPC Core p.12, −1) with HP 13 and Speed 20 (homebrew) | player's derivation |

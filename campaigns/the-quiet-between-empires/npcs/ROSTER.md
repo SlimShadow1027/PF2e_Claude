@@ -29,7 +29,7 @@ One line each so nobody starts sounding like everybody else.
 | Kelda Vornshield | long, ornamented sentences, courtly and condescending; surveyor's precision underneath | languid, theatrical, darkly funny | calls the protagonist by the wrong name — a human guide dead two centuries — and corrects herself late or not at all |
 
 
-## The Last Witness — Kelda Vornshield (concept chosen 2026-10-11; numbers pending)
+## The Last Witness — Kelda Vornshield (built 2026-10-12 — `npcs/kelda-vornshield.md`)
 
 **Chosen at intake as the campaign's GM-run sidekick.** An ancient dwarf or elf who was in the
 tunnel when dwarven digging broke into the Thassilonian ruin, at the tail of the last great

@@ -3,8 +3,8 @@
 > Rendered from `state.json` by `tools/state.py render`. **Do not hand-edit this file.**
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
-- Checkpoint: **006** Kelda Vornshield chosen as the Last Witness; breach c. -1350 AR; gear chosen; Gravity Weapon on infused blasts
-- Rendered at: 2026-10-11T19:25:54Z
+- Checkpoint: **007** Kelda Vornshield built (Court Historian reskin, 13 HP, 20 ft) and entered into state; validator allows level -1 sidekicks
+- Rendered at: 2026-10-12T00:43:09Z
 - Session: 0 (not in session)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Custom**
@@ -20,10 +20,12 @@ _(no situation paragraph recorded yet)_
 
 | Character | HP | AC | Fort | Ref | Will | Perc | Hero | Focus | Conditions |
 |---|---|---|---|---|---|---|---|---|---|
+| Kelda Vornshield | 13/13 | 13 | +3 | +5 | +9 | +7 | 0 | 0/0 | — |
 
 ## Money and carried items
 
 - **Purse:** 0 cp
+- **Kelda Vornshield** Bulk 0.0 (encumbered after 5, max 10)
 
 ---
 

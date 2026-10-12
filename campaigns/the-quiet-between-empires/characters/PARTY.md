@@ -44,7 +44,7 @@ undecided and one item needs stripping first. Verified numbers from the export:
 | HP at level 1 | **31** — 8 ancestry + 10 Ranger + 8 Kineticist + 4 Con + 1 Toughness (dual-class HP stacking, homebrew — `RULES_DELTAS.md`). The export's 19 is the published higher-of-two figure and is superseded. |
 | AC | **18** — 10 + 3 trained + 1 Dex (capped) + 4 armor |
 | Saves | Expert Fort, Expert Reflex, **Trained** Will — correct: both classes are trained in Will at 1st; Kineticist's Will Expertise raises it at level 3 |
-| Perception | +4 |
+| Perception | **+6** — the export's +4 is trained; Ranger grants expert |
 | Speed | 25 (Str 18 clears Breastplate's Str 16, so no penalty) |
 | Focus | 1 point, Gravity Weapon (via Natural Ambition → Initiate Warden) |
 | Languages | Common, Dwarven, Petran |
@@ -72,7 +72,13 @@ undecided and one item needs stripping first. Verified numbers from the export:
   | **Spent** | **12 gp 7 sp 3 cp** | ~5 + 5 L |
   | **Purse** | **2 gp 2 sp 7 cp** | |
 
-- **Gravity Weapon:** house-ruled to work with an Elemental Blast shaped by Weapon Infusion — `RULES_DELTAS.md`. **Open:** confirm Weapon Infusion is on the sheet.
+- **Gravity Weapon:** house-ruled to work with an Elemental Blast shaped by Weapon Infusion — `RULES_DELTAS.md`.
+- **Feats confirmed by the player:** the single gate's two impulse feats are **Armor in Earth** and
+  **[Stepping Stones](https://2e.aonprd.com/Feats.aspx?ID=4223)** (Rage of Elements p.26), as
+  [Single Gate](https://2e.aonprd.com/Classes.aspx?ID=23) requires. The kineticist class feat is
+  **Weapon Infusion**. Initiate Warden via Natural Ambition.
+- **Perception corrected +4 → +6.** [Ranger](https://2e.aonprd.com/Classes.aspx?ID=36) starts **expert** in Perception
+  (Player Core); dual class takes the better rank. Wis +1 + expert (1 + 4) = +6.
 
 ### Gravity Weapon needs a weapon
 

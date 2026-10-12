@@ -25,18 +25,31 @@
   - *"A city fell. Everyone agreed what killed it. Agreement is a very comfortable place to stop
     thinking."*
 
-## Numbers — pending the player's choice of base
+## Numbers
 
-Charter rule 4: a reskin of a published NPC, numbers unchanged. Candidates read from Archives of
-Nethys on 2026-10-11:
+**Homebrew — reskin of [Court Historian](https://2e.aonprd.com/NPCs.aspx?ID=3415) (NPC Core p.12, Creature −1),
+with two changes and everything else unchanged.**
 
-| Base | Level | HP | AC | Fort/Ref/Will | Perc | Why |
-|---|---|---|---|---|---|---|
-| [Court Historian](https://2e.aonprd.com/NPCs.aspx?ID=3415), NPC Core p.12 | −1 | 7 | 13 | +3/+5/+9 | +7 | Lore +13 (×4 slots), Society +9. **Historical Specialist** (a 5th-level challenge on history), **Records Don't Lie** (Perception DC 25 against false history), **Distracting Diatribe** (1 action, target off-guard 1 round). The concept exactly, and fragile. |
-| [Chronicler](https://2e.aonprd.com/NPCs.aspx?ID=3470), NPC Core p.54 | 3 | 45 | 18 | +8/+9/+10 | +12 | Carries maps, Survival +7, Lore +10. **Live to Tell the Tale** (once a day, falls unconscious instead of dying). Primal prepared spells including *know the way* and *light*. Sturdier, but a combatant. |
+| Changed | Base | Here | Why |
+|---|---|---|---|
+| HP | 7 | **13** | Player's derivation: dwarf ancestry 10 ([Player Core](https://2e.aonprd.com/Ancestries.aspx?ID=59)) + 4 "class" − 1 Con (the base's own Con −1, kept for age and failing health) |
+| Speed | 25 ft | **20 ft** | Dwarf ancestry Speed ([Player Core](https://2e.aonprd.com/Ancestries.aspx?ID=59)). The base is human. |
 
-**Reskin changes, stated:** Human → Dwarf trait. Darkvision is added, which changes no number. The
-Lore subcategories are renamed (e.g. Genealogy Lore → Clan Lore, Scribing Lore → Survey Lore).
+- **Creature −1, dwarf, humanoid.** Darkvision.
+- **Perception** +7. **Languages:** Dwarven, Common, Elven (Common and Elven are reskin flavour; the base lists Common).
+- **Skills:** Clan Lore +13, Survey Lore +13, Maza-Khad Lore +13, Scribing Lore +13, Society +9
+  (the base's Genealogy Lore and two open Lore slots, renamed; Scribing Lore kept).
+- **Str** +0, **Dex** +1, **Con** −1, **Int** +5, **Wis** +3, **Cha** +2.
+- **Historical Specialist:** on matters of history or records, she is a 5th-level challenge.
+- **Records Don't Lie:** Perception DC 25 against Deception asserting false current or historical events.
+- **Items:** survey satchel (the base's court record), worn fine clothing, inkwell, writing set.
+- **AC** 13; **Fort** +3, **Ref** +5, **Will** +9. **HP 13.**
+- **Speed** 20 feet.
+- **Melee** ◆ fist +5 (agile, finesse, nonlethal, unarmed), 1d4 bludgeoning.
+- **Ranged** ◆ inkwell +5 (thrown 10 ft), 1d4 bludgeoning.
+- **Distracting Diatribe** ◆ (auditory, linguistic, mental): she recites facts at a creature within
+  30 feet that can hear her, and it is **off-guard for 1 round**.
+- **Reaction:** none.
 
 ## Standing obligation
 
