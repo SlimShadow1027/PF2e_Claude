@@ -5,7 +5,8 @@ attitude do not drift between sessions. Dead NPCs stay in the roster, marked dea
 
 | Name | Role | Faction | Disposition to the party | Status | Last seen (where / when) | File |
 |---|---|---|---|---|---|---|
-| Kelda Vornshield | the Last Witness; employer; GM-run sidekick | none now (retired clan archivist) | — not yet met in play | alive | — | `npcs/kelda-vornshield.md` |
+| Dolf Emberhand | keeper of Emberhand's alehouse | The Long Quiet | indifferent | alive | Emberhand's / 18 Arodus -1000 AR | — |
+| Kelda Vornshield | the Last Witness; employer; GM-run sidekick | none now (retired clan archivist) | indifferent (employer, sizing Shavi up) | alive | Emberhand's, The Long Quiet / 18 Arodus -1000 AR | `npcs/kelda-vornshield.md` |
 
 Disposition scale: `hostile` · `unfriendly` · `wary` · `indifferent` · `friendly` ·
 `helpful` · `devoted`
@@ -26,6 +27,7 @@ One line each so nobody starts sounding like everybody else.
 
 | Name | Vocabulary | Rhythm | Verbal tic |
 |---|---|---|---|
+| Dolf Emberhand | few words, all practical | slow and flat | wipes the same spot on the bar while someone else is talking |
 | Kelda Vornshield | long, ornamented sentences, courtly and condescending; surveyor's precision underneath | languid, theatrical, darkly funny | calls the protagonist by the wrong name — a human guide dead two centuries — and corrects herself late or not at all |
 
 

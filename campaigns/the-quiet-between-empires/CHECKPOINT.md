@@ -3,18 +3,18 @@
 > Rendered from `state.json` by `tools/state.py render`. **Do not hand-edit this file.**
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
-- Checkpoint: **010** character creation closed: Gloomseer prerequisite waived; Monster Hunter rides the Versatile Action; ready for session 1
-- Rendered at: 2026-10-13T14:05:41Z
-- Session: 0 (not in session)
+- Checkpoint: **011** session 1 opened: Versatile Action ruling settled; Kelda's offer at Emberhand's
+- Rendered at: 2026-10-13T22:33:00Z
+- Session: 1 (in progress)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Custom**
 
 ## Scene
 
-- **Where:** the mine-country beneath the range — late summer, the passes still open
+- **Where:** Emberhand's alehouse, The Long Quiet (dwarven mine-head on the flank of Maza-Khad)
 - **When:** 18 Arodus -1000 AR, 08:00
 
-Character creation is complete. Shavi Beifong (human Ranger/Kineticist, earth) has been hired by Kelda Vornshield, the Last Witness, as guard and guide into the depths of Maza-Khad, where the Labyrinth is rumoured to be. Session 1 has not opened.
+Session 1, scene 1. Kelda has made her offer to Shavi at Emberhand's: go down through The Long Quiet's workings to the sealed deep cut, past organised goblins and a gallery that should not exist. 5 sp/day and 15 gp on return alive. Shavi has not answered yet.
 
 ## Party
 
@@ -32,7 +32,7 @@ Character creation is complete. Shavi Beifong (human Ranger/Kineticist, earth) h
 
 ## Next likely beats
 
-Open session 1 with a trailer, then a cold open at the mine-country beneath the range, 18 Arodus -1000 AR, 08:00. First meeting in play of Shavi and Kelda. Before the first combat, confirm the open Versatile Action question in RULES_DELTAS.md (standalone skill actions).
+Shavi accepts, negotiates or questions Kelda. Then prepare and go down. The lowest working and its lone survivor are the obvious first lead.
 
 ---
 

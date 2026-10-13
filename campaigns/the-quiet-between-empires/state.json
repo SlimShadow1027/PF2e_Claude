@@ -3,18 +3,18 @@
   "campaign": "the-quiet-between-empires",
   "title": "The Quiet Between Empires",
   "created_at": "2026-10-06T20:28:33Z",
-  "updated_at": "2026-10-13T14:05:41Z",
+  "updated_at": "2026-10-13T22:33:00Z",
   "transparency": "standard",
   "difficulty_preset": "Custom",
-  "session_in_progress": false,
-  "session_number": 0,
-  "scene_count": 0,
-  "checkpoint_counter": 10,
+  "session_in_progress": true,
+  "session_number": 1,
+  "scene_count": 1,
+  "checkpoint_counter": 11,
   "last_checkpoint": {
-    "id": "010",
-    "name": "character creation closed: Gloomseer prerequisite waived; Monster Hunter rides the Versatile Action; ready for session 1",
-    "at": "2026-10-13T14:05:41Z",
-    "slug": "character-creation-closed-gloomseer-prerequisite-waived-mons"
+    "id": "011",
+    "name": "session 1 opened: Versatile Action ruling settled; Kelda's offer at Emberhand's",
+    "at": "2026-10-13T22:33:00Z",
+    "slug": "session-1-opened-versatile-action-ruling-settled-kelda-s-off"
   },
   "time": {
     "calendar": "golarion",
@@ -24,7 +24,7 @@
     "minute_of_day": 480,
     "elapsed_minutes": 0
   },
-  "location": "the mine-country beneath the range — late summer, the passes still open",
+  "location": "Emberhand's alehouse, The Long Quiet (dwarven mine-head on the flank of Maza-Khad)",
   "party": {
     "level": 1,
     "xp": 0,
@@ -195,9 +195,9 @@
   "quests": {},
   "encounter": null,
   "notes": {
-    "situation": "Character creation is complete. Shavi Beifong (human Ranger/Kineticist, earth) has been hired by Kelda Vornshield, the Last Witness, as guard and guide into the depths of Maza-Khad, where the Labyrinth is rumoured to be. Session 1 has not opened.",
-    "next_beats": "Open session 1 with a trailer, then a cold open at the mine-country beneath the range, 18 Arodus -1000 AR, 08:00. First meeting in play of Shavi and Kelda. Before the first combat, confirm the open Versatile Action question in RULES_DELTAS.md (standalone skill actions).",
-    "present": "Shavi Beifong, Kelda Vornshield",
-    "pending": "Versatile Action: are standalone skill actions such as Recall Knowledge allowed? Ask at session start."
+    "situation": "Session 1, scene 1. Kelda has made her offer to Shavi at Emberhand's: go down through The Long Quiet's workings to the sealed deep cut, past organised goblins and a gallery that should not exist. 5 sp/day and 15 gp on return alive. Shavi has not answered yet.",
+    "next_beats": "Shavi accepts, negotiates or questions Kelda. Then prepare and go down. The lowest working and its lone survivor are the obvious first lead.",
+    "present": "Shavi Beifong, Kelda Vornshield, Dolf Emberhand",
+    "pending": "none"
   }
 }

@@ -35,6 +35,13 @@ contradicted but also are not treated as something the character has heard.
 | 20 | 18 Arodus -1000 AR | Kelda was the **survey-mistress whose maps chose where the dig went** in c. -1350 AR. | character creation | GM-side truth |
 | 21 | 18 Arodus -1000 AR | Shavi Beifong has spent long years among dwarves and underground, and their eyes have adapted to dim light. | character creation, player | known |
 | 10 | 18 Arodus -1000 AR | Thassilon has already fallen and is buried. Nothing has risen to replace it on this coast. | intake, era revision | known |
+| 22 | 18 Arodus -1000 AR | **The Long Quiet** is a dwarven mine-head settlement cut into the flank of Maza-Khad. It is named for its upper workings, which went silent when their seam gave out generations ago. Mining continues lower down. | session 1, scene 1 (name rolled on Place Names) | known |
+| 23 | 18 Arodus -1000 AR | **Dolf Emberhand**, a dwarf, keeps the alehouse at The Long Quiet. People call it Emberhand's. | session 1, scene 1 (name rolled on Dwarf Names) | known |
+| 24 | 18 Arodus -1000 AR | About three weeks ago (c. 28 Erastus), a shift crew on The Long Quiet's lowest working broke into a gallery that Kelda's maps show as solid rock. Two miners went in and one came back. The one who returned does not speak of it. | session 1, scene 1, Kelda | known |
+| 25 | 18 Arodus -1000 AR | Goblin bands in the abandoned upper workings post watches in rotation and hold ground. Goblins of this age do not do that. | session 1, scene 1, Kelda | known |
+| 26 | 18 Arodus -1000 AR | Kelda's destination is **the deep cut** below The Long Quiet. Her clan sealed it generations ago. She says she was there when it was first opened. | session 1, scene 1, Kelda | known |
+| 27 | 18 Arodus -1000 AR | Kelda's offer to Shavi: **5 sp a day**, plus **15 gp** paid on returning to the surface alive. | session 1, scene 1, Kelda | known |
+| 28 | 18 Arodus -1000 AR | Kelda calls Shavi **"Haldren"**, the name of a human guide she says has been dead for two centuries. | session 1, scene 1 | known |
 
 Visibility: `known` (the player heard it) · `GM-side truth` (true, not yet learned) ·
 `local divergence` (this campaign contradicts world canon; the world keeps its version)

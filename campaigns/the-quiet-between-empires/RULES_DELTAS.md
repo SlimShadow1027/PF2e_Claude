@@ -9,7 +9,7 @@ forward and is never applied retroactively.
   `Standard` preset's moderate/severe because the variant stack makes moderate meaningless.
   `extreme` is the top tier `pf2e.py` computes; above it there is no published budget.
 - **Lethality agreed at intake:** death is on the table if the player pushes a bad situation
-- **Last changed:** 2026-10-06
+- **Last changed:** 2026-10-13
 
 ## Official PF2e variant rules
 
@@ -149,10 +149,9 @@ It may **not** be spent on:
     **keeps** Monster Hunter's Recall Knowledge. A feature grants that check as part of Hunt Prey, so
     taking Hunt Prey is still just taking Hunt Prey. The crit benefit is a +1 to one attack roll for
     Shavi and allies, not a debuff on the enemy.
-  - **Open, to confirm at the start of session 1:** whether a *standalone* skill action — Recall
-    Knowledge in particular — is excluded. The player does not recall settling that at intake, and
-    defined the Versatile Action as basic actions other than Strike and other than anything taking
-    more than one action (such as Ready), plus single-action feature actions.
+  - **Ruled 2026-10-13 — standalone skill actions are excluded.** Recall Knowledge taken as its own
+    action is a skill action and cannot be paid with the Versatile Action. Confirmed by the player at
+    the start of session 1. The Monster Hunter check stays allowed because it comes inside Hunt Prey.
 - Anything taking **more than one action**, or anything that **deals damage**.
 
 **What it does to play, recorded so it is not a surprise later:** the free Stride is the large part.
@@ -244,3 +243,4 @@ change and not a math change.
 | 2026-10-12 | 18 Arodus -1000 AR | Kelda Vornshield built on Court Historian (NPC Core p.12, −1) with HP 13 and Speed 20 (homebrew) | player's derivation |
 | 2026-10-12 | 18 Arodus -1000 AR | Underground Lore granted as a bonus Lore (homebrew); Warfare Lore dropped. Gloomseer taken with its Nidalese prerequisite open | player |
 | 2026-10-12 | 18 Arodus -1000 AR | Gloomseer's Nidalese prerequisite waived; Hunt Prey via the Versatile Action keeps Monster Hunter's Recall Knowledge; standalone skill actions on the Versatile Action left open | player |
+| 2026-10-13 | 18 Arodus -1000 AR | Standalone skill actions (Recall Knowledge included) confirmed excluded from the Versatile Action; the Monster Hunter check inside Hunt Prey still allowed | player, session 1 open |
