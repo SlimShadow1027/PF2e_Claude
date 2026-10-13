@@ -82,7 +82,7 @@ Anything here is this table's invention and is marked as such.
 | **Gravity Weapon on infused blasts** | An Elemental Blast shaped by Weapon Infusion counts as a weapon Strike for Gravity Weapon | Player's choice — the build has no weapon | slightly easier — +2 damage once a round at level 1 |
 | **Kelda's HP and Speed** | The sidekick's Court Historian base (NPC Core p.12, −1) runs at **13 HP** (not 7) and **20 ft** (not 25) | Player's derivation from dwarf ancestry: 10 + 4 − 1 Con; dwarf Speed | slightly easier — she survives one early hit; slower to evacuate |
 | **Bonus Lore: Underground** | Shavi is trained in Underground Lore outside the build's skill count | On-theme grant at the player's request; Warfare Lore dropped | negligible |
-| **Gloomseer prerequisite** | Gloomseer (Character Guide p.12, legacy) lists *Nidalese ethnicity* as a prerequisite | Taken by the player; how the prerequisite is met is open — Nidalese descent in the backstory, or waived | minor — low-light vision |
+| **Gloomseer prerequisite waived** | Gloomseer (Character Guide p.12, legacy) lists *Nidalese ethnicity* as a prerequisite; ignored here | Player's choice. In the fiction, Shavi's eyes adapted from long years among dwarves and underground | minor — low-light vision |
 | **Dual-class HP stacks** | A dual-class character gains **both** classes' HP per level, not the higher | Player's choice; published Dual Class grants only the higher | much easier — see the trajectory below |
 
 ### Gravity Weapon on an infused Elemental Blast
@@ -145,6 +145,14 @@ It may **not** be spent on:
 - **Skill actions** — Trip, Grapple, Shove, Disarm, Demoralize, Feint, Recall Knowledge. Settled
   explicitly at intake: the Versatile Action is for movement, setup and utility, not for debuffs.
   (Command an Animal is the one skill-adjacent exception the player named, and it stands.)
+  - **Ruled 2026-10-12 — Hunt Prey with Monster Hunter:** Hunt Prey paid with the Versatile Action
+    **keeps** Monster Hunter's Recall Knowledge. A feature grants that check as part of Hunt Prey, so
+    taking Hunt Prey is still just taking Hunt Prey. The crit benefit is a +1 to one attack roll for
+    Shavi and allies, not a debuff on the enemy.
+  - **Open, to confirm at the start of session 1:** whether a *standalone* skill action — Recall
+    Knowledge in particular — is excluded. The player does not recall settling that at intake, and
+    defined the Versatile Action as basic actions other than Strike and other than anything taking
+    more than one action (such as Ready), plus single-action feature actions.
 - Anything taking **more than one action**, or anything that **deals damage**.
 
 **What it does to play, recorded so it is not a surprise later:** the free Stride is the large part.
@@ -235,3 +243,4 @@ change and not a math change.
 | 2026-10-11 | 18 Arodus -1000 AR | Gravity Weapon applies to an Elemental Blast shaped by Weapon Infusion (homebrew) | player's choice; the build carries no weapon |
 | 2026-10-12 | 18 Arodus -1000 AR | Kelda Vornshield built on Court Historian (NPC Core p.12, −1) with HP 13 and Speed 20 (homebrew) | player's derivation |
 | 2026-10-12 | 18 Arodus -1000 AR | Underground Lore granted as a bonus Lore (homebrew); Warfare Lore dropped. Gloomseer taken with its Nidalese prerequisite open | player |
+| 2026-10-12 | 18 Arodus -1000 AR | Gloomseer's Nidalese prerequisite waived; Hunt Prey via the Versatile Action keeps Monster Hunter's Recall Knowledge; standalone skill actions on the Versatile Action left open | player |

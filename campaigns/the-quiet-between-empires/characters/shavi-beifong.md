@@ -85,7 +85,7 @@ penalty applies.
 
 - **Ancestry feats:** [Natural Ambition](https://2e.aonprd.com/Feats.aspx?ID=4478) → Initiate Warden.
   [Gloomseer](https://2e.aonprd.com/Feats.aspx?ID=942) (Character Guide p.12, **legacy — no Remaster version
-  on AoN**): low-light vision. Prerequisite: Nidalese ethnicity — see `RULES_DELTAS.md`.
+  on AoN**): low-light vision. Nidalese prerequisite **waived** — Shavi's eyes adapted over long years among dwarves and underground (`RULES_DELTAS.md`).
 - **Heritage general feat:** [Toughness](https://2e.aonprd.com/Feats.aspx?ID=5227) (Versatile Human)
 - **Class features — Ranger:** Hunt Prey (◆), Hunter's Edge: Precision
 - **Class features — Kineticist:** Kinetic Gate (single, earth), Kinetic Aura (10-ft emanation), Channel Elements (◆),
@@ -96,7 +96,8 @@ penalty applies.
   [Initiate Warden](https://2e.aonprd.com/Feats.aspx?ID=4862) (Ranger, via Natural Ambition).
   [Monster Hunter](https://2e.aonprd.com/Feats.aspx?ID=4863) (Ranger, Player Core p.157): Recall Knowledge
   about your prey as part of Hunt Prey; on a critical success, +1 circumstance to your next attack roll
-  against it, shared with any ally you tell. Once per day per creature.
+  against it, shared with any ally you tell. Once per day per creature. **Still applies when Hunt Prey is paid
+  with the Versatile Action** (ruled 2026-10-12).
 - **Skill feats:** Forager (Waste Walker)
 - **General feats:** Toughness
 - **Archetype feats:** none yet — Free Archetype begins at level 2
@@ -136,7 +137,8 @@ breastplate makes Armor in Earth unnecessary at level 1.
 
 ## Backstory
 
-A waste-walker from somewhere desolate, now a hired guard and guide. Kelda Vornshield has engaged
+A waste-walker from somewhere desolate, who has spent long years among dwarves and underground —
+long enough that Shavi's eyes have learned the gloom. Now a hired guard and guide. Kelda Vornshield has engaged
 Shavi to take her into the depths of Maza-Khad, where the Labyrinth is rumoured to be.
 
 ## Bonds and ties

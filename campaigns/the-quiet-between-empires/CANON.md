@@ -33,6 +33,7 @@ contradicted but also are not treated as something the character has heard.
 | 18 | 18 Arodus -1000 AR | The elves who were actually present at the breach were **largely lost in that event, or to causes related to it afterward.** | character creation, player | GM-side truth |
 | 19 | 18 Arodus -1000 AR | The Last Witness is **Kelda Vornshield**, a dwarf of about 400 years, already past the typical dwarven span of around 350 (Player Core, Dwarf). A retired clan archivist and surveyor. She hired the protagonist. | character creation, player | known |
 | 20 | 18 Arodus -1000 AR | Kelda was the **survey-mistress whose maps chose where the dig went** in c. -1350 AR. | character creation | GM-side truth |
+| 21 | 18 Arodus -1000 AR | Shavi Beifong has spent long years among dwarves and underground, and their eyes have adapted to dim light. | character creation, player | known |
 | 10 | 18 Arodus -1000 AR | Thassilon has already fallen and is buried. Nothing has risen to replace it on this coast. | intake, era revision | known |
 
 Visibility: `known` (the player heard it) · `GM-side truth` (true, not yet learned) ·

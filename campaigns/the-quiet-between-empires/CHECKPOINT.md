@@ -3,8 +3,8 @@
 > Rendered from `state.json` by `tools/state.py render`. **Do not hand-edit this file.**
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
-- Checkpoint: **009** Shavi's feats confirmed: Gloomseer, Monster Hunter; Underground Lore as bonus Lore
-- Rendered at: 2026-10-12T20:13:42Z
+- Checkpoint: **010** character creation closed: Gloomseer prerequisite waived; Monster Hunter rides the Versatile Action; ready for session 1
+- Rendered at: 2026-10-13T14:05:41Z
 - Session: 0 (not in session)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Custom**
@@ -14,7 +14,7 @@
 - **Where:** the mine-country beneath the range — late summer, the passes still open
 - **When:** 18 Arodus -1000 AR, 08:00
 
-_(no situation paragraph recorded yet)_
+Character creation is complete. Shavi Beifong (human Ranger/Kineticist, earth) has been hired by Kelda Vornshield, the Last Witness, as guard and guide into the depths of Maza-Khad, where the Labyrinth is rumoured to be. Session 1 has not opened.
 
 ## Party
 
@@ -29,6 +29,10 @@ _(no situation paragraph recorded yet)_
 - **Kelda Vornshield** Bulk 0.0 (encumbered after 5, max 10)
 - **Shavi Beifong** Bulk 5.4 (encumbered after 9, max 14)
   - Shavi Beifong: Breastplate (worn), Wooden shield, Adventurer's Pack, Hooded lantern, Oil (pint) ×5, Climbing kit, Grappling hook, Crowbar, Signal whistle, Caltrops
+
+## Next likely beats
+
+Open session 1 with a trailer, then a cold open at the mine-country beneath the range, 18 Arodus -1000 AR, 08:00. First meeting in play of Shavi and Kelda. Before the first combat, confirm the open Versatile Action question in RULES_DELTAS.md (standalone skill actions).
 
 ---
 

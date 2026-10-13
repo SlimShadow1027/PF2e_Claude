@@ -3,18 +3,18 @@
   "campaign": "the-quiet-between-empires",
   "title": "The Quiet Between Empires",
   "created_at": "2026-10-06T20:28:33Z",
-  "updated_at": "2026-10-12T20:13:42Z",
+  "updated_at": "2026-10-13T14:05:41Z",
   "transparency": "standard",
   "difficulty_preset": "Custom",
   "session_in_progress": false,
   "session_number": 0,
   "scene_count": 0,
-  "checkpoint_counter": 9,
+  "checkpoint_counter": 10,
   "last_checkpoint": {
-    "id": "009",
-    "name": "Shavi's feats confirmed: Gloomseer, Monster Hunter; Underground Lore as bonus Lore",
-    "at": "2026-10-12T20:13:42Z",
-    "slug": "shavi-s-feats-confirmed-gloomseer-monster-hunter-underground"
+    "id": "010",
+    "name": "character creation closed: Gloomseer prerequisite waived; Monster Hunter rides the Versatile Action; ready for session 1",
+    "at": "2026-10-13T14:05:41Z",
+    "slug": "character-creation-closed-gloomseer-prerequisite-waived-mons"
   },
   "time": {
     "calendar": "golarion",
@@ -195,7 +195,9 @@
   "quests": {},
   "encounter": null,
   "notes": {
-    "situation": "",
-    "next_beats": ""
+    "situation": "Character creation is complete. Shavi Beifong (human Ranger/Kineticist, earth) has been hired by Kelda Vornshield, the Last Witness, as guard and guide into the depths of Maza-Khad, where the Labyrinth is rumoured to be. Session 1 has not opened.",
+    "next_beats": "Open session 1 with a trailer, then a cold open at the mine-country beneath the range, 18 Arodus -1000 AR, 08:00. First meeting in play of Shavi and Kelda. Before the first combat, confirm the open Versatile Action question in RULES_DELTAS.md (standalone skill actions).",
+    "present": "Shavi Beifong, Kelda Vornshield",
+    "pending": "Versatile Action: are standalone skill actions such as Recall Knowledge allowed? Ask at session start."
   }
 }
