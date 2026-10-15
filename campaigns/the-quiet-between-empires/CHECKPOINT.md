@@ -3,8 +3,8 @@
 > Rendered from `state.json` by `tools/state.py render`. **Do not hand-edit this file.**
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
-- Checkpoint: **012** Shavi accepts Kelda's terms; the route, the warden, the survivor, and Kelda's stated aim
-- Rendered at: 2026-10-15T16:10:42Z
+- Checkpoint: **013** Kelda names Thorn Vigil; the shaft route and its hazards
+- Rendered at: 2026-10-15T17:50:56Z
 - Session: 1 (in progress)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Custom**
@@ -12,9 +12,9 @@
 ## Scene
 
 - **Where:** Emberhand's alehouse, The Long Quiet (dwarven mine-head on the flank of Maza-Khad)
-- **When:** 18 Arodus -1000 AR, 08:30
+- **When:** 18 Arodus -1000 AR, 08:45
 
-Session 1, scene 1. Shavi has accepted Kelda's terms (5 sp/day, 15 gp on return alive). Kelda has explained her route through the goblin-held upper workings to her old survey shaft, the warden's barricade, the survivor Thrain, and her stated aim of correcting her copies of the marks in the deep cut.
+Session 1, scene 1, Emberhand's. Kelda has named Thorn Vigil and said it was dead before the armies came, without saying what killed it. She has laid out the shaft route and its hazards: goblins, rotten timbering, blackdamp, a 500-ft staged shaft with rungs of unknown condition, noise carrying to the worked levels, and a bottom that may have moved.
 
 ## Party
 
