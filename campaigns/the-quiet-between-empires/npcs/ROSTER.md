@@ -5,6 +5,7 @@ attitude do not drift between sessions. Dead NPCs stay in the roster, marked dea
 
 | Name | Role | Faction | Disposition to the party | Status | Last seen (where / when) | File |
 |---|---|---|---|---|---|---|
+| Astrid Orebound | Thrain Deepdelve's sister; householder, lower terraces | The Long Quiet | wary | alive | her house / 18 Arodus -1000 AR | — |
 | Dolf Emberhand | keeper of Emberhand's alehouse | The Long Quiet | indifferent | alive | Emberhand's / 18 Arodus -1000 AR | — |
 | Kelda Vornshield | the Last Witness; employer; GM-run sidekick | none now (retired clan archivist) | friendly (employer; Shavi accepted her terms) | alive | Emberhand's, The Long Quiet / 18 Arodus -1000 AR | `npcs/kelda-vornshield.md` |
 
