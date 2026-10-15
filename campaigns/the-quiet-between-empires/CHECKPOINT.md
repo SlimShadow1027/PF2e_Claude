@@ -3,8 +3,8 @@
 > Rendered from `state.json` by `tools/state.py render`. **Do not hand-edit this file.**
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
-- Checkpoint: **011** session 1 opened: Versatile Action ruling settled; Kelda's offer at Emberhand's
-- Rendered at: 2026-10-13T22:33:00Z
+- Checkpoint: **012** Shavi accepts Kelda's terms; the route, the warden, the survivor, and Kelda's stated aim
+- Rendered at: 2026-10-15T16:10:42Z
 - Session: 1 (in progress)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Custom**
@@ -12,9 +12,9 @@
 ## Scene
 
 - **Where:** Emberhand's alehouse, The Long Quiet (dwarven mine-head on the flank of Maza-Khad)
-- **When:** 18 Arodus -1000 AR, 08:00
+- **When:** 18 Arodus -1000 AR, 08:30
 
-Session 1, scene 1. Kelda has made her offer to Shavi at Emberhand's: go down through The Long Quiet's workings to the sealed deep cut, past organised goblins and a gallery that should not exist. 5 sp/day and 15 gp on return alive. Shavi has not answered yet.
+Session 1, scene 1. Shavi has accepted Kelda's terms (5 sp/day, 15 gp on return alive). Kelda has explained her route through the goblin-held upper workings to her old survey shaft, the warden's barricade, the survivor Thrain, and her stated aim of correcting her copies of the marks in the deep cut.
 
 ## Party
 
@@ -30,9 +30,13 @@ Session 1, scene 1. Kelda has made her offer to Shavi at Emberhand's: go down th
 - **Shavi Beifong** Bulk 5.4 (encumbered after 9, max 14)
   - Shavi Beifong: Breastplate (worn), Wooden shield, Adventurer's Pack, Hooded lantern, Oil (pint) ×5, Climbing kit, Grappling hook, Crowbar, Signal whistle, Caltrops
 
+## Quests
+
+- **Kelda's descent** — active · next lead: Talk to Thrain Deepdelve (sister's house, lower terraces) or Dagmar Stonewell (main lift barricade), or go straight up into the abandoned upper workings to Kelda's survey shaft
+
 ## Next likely beats
 
-Shavi accepts, negotiates or questions Kelda. Then prepare and go down. The lowest working and its lone survivor are the obvious first lead.
+Shavi chooses: visit Thrain Deepdelve, approach mine-warden Dagmar Stonewell, provision, or head up into the upper workings.
 
 ---
 

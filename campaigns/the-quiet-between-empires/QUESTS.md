@@ -8,14 +8,18 @@ no memory reads to know where to point.
 
 ## Active
 
-### _Quest name_
+### Kelda's descent
 
-- **Status:** active
-- **Given by:**
-- **What is wanted:**
-- **Next lead:** _(a place to go or a person to ask — something actionable)_
-- **What is at stake:**
-- **Reward discussed:**
+- **Status:** active (accepted 18 Arodus -1000 AR)
+- **Given by:** Kelda Vornshield, at Emberhand's in The Long Quiet
+- **What is wanted:** guide and guard Kelda down to the deep cut below The Long Quiet. Her route runs
+  through the abandoned upper workings, where the organised goblins are, then down her old survey shaft.
+  This bypasses Dagmar Stonewell's barricade at the main lift.
+- **Next lead:** Thrain Deepdelve (sister's house, lower terraces), the only one to come back from the
+  impossible gallery. Or Dagmar Stonewell at the main lift barricade. Or straight up into the upper workings.
+- **What is at stake:** Kelda's life (13 HP, 20 ft Speed) and whatever is at the bottom. A miner is
+  missing in the gallery that should not exist.
+- **Reward discussed:** 5 sp per day, plus 15 gp on returning to the surface alive.
 
 ## Dormant
 

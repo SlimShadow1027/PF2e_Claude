@@ -42,6 +42,12 @@ contradicted but also are not treated as something the character has heard.
 | 26 | 18 Arodus -1000 AR | Kelda's destination is **the deep cut** below The Long Quiet. Her clan sealed it generations ago. She says she was there when it was first opened. | session 1, scene 1, Kelda | known |
 | 27 | 18 Arodus -1000 AR | Kelda's offer to Shavi: **5 sp a day**, plus **15 gp** paid on returning to the surface alive. | session 1, scene 1, Kelda | known |
 | 28 | 18 Arodus -1000 AR | Kelda calls Shavi **"Haldren"**, the name of a human guide she says has been dead for two centuries. | session 1, scene 1 | known |
+| 29 | 18 Arodus -1000 AR | Shavi accepted Kelda's terms as offered: 5 sp a day, plus 15 gp on returning alive. | session 1, scene 1 | known |
+| 30 | 18 Arodus -1000 AR | **Dagmar Stonewell** is mine-warden of The Long Quiet. Since the breach she has closed the lowest working and put a barricade and guards at the foot of the main lift. Nobody goes below it without her leave, and she is not giving it. | session 1, scene 1, Kelda | known |
+| 31 | 18 Arodus -1000 AR | **Thrain Deepdelve** is the miner who came back out of the impossible gallery. He is at his sister's house on the lower terraces. His shift-partner did not come back. | session 1, scene 1, Kelda | known |
+| 32 | 18 Arodus -1000 AR | Kelda's route avoids the warden's barricade. It runs through the abandoned upper workings to an old survey shaft that she cut herself, which drops past the worked levels toward the deep cut. The goblins are in those upper workings. | session 1, scene 1, Kelda | known |
+| 33 | 18 Arodus -1000 AR | By Kelda's measure, the lowest worked gallery is about 600 feet below the upper lift-head, and the deep cut lies below that. The descent by her route takes the better part of a day. | session 1, scene 1, Kelda | known |
+| 34 | 18 Arodus -1000 AR | Kelda's stated aim: when the deep cut was opened, its walls carried marks older than any dwarven work. She copied them, believes she copied them wrongly, and wants to correct her notes before she dies. She also says that everyone agrees on what happened after the cut was opened, and that she was there and has never agreed. | session 1, scene 1, Kelda | known |
 
 Visibility: `known` (the player heard it) · `GM-side truth` (true, not yet learned) ·
 `local divergence` (this campaign contradicts world canon; the world keeps its version)
