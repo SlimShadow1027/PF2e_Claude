@@ -5,7 +5,9 @@ attitude do not drift between sessions. Dead NPCs stay in the roster, marked dea
 
 | Name | Role | Faction | Disposition to the party | Status | Last seen (where / when) | File |
 |---|---|---|---|---|---|---|
-| Astrid Orebound | Thrain Deepdelve's sister; householder, lower terraces | The Long Quiet | wary | alive | her house / 18 Arodus -1000 AR | — |
+| Thrain Deepdelve | miner; the only one back from the impossible gallery | The Long Quiet | indifferent, frightened; spoke to Shavi | alive | Astrid's house / 18 Arodus -1000 AR | — |
+| Orik Hammerfast | miner; Thrain's shift-partner | The Long Quiet | — | missing (in the gallery) | the impossible gallery / c. 28 Erastus -1000 AR | — |
+| Astrid Orebound | Thrain Deepdelve's sister; householder, lower terraces | The Long Quiet | helpful (Diplomacy crit; dislikes Kelda) | alive | her house / 18 Arodus -1000 AR | — |
 | Dolf Emberhand | keeper of Emberhand's alehouse | The Long Quiet | indifferent | alive | Emberhand's / 18 Arodus -1000 AR | — |
 | Kelda Vornshield | the Last Witness; employer; GM-run sidekick | none now (retired clan archivist) | friendly (employer; Shavi accepted her terms) | alive | Emberhand's, The Long Quiet / 18 Arodus -1000 AR | `npcs/kelda-vornshield.md` |
 
@@ -21,7 +23,6 @@ People the player has heard of and not seen.
 | Name | What the player has heard | Who said it |
 |---|---|---|
 | Dagmar Stonewell | Mine-warden of The Long Quiet. Has closed the lowest working and barricaded the foot of the main lift; refuses leave to go below | Kelda |
-| Thrain Deepdelve | The miner who came back from the impossible gallery; at his sister's house on the lower terraces; has not said a useful word since | Kelda |
 
 ## Voices in use
 
