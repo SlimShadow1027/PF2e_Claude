@@ -3,26 +3,26 @@
   "campaign": "the-quiet-between-empires",
   "title": "The Quiet Between Empires",
   "created_at": "2026-10-06T20:28:33Z",
-  "updated_at": "2026-10-16T15:17:36Z",
+  "updated_at": "2026-10-29T20:38:22Z",
   "transparency": "standard",
   "difficulty_preset": "Custom",
   "session_in_progress": true,
   "session_number": 1,
   "scene_count": 2,
-  "checkpoint_counter": 15,
+  "checkpoint_counter": 16,
   "last_checkpoint": {
-    "id": "015",
-    "name": "Astrid lets Shavi in; Thrain's account of the impossible gallery",
-    "at": "2026-10-16T15:17:36Z",
-    "slug": "astrid-lets-shavi-in-thrain-s-account-of-the-impossible-gall"
+    "id": "016",
+    "name": "Thrain's hands dressed; the old chalk, the draught, Orik's count",
+    "at": "2026-10-29T20:38:22Z",
+    "slug": "thrain-s-hands-dressed-the-old-chalk-the-draught-orik-s-coun"
   },
   "time": {
     "calendar": "golarion",
     "year": -1000,
     "month": 8,
     "day": 18,
-    "minute_of_day": 585,
-    "elapsed_minutes": 105
+    "minute_of_day": 615,
+    "elapsed_minutes": 135
   },
   "location": "Astrid Orebound's house, lower terraces, The Long Quiet",
   "party": {
@@ -208,7 +208,7 @@
   },
   "encounter": null,
   "notes": {
-    "situation": "Session 1, scene 2. Kelda waits down the lane. Shavi crit-succeeded Diplomacy with Astrid (now helpful) and has heard Thrain's account: non-dwarven smooth walls, too many turns, moving stone, Orik Hammerfast calling from inside the wall, and extra chalk marks that led Thrain out.",
+    "situation": "Session 1, scene 2, Astrid's back room. Shavi has dressed Thrain's hands and heard the rest: old-form crossed-tally chalk marks, a reversing draught, Orik counting paces inside the wall (Thrain keeps the count, past 30,000), and the gallery's location off the east heading of the lowest working. Kelda waits in the lane.",
     "next_beats": "Talk to Thrain. What he saw in the gallery, and his missing shift-partner. Then Dagmar, supplies, or the upper workings.",
     "present": "Shavi Beifong, Kelda Vornshield, Astrid Orebound, Thrain Deepdelve",
     "pending": "none"

@@ -3,8 +3,8 @@
 > Rendered from `state.json` by `tools/state.py render`. **Do not hand-edit this file.**
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
-- Checkpoint: **015** Astrid lets Shavi in; Thrain's account of the impossible gallery
-- Rendered at: 2026-10-16T15:17:36Z
+- Checkpoint: **016** Thrain's hands dressed; the old chalk, the draught, Orik's count
+- Rendered at: 2026-10-29T20:38:22Z
 - Session: 1 (in progress)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Custom**
@@ -12,9 +12,9 @@
 ## Scene
 
 - **Where:** Astrid Orebound's house, lower terraces, The Long Quiet
-- **When:** 18 Arodus -1000 AR, 09:45
+- **When:** 18 Arodus -1000 AR, 10:15
 
-Session 1, scene 2. Kelda waits down the lane. Shavi crit-succeeded Diplomacy with Astrid (now helpful) and has heard Thrain's account: non-dwarven smooth walls, too many turns, moving stone, Orik Hammerfast calling from inside the wall, and extra chalk marks that led Thrain out.
+Session 1, scene 2, Astrid's back room. Shavi has dressed Thrain's hands and heard the rest: old-form crossed-tally chalk marks, a reversing draught, Orik counting paces inside the wall (Thrain keeps the count, past 30,000), and the gallery's location off the east heading of the lowest working. Kelda waits in the lane.
 
 ## Party
 
