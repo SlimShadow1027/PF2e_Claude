@@ -66,6 +66,9 @@ contradicted but also are not treated as something the character has heard.
 | 50 | 18 Arodus -1000 AR | Thrain's account: when the stone moved, the draught in the gallery **reversed**. Air that had been flowing past them into the passage began flowing out. | session 1, scene 2, Thrain | known |
 | 51 | 18 Arodus -1000 AR | Thrain's account: Orik's voice first said "Thrain, lamp's here, come on." From the side, it asked which way Thrain was. From inside the wall it was **counting paces**. Thrain picked the count up, and he keeps it going at night "so he doesn't lose his place." The count is past **thirty thousand**. | session 1, scene 2, Thrain | known |
 | 52 | 18 Arodus -1000 AR | The impossible gallery opens off **the east heading of the lowest working**. It is now boarded with timber and guarded by Dagmar's people. | session 1, scene 2, Thrain | known |
+| 53 | 18 Arodus -1000 AR | Underground Lore (Shavi knows): a mine's draught follows warmth and openings. It turns naturally only slowly, over hours, as the surface warms and cools, or when a door or roof-fall opens or closes somewhere in the system. A *sudden* reversal means a large opening closed and another opened in connected workings. That much air moving at once means the passage is joined to a very large volume. | session 1, Recall Knowledge (Underground Lore), success | known |
+| 54 | 18 Arodus -1000 AR | Shavi told Kelda what Thrain said. *(What exactly was shared is recorded in the session log.)* | session 1, scene 2 | known |
+| 55 | 18 Arodus -1000 AR | The abandoned **upper lift-head** is a roofless stone house over a capped shaft. An open adit beside it leads into the upper workings. The summer air drafts steadily *into* the adit. | session 1, scene 3 | known |
 
 Visibility: `known` (the player heard it) · `GM-side truth` (true, not yet learned) ·
 `local divergence` (this campaign contradicts world canon; the world keeps its version)

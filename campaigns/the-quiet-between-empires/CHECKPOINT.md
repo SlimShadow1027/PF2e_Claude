@@ -3,18 +3,18 @@
 > Rendered from `state.json` by `tools/state.py render`. **Do not hand-edit this file.**
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
-- Checkpoint: **016** Thrain's hands dressed; the old chalk, the draught, Orik's count
-- Rendered at: 2026-10-29T20:38:22Z
+- Checkpoint: **017** the descent begins: into the upper workings
+- Rendered at: 2026-11-02T17:02:09Z
 - Session: 1 (in progress)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Custom**
 
 ## Scene
 
-- **Where:** Astrid Orebound's house, lower terraces, The Long Quiet
-- **When:** 18 Arodus -1000 AR, 10:15
+- **Where:** the upper workings of The Long Quiet, just inside the adit by the abandoned upper lift-head
+- **When:** 18 Arodus -1000 AR, 11:15
 
-Session 1, scene 2, Astrid's back room. Shavi has dressed Thrain's hands and heard the rest: old-form crossed-tally chalk marks, a reversing draught, Orik counting paces inside the wall (Thrain keeps the count, past 30,000), and the gallery's location off the east heading of the lowest working. Kelda waits in the lane.
+Session 1, scene 3. Shavi and Kelda have entered the abandoned upper workings through the adit by the upper lift-head, 11:15. Kelda reacted sharply to the crossed-tally chalk detail. Fresh goblin sign ahead. Awaiting the player's exploration activities.
 
 ## Party
 
@@ -36,7 +36,7 @@ Session 1, scene 2, Astrid's back room. Shavi has dressed Thrain's hands and hea
 
 ## Next likely beats
 
-Talk to Thrain. What he saw in the gallery, and his missing shift-partner. Then Dagmar, supplies, or the upper workings.
+Exploration activities, then the upper workings toward the survey shaft (about 120 ft below the lift-head). A goblin watch post sits on the route. Build it from Monster Core with a cited source, an objective, and severe threat.
 
 ---
 
