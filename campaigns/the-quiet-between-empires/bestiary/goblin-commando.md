@@ -1,5 +1,7 @@
 # Goblin Commando — watch-post leader
 
+
+Source: Goblin Commando, Monster Core p.174, Creature 1 — https://2e.aonprd.com/NPCs.aspx?ID=3025 (fetched 2026-11-04)
 **Published, numbers unchanged: [Goblin Commando](https://2e.aonprd.com/NPCs.aspx?ID=3025) (Monster Core p.174, Creature 1).**
 Era flavour per CANON row 5 (primitive, feral). The discipline is not theirs (CANON row 25).
 

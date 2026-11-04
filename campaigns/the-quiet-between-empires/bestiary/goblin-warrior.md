@@ -1,5 +1,7 @@
 # Goblin Warrior — watch-post sentry
 
+
+Source: Goblin Warrior, Monster Core p.174, Creature −1 — https://2e.aonprd.com/NPCs.aspx?ID=3024 (fetched 2026-11-04)
 **Published, numbers unchanged: [Goblin Warrior](https://2e.aonprd.com/NPCs.aspx?ID=3024) (Monster Core p.174, Creature −1).**
 
 - Small goblin humanoid. **Perception** +2, darkvision. Common, Goblin.
