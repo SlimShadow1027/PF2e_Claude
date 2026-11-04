@@ -69,6 +69,8 @@ contradicted but also are not treated as something the character has heard.
 | 53 | 18 Arodus -1000 AR | Underground Lore (Shavi knows): a mine's draught follows warmth and openings. It turns naturally only slowly, over hours, as the surface warms and cools, or when a door or roof-fall opens or closes somewhere in the system. A *sudden* reversal means a large opening closed and another opened in connected workings. That much air moving at once means the passage is joined to a very large volume. | session 1, Recall Knowledge (Underground Lore), success | known |
 | 54 | 18 Arodus -1000 AR | Shavi told Kelda what Thrain said. *(What exactly was shared is recorded in the session log.)* | session 1, scene 2 | known |
 | 55 | 18 Arodus -1000 AR | The abandoned **upper lift-head** is a roofless stone house over a capped shaft. An open adit beside it leads into the upper workings. The summer air drafts steadily *into* the adit. | session 1, scene 3 | known |
+| 56 | 18 Arodus -1000 AR | Goblin watch posts in the upper workings check in with each other by clicking stones in pairs, call and answer. | session 1, scene 3 | known |
+| 57 | 18 Arodus -1000 AR | The first watch post sits at a junction about 150 ft into the upper workings. It has an ember-pot fire and an alarm cord hung with bones and tin running down a side passage. Two goblins hold it: a horsechopper-armed leader and a sentry with a shortbow. | session 1, scene 3 | known |
 
 Visibility: `known` (the player heard it) · `GM-side truth` (true, not yet learned) ·
 `local divergence` (this campaign contradicts world canon; the world keeps its version)

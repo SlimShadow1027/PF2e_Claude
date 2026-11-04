@@ -61,3 +61,10 @@ antagonist at its centre. It has one, and it is underground.
 The fen is out. This is mountain and mine country — a **Daedalus labyrinth** that will not hold its
 shape, reached through dwarven workings that broke into a Thassilonian ruin. Nothing of the
 Mushfens framing survives: no low water, no thaw, no causeways.
+
+## Encounter notes — upper workings watch post (session 1)
+
+- XP: Goblin Commando (lvl 1, party+0 = 40) + Goblin Warrior (lvl −1, party−2 = 20) = **60 XP, severe** for party level 1 of 2 (`pf2e.py encounter`).
+- **If the alarm cord is pulled:** it rattles bones and tin down the side passage to the band's den. **Three rounds later**, 2 more Goblin Warriors (Monster Core p.174) arrive from the side passage. For the rest of this delve the upper workings are on alert: sentries are doubled and Stealth is contested at Perception +2 (an alert-state ruling, GM call).
+- If a goblin flees down the side passage, the same result follows on a 2-round delay.
+- Commando tactic: reach 10 ft and trips with the horsechopper. It hangs back by the fire and lets the warrior run.
