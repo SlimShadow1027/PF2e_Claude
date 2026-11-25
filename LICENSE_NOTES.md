@@ -101,6 +101,26 @@ Where this framework invents a rule rather than quoting one, it says so — in `
 campaign's house rules, and inline in `system/` for the framework's own conventions (the wounded
 descriptors, the scene-check ladder, the "no, and" oracle rung, the four presets).
 
+## D&D 5e — SRD 5.2.1 (CC-BY-4.0)
+
+`tools/dnd5e.py`, `templates/dnd5e/` and `system/dnd5e/` support D&D Fifth Edition campaigns.
+They contain game mechanics and short rule statements only — numeric tables and one-line
+rules, no stat blocks, spell, class or monster text — in the same spirit as the PF2e material
+above.
+
+> This work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by
+> Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is
+> licensed under the Creative Commons Attribution 4.0 International License, available at
+> https://creativecommons.org/licenses/by/4.0/legalcode.
+
+⚠ The wording above follows the attribution statement the SRD 5.2.1 asks for, but it was
+written without access to the document (the host was unreachable). Check it against the SRD's
+legal page before publishing anything built from this repository.
+
+"Dungeons & Dragons" and "D&D" are trademarks of Wizards of the Coast; they are used here only
+to say which game these tools support. This repository is not affiliated with or endorsed by
+Wizards of the Coast.
+
 ## If you own the books
 
 You should. This framework is designed to be used alongside Player Core, Player Core 2, GM Core and

@@ -94,6 +94,29 @@ such in `pf2e.py sources`.
 
 ## To verify before first play
 
+### D&D 5e — every table in `tools/dnd5e.py`
+
+Added 2026-11-25. **All unverified.** Written from the SRD 5.2.1 section names cited on each
+`Source:` line; the SRD host (media.dndbeyond.com) and every mirror tried were unreachable
+from the environment, so no value was read back. Verify each before leaning on it, flip it to
+`verified=True` with the page, and delete its row here.
+
+| `tools/dnd5e.py` key | What | Risk if wrong |
+|---|---|---|
+| `encounter_budget` | XP Budget per Character, Low / Moderate / High, levels 1–20 | every encounter's difficulty |
+| `xp_by_cr` | XP by CR 0–30 | encounter cost and XP awards |
+| `advancement` | XP thresholds and proficiency bonus by level | levelling |
+| `death_saves` | DC 10, nat 20 / nat 1, damage at 0 HP, massive damage | character death |
+| `d20_tests`, `critical_damage` | nat 20/1 on attacks only; crit doubles dice, not modifiers | every attack |
+| `exhaustion` | −2 × level to d20 Tests, −5 ft × level Speed, death at 6 | attrition |
+| `rests` | Long Rest restores **all** Hit Point Dice (2024) | attrition |
+| `concentration` | DC max(10, half damage), cap 30 | casters |
+| `typical_dcs`, `save_dc`, `coins`, `conditions`, `carrying_capacity` | as named | low |
+
+`LICENSE_NOTES.md`'s SRD attribution wording is in the same state.
+
+### Pathfinder 2e
+
 **This list is now empty of published tables.** Every table in `tools/pf2e.py` has been read from
 Archives of Nethys or is labelled as this framework's own convention, and the inline values in
 `system/` have been checked too.

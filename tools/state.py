@@ -2,13 +2,18 @@
 """state.py — the only writer of `campaigns/<slug>/state.json`.
 
 `state.json` is canonical for every volatile number: hit points, conditions with values
-and durations, Hero Points, Focus Points, spell slots, dying/wounded/doomed, coins,
+and durations, Hero Points, Focus Points, spell slots, dying/wounded/doomed (or, in a 5e
+campaign, death saves, exhaustion, Heroic Inspiration and Hit Point Dice), coins,
 consumables, XP, level, the in-world date, clock segments, position, and the full
 encounter tracker. Prose and the built character live in Markdown. `CHECKPOINT.md` is
 rendered from here and is never hand-edited.
 
 Every mutation goes through this CLI so it is atomic and validated. Impossible states are
 refused with an explanation rather than silently clamped.
+
+Two game systems share this file. `state.json`'s `system` field is `pf2e` (the default,
+and what every campaign without the field is) or `dnd5e`. Each command that only makes sense
+in one system refuses in the other and names the command to use instead.
 
 Standard library only. See system/05-checkpoint-protocol.md and system/03-*.md.
 """
@@ -35,8 +40,11 @@ from roll import (  # noqa: E402
     append_log,
     repo_root,
     utc_now,
+    SYSTEMS,
+    make_deathsave,
 )
 import pf2e  # noqa: E402
+import dnd5e  # noqa: E402
 
 SCHEMA_VERSION = 2
 
@@ -97,8 +105,37 @@ TRACKED_SEPARATELY = {"dying", "wounded", "doomed"}
 DURATION_KINDS = ("rounds", "minutes", "hours", "days", "end-of-turn", "until-removed")
 
 COIN_ORDER = ("pp", "gp", "sp", "cp")
-COIN_IN_CP = {"pp": 1000, "gp": 100, "sp": 10, "cp": 1}
+COIN_IN_CP = {"pp": 1000, "gp": 100, "ep": 50, "sp": 10, "cp": 1}
 # Source: Player Core, "Coins" — 1 pp = 10 gp, 1 gp = 10 sp, 1 sp = 10 cp.
+# The electrum piece (ep = 5 sp) exists only in 5e; see tools/dnd5e.py `coins`.
+ALL_COINS = ("pp", "gp", "ep", "sp", "cp")
+
+
+def system_of(data: dict[str, Any]) -> str:
+    """The campaign's game system. A state.json with no `system` field is PF2e."""
+    return data.get("system", "pf2e")
+
+
+def is_5e(data: dict[str, Any]) -> bool:
+    return system_of(data) == "dnd5e"
+
+
+def coin_order(system: str) -> tuple[str, ...]:
+    return dnd5e.COIN_ORDER if system == "dnd5e" else COIN_ORDER
+
+
+def condition_sets(system: str) -> tuple[set[str], set[str], set[str]]:
+    """(valued, unvalued, tracked-as-own-field) conditions for a system."""
+    if system == "dnd5e":
+        return set(), set(dnd5e.CONDITIONS), set(dnd5e.TRACKED_SEPARATELY)
+    return VALUED_CONDITIONS, UNVALUED_CONDITIONS, TRACKED_SEPARATELY
+
+
+def only(data: dict[str, Any], system: str, cmd: str, instead: str) -> None:
+    """Refuse a command that belongs to the other system, and say what to use."""
+    if system_of(data) != system:
+        name = "PF2e" if system == "pf2e" else "5e"
+        raise StateError(f"`{cmd}` is {name}-only and this campaign runs {system_of(data)}; {instead}")
 
 
 class StateError(Exception):
@@ -132,9 +169,14 @@ def save(slug: str, data: dict[str, Any]) -> None:
     atomic_write(state_path(slug), json.dumps(data, indent=2, ensure_ascii=False, sort_keys=False) + "\n")
 
 
-def blank_state(slug: str, title: str = "", transparency: str = "standard") -> dict[str, Any]:
+def blank_state(slug: str, title: str = "", transparency: str = "standard",
+                system: str = "pf2e") -> dict[str, Any]:
+    if system not in SYSTEMS:
+        raise StateError(f"unknown system {system!r} (have: {', '.join(SYSTEMS)})")
+    five = system == "dnd5e"
     return {
         "schema_version": SCHEMA_VERSION,
+        "system": system,
         "campaign": slug,
         "title": title or slug,
         "created_at": utc_now(),
@@ -146,12 +188,12 @@ def blank_state(slug: str, title: str = "", transparency: str = "standard") -> d
         "scene_count": 0,
         "checkpoint_counter": 0,
         "last_checkpoint": None,
-        "time": pf2e.blank_time(),
+        "time": pf2e.blank_time("generic", 1) if five else pf2e.blank_time(),
         "location": "unset",
         "party": {
             "level": 1,
             "xp": 0,
-            "gold": {"pp": 0, "gp": 0, "sp": 0, "cp": 0},
+            "gold": {c: 0 for c in coin_order(system)},
             "stash": [],
         },
         "pcs": {},
@@ -247,6 +289,35 @@ def blank_character(name: str, kind: str = "pc", level: int = 1) -> dict[str, An
     }
 
 
+ABILITIES = ("str", "dex", "con", "int", "wis", "cha")
+
+
+def blank_character_5e(name: str, kind: str = "pc", level: int = 1) -> dict[str, Any]:
+    """A 5e character's volatile numbers. The built character lives in its Markdown sheet."""
+    return {
+        "name": name,
+        "kind": kind,
+        "level": level,
+        "hp": {"current": 0, "max": 0, "temp": 0},
+        "ac": 0,
+        "saves": {a: 0 for a in ABILITIES},  # saving-throw modifiers, proficiency included
+        "con_mod": 0,
+        "passive_perception": 10,
+        "speed": 30,
+        "heroic_inspiration": False,
+        "hit_dice": {"die": "d8", "max": level, "current": level},
+        "exhaustion": 0,
+        "death_saves": {"successes": 0, "failures": 0},
+        "stable": False,
+        "concentration": None,
+        "spell_slots": {},
+        "conditions": [],
+        "items": [],
+        "sheet": None,
+        "notes": "",
+    }
+
+
 def find_character(data: dict[str, Any], who: str) -> tuple[str, dict[str, Any]]:
     pcs = data.setdefault("pcs", {})
     key = who if who in pcs else slugify(who)
@@ -279,6 +350,8 @@ def apply_damage(data: dict[str, Any], who: str, amount: int, *, from_crit: bool
     """
     if amount < 0:
         raise StateError(f"damage of {amount} is not damage; use `heal`")
+    if is_5e(data):
+        return apply_damage_5e(data, who, amount, from_crit=from_crit)
     key, pc = find_character(data, who)
     notes: list[str] = []
     hp = pc["hp"]
@@ -303,6 +376,59 @@ def apply_damage(data: dict[str, Any], who: str, amount: int, *, from_crit: bool
     return notes
 
 
+def apply_damage_5e(data: dict[str, Any], who: str, amount: int, *, from_crit: bool = False) -> list[str]:
+    """5e damage: temp HP first, then HP; 0 HP means unconscious and death saves.
+
+    Source (UNVERIFIED): tools/dnd5e.py `death_saves` and `concentration`. Damage at 0 HP is
+    one death-save failure (two from a Critical Hit). If the damage that takes a creature to
+    0 HP leaves a remainder equal to or above its HP maximum, it dies outright.
+    """
+    key, pc = find_character(data, who)
+    notes: list[str] = []
+    hp = pc["hp"]
+    left = amount
+    if hp.get("temp", 0) > 0:
+        absorbed = min(hp["temp"], left)
+        hp["temp"] -= absorbed
+        left -= absorbed
+        notes.append(f"{absorbed} absorbed by temporary HP ({hp['temp']} temp left)")
+    ds = pc.setdefault("death_saves", {"successes": 0, "failures": 0})
+    if hp["current"] <= 0 and left > 0:
+        if left >= int(hp.get("max", 0)) > 0:
+            notes.append(f"⚠ {left} damage at 0 HP meets {pc['name']}'s HP maximum ({hp['max']}) — "
+                         "instant death (massive damage) unless something intervenes")
+            ds["failures"] = 3
+            return notes
+        ds["failures"] = min(3, int(ds.get("failures", 0)) + (2 if from_crit else 1))
+        pc["stable"] = False
+        notes.append(f"{pc['name']} takes damage at 0 HP — death saves "
+                     f"{ds['successes']} success / {ds['failures']} failure"
+                     + (" (critical: two failures)" if from_crit else ""))
+        if ds["failures"] >= 3:
+            notes.append(f"⚠ three death-save failures — {pc['name']} dies unless something intervenes")
+        return notes
+    overflow = left - hp["current"]
+    hp["current"] = max(0, hp["current"] - left)
+    notes.append(f"{pc['name']} HP {hp['current']}/{hp['max']}")
+    if left > 0 and hp["current"] > 0 and pc.get("concentration"):
+        notes.append(f"{pc['name']} is concentrating on {pc['concentration']} — Constitution save "
+                     f"DC {dnd5e.concentration_dc(left)} to keep it (roll it with roll.py save)")
+    if hp["current"] == 0 and left > 0:
+        if overflow >= int(hp.get("max", 0)) > 0:
+            notes.append(f"⚠ {overflow} damage past 0 meets the HP maximum ({hp['max']}) — "
+                         f"instant death (massive damage) unless something intervenes")
+            ds["failures"] = 3
+        else:
+            ds["successes"], ds["failures"] = 0, 0
+            pc["stable"] = False
+            notes.append(f"{pc['name']} drops to 0 HP — unconscious; death saves start at the "
+                         "beginning of their turns (`state.py deathsave`)")
+            if pc.get("concentration"):
+                notes.append(f"concentration on {pc['concentration']} ends (unconscious)")
+                pc["concentration"] = None
+    return notes
+
+
 def apply_healing(data: dict[str, Any], who: str, amount: int) -> list[str]:
     if amount < 0:
         raise StateError(f"healing of {amount} is not healing; use `damage`")
@@ -316,8 +442,15 @@ def apply_healing(data: dict[str, Any], who: str, amount: int) -> list[str]:
         new = hp["max"]
     else:
         notes = []
+    was_down = hp["current"] <= 0
     hp["current"] = new
     notes.append(f"{pc['name']} HP {hp['current']}/{hp['max']}")
+    if is_5e(data):
+        if was_down and hp["current"] >= 1:
+            pc["death_saves"] = {"successes": 0, "failures": 0}
+            pc["stable"] = False
+            notes.append(f"{pc['name']} regains consciousness; death saves reset")
+        return notes
     if hp["current"] >= 1 and pc.get("dying", 0) > 0:
         notes += set_dying(data, key, 0, reason="back to 1 HP or more")
     return notes
@@ -335,6 +468,9 @@ def set_hp(data: dict[str, Any], who: str, current: int | None, maximum: int | N
         raise StateError(f"current HP of {new_cur} is impossible; 0 is the floor and dying tracks the rest")
     if new_cur > new_max:
         raise StateError(f"current HP {new_cur} is above maximum {new_max} — refusing rather than clamping")
+    if is_5e(data) and hp["current"] <= 0 < new_cur:
+        pc["death_saves"] = {"successes": 0, "failures": 0}
+        pc["stable"] = False
     if new_temp < 0:
         raise StateError("temporary HP cannot be negative")
     hp["current"], hp["max"], hp["temp"] = new_cur, new_max, new_temp
@@ -392,16 +528,19 @@ def condition_add(
 ) -> list[str]:
     key, pc = find_character(data, who)
     slug = slugify(name)
-    if slug in TRACKED_SEPARATELY:
+    valued, unvalued, tracked = condition_sets(system_of(data))
+    known = valued | unvalued
+    if slug in tracked:
         raise StateError(
             f"{slug} is tracked as its own field, not as a condition entry — "
             f"use `{slug} set <who> <value>` so there is only one copy of the number"
         )
-    if slug not in KNOWN_CONDITIONS:
+    if slug not in known:
+        label = "5e" if is_5e(data) else "PF2e"
         raise StateError(
-            f"{name!r} is not a PF2e condition. Known: " + ", ".join(sorted(KNOWN_CONDITIONS))
+            f"{name!r} is not a {label} condition. Known: " + ", ".join(sorted(known))
         )
-    if slug in VALUED_CONDITIONS:
+    if slug in valued:
         if value is None:
             raise StateError(f"{slug} always carries a value — say how much")
         if value < 1:
@@ -412,7 +551,7 @@ def condition_add(
     conds = pc.setdefault("conditions", [])
     for c in conds:
         if c["name"] == slug:
-            if slug in VALUED_CONDITIONS:
+            if slug in valued:
                 # The stronger value wins; PF2e conditions of the same name do not stack.
                 if value is not None and value > int(c.get("value") or 0):
                     c["value"] = value
@@ -541,6 +680,8 @@ def slots_use(data: dict[str, Any], who: str, rank: str, n: int = 1) -> list[str
 
 def daily_prep(data: dict[str, Any]) -> list[str]:
     """Reset what a night's rest and daily preparations restore."""
+    if is_5e(data):
+        return long_rest(data)
     notes = []
     for _, pc in data.get("pcs", {}).items():
         for key, entry in pc.get("spell_slots", {}).items():
@@ -560,21 +701,163 @@ def daily_prep(data: dict[str, Any]) -> list[str]:
 
 
 # --------------------------------------------------------------------------------------
+# 5e resources: death saves, Heroic Inspiration, exhaustion, Hit Point Dice, rests
+# --------------------------------------------------------------------------------------
+
+
+def deathsave_apply(data: dict[str, Any], slug: str, who: str, bonus: int = 0,
+                    advantage: bool = False, disadvantage: bool = False) -> list[str]:
+    """Roll a real death save, log it, and apply it. Source (UNVERIFIED): dnd5e `death_saves`."""
+    key, pc = find_character(data, who)
+    if int(pc["hp"]["current"]) > 0:
+        raise StateError(f"{pc['name']} is at {pc['hp']['current']} HP and makes no death saves")
+    if pc.get("stable"):
+        raise StateError(f"{pc['name']} is stable and makes no death saves")
+    ds = pc.setdefault("death_saves", {"successes": 0, "failures": 0})
+    if int(ds.get("failures", 0)) >= 3:
+        raise StateError(f"{pc['name']} already has three failures")
+    r = make_deathsave(bonus=bonus, actor=pc["name"], transparency=data.get("transparency", "standard"),
+                       advantage=advantage, disadvantage=disadvantage)
+    append_log(
+        campaign_dir(slug) / "logs" / "rolls.jsonl",
+        r.log_record(slug, data.get("session_number"), int(data.get("checkpoint_counter", 0))),
+    )
+    out = r.extra["deathsave"]
+    notes = [r.detail_line()]
+    if out["regain_hp"]:
+        pc["hp"]["current"] = out["regain_hp"]
+        pc["death_saves"] = {"successes": 0, "failures": 0}
+        notes.append(f"{pc['name']} regains 1 HP and is conscious")
+        return notes
+    ds["successes"] = min(3, int(ds.get("successes", 0)) + out["successes"])
+    ds["failures"] = min(3, int(ds.get("failures", 0)) + out["failures"])
+    notes.append(f"{pc['name']}: {ds['successes']} success / {ds['failures']} failure")
+    if ds["successes"] >= 3:
+        pc["stable"] = True
+        pc["death_saves"] = {"successes": 0, "failures": 0}
+        notes.append(f"{pc['name']} is stable at 0 HP (regains 1 HP after 1d4 hours — roll it)")
+    elif ds["failures"] >= 3:
+        notes.append(f"⚠ three failures — {pc['name']} dies unless something intervenes")
+    return notes
+
+
+def inspiration(data: dict[str, Any], who: str, verb: str) -> list[str]:
+    """Heroic Inspiration: you have it or you don't; it does not stack."""
+    _, pc = find_character(data, who)
+    have = bool(pc.get("heroic_inspiration"))
+    if verb == "gain":
+        if have:
+            return [f"{pc['name']} already has Heroic Inspiration; it does not stack "
+                    "(the 2024 rules let them give the new one to another PC instead)"]
+        pc["heroic_inspiration"] = True
+        return [f"{pc['name']} gains Heroic Inspiration"]
+    if verb == "spend":
+        if not have:
+            raise StateError(f"{pc['name']} has no Heroic Inspiration to spend")
+        pc["heroic_inspiration"] = False
+        return [f"{pc['name']} spends Heroic Inspiration — reroll one die with roll.py and use the new roll"]
+    pc["heroic_inspiration"] = False
+    return [f"{pc['name']}: Heroic Inspiration cleared"]
+
+
+def exhaustion_set(data: dict[str, Any], who: str, value: int) -> list[str]:
+    _, pc = find_character(data, who)
+    if not 0 <= value <= dnd5e.EXHAUSTION_MAX:
+        raise StateError(f"exhaustion runs 0-{dnd5e.EXHAUSTION_MAX}, not {value}")
+    pc["exhaustion"] = value
+    d20, speed = dnd5e.exhaustion_penalty(value)
+    notes = [f"{pc['name']}: exhaustion {value}" + (f" ({d20:+d} to d20 Tests, {speed:+d} ft Speed)" if value else "")]
+    if value >= dnd5e.EXHAUSTION_MAX:
+        notes.append(f"⚠ exhaustion {value} — {pc['name']} dies unless something intervenes")
+    return notes
+
+
+def hitdice_spend(data: dict[str, Any], slug: str, who: str, n: int) -> list[str]:
+    """Spend Hit Point Dice on a Short Rest: real dice, logged, healing applied."""
+    key, pc = find_character(data, who)
+    hd = pc.setdefault("hit_dice", {"die": "d8", "max": pc.get("level", 1), "current": pc.get("level", 1)})
+    if n < 1:
+        raise StateError("spend at least one Hit Point Die")
+    if int(hd.get("current", 0)) < n:
+        raise StateError(f"{pc['name']} has {hd.get('current', 0)} Hit Point Dice left and cannot spend {n}")
+    if int(pc["hp"]["current"]) <= 0:
+        raise StateError(f"{pc['name']} is at 0 HP; Hit Point Dice need a conscious creature")
+    con = int(pc.get("con_mod", 0))
+    expr = f"{n}{hd['die']}" + (f"{n * con:+d}" if con else "")
+    r = make_roll("hitdice", expr, label=f"Hit Point Dice ×{n}", actor=pc["name"],
+                  transparency=data.get("transparency", "standard"), tags=["hitdice"], system="dnd5e")
+    append_log(
+        campaign_dir(slug) / "logs" / "rolls.jsonl",
+        r.log_record(slug, data.get("session_number"), int(data.get("checkpoint_counter", 0))),
+    )
+    hd["current"] = int(hd["current"]) - n
+    notes = [r.detail_line(), f"{pc['name']}: {hd['current']}/{hd['max']} Hit Point Dice left"]
+    notes += apply_healing(data, key, max(0, r.result.total))
+    return notes
+
+
+def long_rest(data: dict[str, Any]) -> list[str]:
+    """Source (UNVERIFIED): tools/dnd5e.py `rests` — all HP, all Hit Point Dice, spell slots,
+    exhaustion -1. The 2024 rules restore every spent Hit Point Die."""
+    notes = []
+    for _, pc in data.get("pcs", {}).items():
+        hp = pc["hp"]
+        if int(hp["current"]) <= 0 and not pc.get("stable"):
+            notes.append(f"{pc['name']} is dying, not resting — skipped")
+            continue
+        hp["current"] = int(hp["max"])
+        hd = pc.setdefault("hit_dice", {"die": "d8", "max": pc.get("level", 1), "current": pc.get("level", 1)})
+        hd["current"] = int(hd.get("max", 0))
+        for e in pc.get("spell_slots", {}).values():
+            e["used"] = 0
+        if int(pc.get("exhaustion", 0)) > 0:
+            pc["exhaustion"] = int(pc["exhaustion"]) - 1
+        pc["death_saves"] = {"successes": 0, "failures": 0}
+        pc["stable"] = False
+        notes.append(f"{pc['name']}: HP {hp['current']}/{hp['max']}, Hit Point Dice {hd['current']}/{hd['max']}, "
+                     f"slots restored, exhaustion {pc.get('exhaustion', 0)}")
+    notes.append("Class features that recover on a Long Rest: restore them by hand from the sheet. "
+                 "Advance the clock 8 hours with `advance-time 8 hours`.")
+    return notes
+
+
+def short_rest(data: dict[str, Any]) -> list[str]:
+    return [
+        "Short Rest (1 hour): spend Hit Point Dice with `hitdice spend <who> <n>` — the dice are real.",
+        "Class features that recover on a Short Rest (Warlock slots, Action Surge, Channel Divinity "
+        "uses and so on): restore them by hand from the sheet.",
+        "Advance the clock with `advance-time 1 hour`.",
+    ]
+
+
+def concentration(data: dict[str, Any], who: str, spell: str | None) -> list[str]:
+    _, pc = find_character(data, who)
+    before = pc.get("concentration")
+    pc["concentration"] = spell
+    if spell:
+        return [f"{pc['name']} concentrates on {spell}" + (f" (ending {before})" if before else "")]
+    return [f"{pc['name']} stops concentrating" + (f" on {before}" if before else "")]
+
+
+# --------------------------------------------------------------------------------------
 # Money and items
 # --------------------------------------------------------------------------------------
 
-_COIN_RE = re.compile(r"^(\d+)\s*(pp|gp|sp|cp)$", re.IGNORECASE)
+_COIN_RE = re.compile(r"^(\d+)\s*(pp|gp|ep|sp|cp)$", re.IGNORECASE)
 
 
-def parse_coins(tokens: Iterable[str]) -> dict[str, int]:
-    out = {c: 0 for c in COIN_ORDER}
+def parse_coins(tokens: Iterable[str], order: Sequence[str] = COIN_ORDER) -> dict[str, int]:
+    out = {c: 0 for c in order}
     seen = False
     for tok in tokens:
-        for piece in re.findall(r"\d+\s*(?:pp|gp|sp|cp)", str(tok), re.IGNORECASE):
+        for piece in re.findall(r"\d+\s*(?:pp|gp|ep|sp|cp)", str(tok), re.IGNORECASE):
             m = _COIN_RE.match(piece.replace(" ", ""))
             if not m:
                 continue
-            out[m.group(2).lower()] += int(m.group(1))
+            coin = m.group(2).lower()
+            if coin not in out:
+                raise StateError(f"{coin} is not a coin in this system (have: {', '.join(order)})")
+            out[coin] += int(m.group(1))
             seen = True
     if not seen:
         raise StateError("no coins found — write amounts like '42gp 3sp'")
@@ -582,19 +865,20 @@ def parse_coins(tokens: Iterable[str]) -> dict[str, int]:
 
 
 def coins_to_cp(coins: dict[str, int]) -> int:
-    return sum(int(coins.get(c, 0)) * COIN_IN_CP[c] for c in COIN_ORDER)
+    return sum(int(coins.get(c, 0)) * COIN_IN_CP[c] for c in ALL_COINS)
 
 
-def cp_to_coins(total: int) -> dict[str, int]:
-    out = {}
+def cp_to_coins(total: int, order: Sequence[str] = COIN_ORDER) -> dict[str, int]:
+    """Make change. Electrum is never given as change, even in 5e: nobody asks for it."""
+    out = {c: 0 for c in order}
     left = total
-    for c in COIN_ORDER:
+    for c in [c for c in order if c != "ep"]:
         out[c], left = divmod(left, COIN_IN_CP[c])
     return out
 
 
 def format_coins(coins: dict[str, int]) -> str:
-    parts = [f"{coins[c]} {c}" for c in COIN_ORDER if coins.get(c)]
+    parts = [f"{coins[c]} {c}" for c in ALL_COINS if coins.get(c)]
     return ", ".join(parts) if parts else "0 cp"
 
 
@@ -606,12 +890,13 @@ def gold_change(data: dict[str, Any], tokens: Sequence[str], sign: int) -> list[
     matching denominations first and only breaks larger coins when it has to, which is what
     happens at a table.
     """
-    amount = parse_coins(tokens)
-    purse = data.setdefault("party", {}).setdefault("gold", {c: 0 for c in COIN_ORDER})
-    for c in COIN_ORDER:
+    order = coin_order(system_of(data))
+    amount = parse_coins(tokens, order)
+    purse = data.setdefault("party", {}).setdefault("gold", {c: 0 for c in order})
+    for c in order:
         purse.setdefault(c, 0)
     if sign > 0:
-        for c in COIN_ORDER:
+        for c in order:
             purse[c] = int(purse[c]) + int(amount.get(c, 0))
         return [f"party gains {format_coins(amount)} → {format_coins(purse)}"]
 
@@ -624,7 +909,7 @@ def gold_change(data: dict[str, Any], tokens: Sequence[str], sign: int) -> list[
         )
     owed = cost
     broke = False
-    for c in COIN_ORDER:  # pay from the largest matching denomination down
+    for c in order:  # pay from the largest matching denomination down
         want = min(int(amount.get(c, 0)), int(purse[c]))
         if want:
             purse[c] -= want
@@ -632,7 +917,7 @@ def gold_change(data: dict[str, Any], tokens: Sequence[str], sign: int) -> list[
     if owed > 0:
         # Break the largest coins available until the rest is covered, then give change.
         pool = coins_to_cp(purse)
-        purse.update(cp_to_coins(pool - owed))
+        purse.update(cp_to_coins(pool - owed, order))
         broke = True
     out = [f"party spends {format_coins(amount)} → {format_coins(purse)}"]
     if broke:
@@ -641,10 +926,11 @@ def gold_change(data: dict[str, Any], tokens: Sequence[str], sign: int) -> list[
 
 
 def gold_set(data: dict[str, Any], tokens: Sequence[str]) -> list[str]:
-    coins = parse_coins(tokens)
+    order = coin_order(system_of(data))
+    coins = parse_coins(tokens, order)
     if any(v < 0 for v in coins.values()):
         raise StateError("coin counts cannot be negative")
-    data.setdefault("party", {})["gold"] = {c: int(coins.get(c, 0)) for c in COIN_ORDER}
+    data.setdefault("party", {})["gold"] = {c: int(coins.get(c, 0)) for c in order}
     return [f"purse set to {format_coins(data['party']['gold'])}"]
 
 
@@ -738,7 +1024,9 @@ def bulk_report(data: dict[str, Any]) -> list[dict[str, Any]]:
     Nothing here reduces worn armour's Bulk: no such rule was found in Player Core's Bulk
     section, and worn armour counts in full.
     """
-    rows = []
+    rows: list[dict[str, Any]] = []
+    if is_5e(data):
+        return rows  # Bulk is PF2e; 5e carrying capacity is by weight (tools/dnd5e.py)
     for key, pc in data.get("pcs", {}).items():
         tenths = 0
         for it in pc.get("items", []):
@@ -916,6 +1204,10 @@ def encounter_add(data: dict[str, Any], name: str, side: str, **kw: Any) -> list
     if kw.get("ref"):
         find_character(data, kw["ref"])  # raises if absent
     c = blank_combatant(name, side, **kw)
+    if is_5e(data):
+        c["actions_remaining"] = 1  # one action; the bonus action is tracked beside it
+        c["bonus_available"] = True
+        c["map_step"] = None
     if any(x["id"] == c["id"] for x in e["combatants"]):
         raise StateError(f"a combatant with id {c['id']!r} is already in this encounter")
     e["combatants"].append(c)
@@ -952,17 +1244,47 @@ def encounter_next(data: dict[str, Any]) -> list[str]:
         notes.append(f"— round {e['round']} —")
     e["turn_index"] = idx
     nxt = live[idx]
-    nxt["actions_remaining"] = 3
     nxt["actions_spent"] = 0
-    nxt["map_step"] = 0
     nxt["reaction_available"] = True
     nxt["reaction_used_for"] = None
+    if is_5e(data):
+        nxt["actions_remaining"] = 1
+        nxt["bonus_available"] = True
+        extra = ""
+        if nxt.get("ref"):
+            try:
+                _, pc = find_character(data, nxt["ref"])
+            except StateError:
+                pc = {}
+            if pc and int(pc.get("hp", {}).get("current", 1)) <= 0 and not pc.get("stable"):
+                extra = " — at 0 HP: roll a death save first (`state.py deathsave`)"
+        notes.append(f"{nxt['name']}'s turn (round {e['round']}): action, bonus action, "
+                     f"reaction available{extra}")
+        return notes
+    nxt["actions_remaining"] = 3
+    nxt["map_step"] = 0
     notes.append(f"{nxt['name']}'s turn (round {e['round']}), ◆◆◆, reaction available")
     return notes
 
 
+def encounter_bonus(data: dict[str, Any], who: str, what: str | None) -> list[str]:
+    only(data, "dnd5e", "encounter bonus", "PF2e has no bonus action — spend actions with `encounter action`")
+    c = find_combatant(data, who)
+    if not c.get("bonus_available", True):
+        raise StateError(f"{c['name']} has already taken a bonus action this turn")
+    c["bonus_available"] = False
+    return [f"{c['name']}: bonus action spent" + (f" on {what}" if what else "")]
+
+
 def encounter_action(data: dict[str, Any], who: str, n: int) -> list[str]:
     c = find_combatant(data, who)
+    if is_5e(data):
+        if int(c["actions_remaining"]) < n:
+            raise StateError(f"{c['name']} has no action left this turn (Action Surge? restore it with "
+                             "`set` and note the source)")
+        c["actions_remaining"] = int(c["actions_remaining"]) - n
+        c["actions_spent"] = int(c["actions_spent"]) + n
+        return [f"{c['name']}: action spent ({c['actions_remaining']} left)"]
     left = int(c["actions_remaining"]) - n
     if left < 0:
         raise StateError(f"{c['name']} has {c['actions_remaining']} action(s) left and cannot spend {n}")
@@ -973,6 +1295,7 @@ def encounter_action(data: dict[str, Any], who: str, n: int) -> list[str]:
 
 
 def encounter_map_step(data: dict[str, Any], who: str, step: int | None) -> list[str]:
+    only(data, "pf2e", "encounter map-step", "5e has no multiple attack penalty")
     c = find_combatant(data, who)
     new = int(c["map_step"]) + 1 if step is None else step
     if new < 0 or new > 2:
@@ -1040,7 +1363,11 @@ def encounter_status(data: dict[str, Any]) -> list[str]:
     if e.get("map"):
         out.append(f"map: maps/{e['map']}.md")
     out.append("")
-    out.append(f"{'':2} {'combatant':<22} {'init':>4} {'HP':>12} {'act':<4} {'MAP':>4} {'rxn':<4} {'pos':<5} conditions")
+    five = is_5e(data)
+    if five:
+        out.append(f"{'':2} {'combatant':<22} {'init':>4} {'HP':>12} {'A':<2} {'B':<2} {'rxn':<4} {'pos':<5} conditions")
+    else:
+        out.append(f"{'':2} {'combatant':<22} {'init':>4} {'HP':>12} {'act':<4} {'MAP':>4} {'rxn':<4} {'pos':<5} conditions")
     for i, c in enumerate(e["combatants"]):
         hp = combatant_hp(data, c)
         hp_s = f"{hp['current']}/{hp['max']}" if hp else "?"
@@ -1055,6 +1382,17 @@ def encounter_status(data: dict[str, Any]) -> list[str]:
             else:
                 conds = pc.get("conditions", [])
                 dying = int(pc.get("dying", 0))
+                if five:
+                    conds = list(conds)
+                    if int(pc.get("exhaustion", 0)):
+                        conds.insert(0, {"name": "exhaustion", "value": pc["exhaustion"]})
+                    if int(pc.get("hp", {}).get("current", 1)) <= 0:
+                        ds = pc.get("death_saves") or {}
+                        word = "stable" if pc.get("stable") else (
+                            f"death saves {ds.get('successes', 0)}✓/{ds.get('failures', 0)}✗")
+                        conds.insert(0, {"name": word})
+                    if pc.get("concentration"):
+                        conds.append({"name": f"concentrating: {pc['concentration']}"})
         else:
             conds = c.get("conditions") or []
             dying = int(c.get("dying") or 0)
@@ -1062,8 +1400,16 @@ def encounter_status(data: dict[str, Any]) -> list[str]:
         if dying:
             cs = f"dying {dying}" + (f", {cs}" if cs else "")
         mark = "→" if i == int(e.get("turn_index", 0)) else " "
-        pips = "◆" * int(c["actions_remaining"]) + "◇" * (3 - int(c["actions_remaining"]))
         rxn = "yes" if c["reaction_available"] else "used"
+        if five:
+            act = "✓" if int(c.get("actions_remaining", 1)) > 0 else "·"
+            bon = "✓" if c.get("bonus_available", True) else "·"
+            out.append(
+                f"{mark:2} {c['name']:<22} {str(c.get('initiative') or '-'):>4} {hp_s:>12} "
+                f"{act:<2} {bon:<2} {rxn:<4} {str(c.get('position') or '-'):<5} {cs}"
+            )
+            continue
+        pips = "◆" * int(c["actions_remaining"]) + "◇" * (3 - int(c["actions_remaining"]))
         out.append(
             f"{mark:2} {c['name']:<22} {str(c.get('initiative') or '-'):>4} {hp_s:>12} "
             f"{pips:<4} {c['map_step']:>4} {rxn:<4} {str(c.get('position') or '-'):<5} {cs}"
@@ -1091,6 +1437,8 @@ def render_checkpoint(slug: str, data: dict[str, Any]) -> str:
     a(f"- Rendered at: {utc_now()}")
     a(f"- Session: {data.get('session_number', 0)}"
       f" ({'in progress' if data.get('session_in_progress') else 'not in session'})")
+    if is_5e(data):  # PF2e omits the line so every pre-5e CHECKPOINT.md stays in sync
+        a("- System: **D&D 5e (2024 / SRD 5.2.1)**")
     a(f"- Party level {data.get('party', {}).get('level', 1)}, "
       f"{data.get('party', {}).get('xp', 0)} XP")
     a(f"- Transparency mode: `{data.get('transparency', 'standard')}` — "
@@ -1107,9 +1455,35 @@ def render_checkpoint(slug: str, data: dict[str, Any]) -> str:
 
     a("## Party")
     a("")
-    a("| Character | HP | AC | Fort | Ref | Will | Perc | Hero | Focus | Conditions |")
-    a("|---|---|---|---|---|---|---|---|---|---|")
+    five = is_5e(data)
+    if five:
+        a("| Character | HP | AC | Saves (Str Dex Con Int Wis Cha) | PP | Insp | HP Dice | Conditions |")
+        a("|---|---|---|---|---|---|---|---|")
+    else:
+        a("| Character | HP | AC | Fort | Ref | Will | Perc | Hero | Focus | Conditions |")
+        a("|---|---|---|---|---|---|---|---|---|---|")
     for key, pc in data.get("pcs", {}).items():
+        if five:
+            hp = pc.get("hp", {})
+            temp = f" +{hp.get('temp')}t" if hp.get("temp") else ""
+            sv = pc.get("saves", {})
+            saves = " ".join(f"{int(sv.get(x, 0)):+d}" for x in ABILITIES)
+            hd = pc.get("hit_dice", {})
+            conds = [c["name"] + (f" [{describe_duration(c.get('duration') or {})}]"
+                                  if (c.get("duration") or {}).get("kind") != "until-removed" else "")
+                     for c in pc.get("conditions", [])]
+            if int(pc.get("exhaustion", 0)):
+                conds.insert(0, f"**exhaustion {pc['exhaustion']}**")
+            if int(hp.get("current", 1)) <= 0:
+                ds = pc.get("death_saves", {})
+                conds.insert(0, "**stable at 0 HP**" if pc.get("stable") else
+                             f"**0 HP — death saves {ds.get('successes', 0)}✓ {ds.get('failures', 0)}✗**")
+            if pc.get("concentration"):
+                conds.append(f"concentrating: {pc['concentration']}")
+            a(f"| {pc.get('name', key)} | {hp.get('current', 0)}/{hp.get('max', 0)}{temp} | {pc.get('ac', 0)} | "
+              f"{saves} | {pc.get('passive_perception', 10)} | {'yes' if pc.get('heroic_inspiration') else '—'} | "
+              f"{hd.get('current', 0)}/{hd.get('max', 0)}{hd.get('die', '')} | {', '.join(conds) or '—'} |")
+            continue
         hp = pc.get("hp", {})
         temp = f" +{hp.get('temp')}t" if hp.get("temp") else ""
         s = pc.get("saves", {})
@@ -1135,7 +1509,8 @@ def render_checkpoint(slug: str, data: dict[str, Any]) -> str:
             bits = []
             for rank in sorted(pc["spell_slots"], key=lambda r: int(r)):
                 e = pc["spell_slots"][rank]
-                bits.append(f"rank {rank}: {int(e.get('max', 0)) - int(e.get('used', 0))}/{e.get('max', 0)}")
+                word = "level" if is_5e(data) else "rank"
+                bits.append(f"{word} {rank}: {int(e.get('max', 0)) - int(e.get('used', 0))}/{e.get('max', 0)}")
             a(f"- **{pc.get('name', key)}** — " + "; ".join(bits))
         a("")
 
@@ -1190,7 +1565,9 @@ def render_checkpoint(slug: str, data: dict[str, Any]) -> str:
         a("```")
         a("")
         a("This encounter is mid-fight. Restoring this checkpoint restores the tracker exactly:")
-        a("initiative order, current turn, actions spent, MAP step, reactions, HP, conditions and positions.")
+        a("initiative order, current turn, actions spent, "
+          + ("bonus actions" if is_5e(data) else "MAP step")
+          + ", reactions, HP, conditions and positions.")
         a("")
 
     beats = (data.get("notes") or {}).get("next_beats")
@@ -1469,6 +1846,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("init", help="create a blank state.json")
     p.add_argument("--title", default="")
     p.add_argument("--transparency", default="standard")
+    p.add_argument("--system", default="pf2e", choices=list(SYSTEMS))
     p.add_argument("--force", action="store_true")
 
     p = sub.add_parser("add-character", help="add a PC, ally, sidekick or companion")
@@ -1485,6 +1863,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--str-mod", type=int, default=0)
     p.add_argument("--hero-points", type=int, default=1)
     p.add_argument("--sheet", default=None)
+    # 5e: saving-throw modifiers per ability, and the rest of the volatile block
+    for ab in ("str", "dex", "con", "int", "wis", "cha"):
+        p.add_argument(f"--{ab}-save", type=int, default=0, help="5e saving-throw modifier")
+    p.add_argument("--con-mod", type=int, default=0, help="5e: for Hit Point Dice")
+    p.add_argument("--hit-die", default="d8", help="5e: d6, d8, d10 or d12")
+    p.add_argument("--passive-perception", type=int, default=10)
+    p.add_argument("--inspiration", action="store_true", help="5e: starts with Heroic Inspiration")
 
     p = sub.add_parser("damage")
     p.add_argument("who")
@@ -1522,8 +1907,45 @@ def build_parser() -> argparse.ArgumentParser:
         r.add_argument("who")
         r.add_argument("value", type=int)
 
-    p = sub.add_parser("recovery", help="roll a real recovery check and apply the result")
+    p = sub.add_parser("recovery", help="PF2e: roll a real recovery check and apply the result")
     p.add_argument("who")
+
+    p = sub.add_parser("deathsave", help="5e: roll a real death save and apply the result")
+    p.add_argument("who")
+    p.add_argument("--bonus", type=int, default=0)
+    p.add_argument("--adv", action="store_true")
+    p.add_argument("--dis", action="store_true")
+
+    p = sub.add_parser("inspiration", help="5e: Heroic Inspiration")
+    q = p.add_subparsers(dest="sub", required=True)
+    for verb in ("gain", "spend", "clear"):
+        r = q.add_parser(verb)
+        r.add_argument("who")
+
+    p = sub.add_parser("exhaustion", help="5e: exhaustion level 0-6")
+    q = p.add_subparsers(dest="sub", required=True)
+    r = q.add_parser("set")
+    r.add_argument("who")
+    r.add_argument("value", type=int)
+
+    p = sub.add_parser("hitdice", help="5e: Hit Point Dice")
+    q = p.add_subparsers(dest="sub", required=True)
+    r = q.add_parser("spend")
+    r.add_argument("who")
+    r.add_argument("n", nargs="?", type=int, default=1)
+    r = q.add_parser("set")
+    r.add_argument("who")
+    r.add_argument("current", type=int)
+    r.add_argument("--max", dest="maximum", type=int)
+    r.add_argument("--die", default=None)
+
+    sub.add_parser("short-rest", help="5e: what a Short Rest restores")
+    sub.add_parser("long-rest", help="5e: HP, Hit Point Dice, slots, exhaustion -1")
+
+    p = sub.add_parser("concentration", help="5e: set or clear the spell being concentrated on")
+    p.add_argument("who")
+    p.add_argument("spell", nargs="*")
+    p.add_argument("--end", action="store_true")
 
     p = sub.add_parser("hero")
     q = p.add_subparsers(dest="sub", required=True)
@@ -1671,6 +2093,9 @@ def build_parser() -> argparse.ArgumentParser:
     r = q.add_parser("map-step")
     r.add_argument("who")
     r.add_argument("step", nargs="?", type=int, default=None)
+    r = q.add_parser("bonus", help="5e: spend the bonus action")
+    r.add_argument("who")
+    r.add_argument("what", nargs="?", default=None)
     r = q.add_parser("reaction")
     r.add_argument("who")
     r.add_argument("what", nargs="?", default=None)
@@ -1715,7 +2140,7 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
         p = state_path(slug)
         if p.exists() and not args.force:
             raise StateError(f"{p} already exists; pass --force to overwrite (this discards live state)")
-        data = blank_state(slug, args.title, args.transparency)
+        data = blank_state(slug, args.title, args.transparency, args.system)
         save(slug, data)
         write_render(slug, data)
         return [f"wrote {p.relative_to(repo_root())} and CHECKPOINT.md"], False, None
@@ -1735,6 +2160,26 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
         key = slugify(args.name)
         if key in data.get("pcs", {}):
             raise StateError(f"{key} already exists")
+        if is_5e(data):
+            if args.hit_die not in ("d6", "d8", "d10", "d12"):
+                raise StateError(f"{args.hit_die} is not a 5e Hit Point Die (d6, d8, d10, d12)")
+            pc = blank_character_5e(args.name, args.kind, args.level)
+            pc.update(
+                {
+                    "hp": {"current": args.hp, "max": args.hp, "temp": 0},
+                    "ac": args.ac,
+                    "saves": {ab: getattr(args, f"{ab}_save") for ab in ABILITIES},
+                    "con_mod": args.con_mod,
+                    "passive_perception": args.passive_perception,
+                    "speed": args.speed if args.speed != 25 else 30,
+                    "heroic_inspiration": args.inspiration,
+                    "hit_dice": {"die": args.hit_die, "max": args.level, "current": args.level},
+                    "sheet": args.sheet or f"characters/{key}.md",
+                }
+            )
+            data.setdefault("pcs", {})[key] = pc
+            return [f"added {args.name} ({args.kind}, level {args.level}, {args.hp} HP, "
+                    f"{args.level}{args.hit_die} Hit Point Dice) as `{key}`"], True, data
         pc = blank_character(args.name, args.kind, args.level)
         pc.update(
             {
@@ -1771,12 +2216,64 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
             out.append(f"  {c['name']}" + (f" {c['value']}" if c.get("value") else "")
                        + f" — {describe_duration(c.get('duration') or {})}"
                        + (f" (from {c['source']})" if c.get("source") else ""))
-        for n in ("dying", "wounded", "doomed"):
+        for n in ("dying", "wounded", "doomed", "exhaustion"):
             if int(pc.get(n, 0)):
                 out.append(f"  {n} {pc[n]}")
         if len(out) == 1:
             out.append("  none")
         return out, False, data
+
+    pf2e_only = {
+        "dying": "5e tracks death saves — `deathsave <who>`",
+        "wounded": "5e has no wounded condition",
+        "doomed": "5e has no doomed condition",
+        "recovery": "use `deathsave <who>`",
+        "hero": "use `inspiration gain|spend <who>`",
+        "focus": "5e has no focus pool; track the resource on the sheet or as an item with charges",
+        "bulk": "5e carrying capacity is by weight (Strength x 15 lb.; tools/dnd5e.py)",
+    }
+    five_only = {
+        "deathsave": "use `recovery <who>`",
+        "inspiration": "use `hero gain|spend <who>`",
+        "exhaustion": "PF2e uses `condition add <who> drained|fatigued ...`",
+        "hitdice": "PF2e heals with Treat Wounds and rest",
+        "short-rest": "PF2e uses Refocus and Treat Wounds",
+        "long-rest": "use `daily-prep`",
+        "concentration": "PF2e sustains spells with the Sustain action instead",
+    }
+    if cmd in pf2e_only:
+        only(data, "pf2e", cmd, pf2e_only[cmd])
+    if cmd in five_only:
+        only(data, "dnd5e", cmd, five_only[cmd])
+
+    if cmd == "deathsave":
+        return deathsave_apply(data, slug, args.who, args.bonus, args.adv, args.dis), True, data
+    if cmd == "inspiration":
+        return inspiration(data, args.who, sub), True, data
+    if cmd == "exhaustion":
+        return exhaustion_set(data, args.who, args.value), True, data
+    if cmd == "hitdice":
+        if sub == "spend":
+            return hitdice_spend(data, slug, args.who, args.n), True, data
+        _, pc = find_character(data, args.who)
+        hd = pc.setdefault("hit_dice", {"die": "d8", "max": pc.get("level", 1), "current": 0})
+        if args.maximum is not None:
+            hd["max"] = args.maximum
+        if args.die:
+            hd["die"] = args.die
+        if not 0 <= args.current <= int(hd["max"]):
+            raise StateError(f"{args.current} Hit Point Dice is outside 0-{hd['max']}")
+        hd["current"] = args.current
+        return [f"{pc['name']}: {hd['current']}/{hd['max']}{hd['die']} Hit Point Dice"], True, data
+    if cmd == "short-rest":
+        return short_rest(data), False, data
+    if cmd == "long-rest":
+        return long_rest(data), True, data
+    if cmd == "concentration":
+        spell = None if args.end else (" ".join(args.spell) or None)
+        if not args.end and not spell:
+            raise StateError("name the spell, or pass --end")
+        return concentration(data, args.who, spell), True, data
 
     if cmd in ("dying", "wounded", "doomed"):
         if cmd == "dying":
@@ -1923,6 +2420,15 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
             raise StateError("XP cannot be negative")
         party["xp"] = new
         notes = [f"party XP: {new}"]
+        if is_5e(data):
+            lvl = dnd5e.level_for_xp(new)
+            if lvl > int(party.get("level", 1)):
+                notes.append(f"⚠ {new} XP reaches level {lvl} — level up (system/dnd5e/README.md); "
+                             "5e XP is cumulative, so do not subtract anything")
+            nxt = dnd5e.xp_to_next(new)
+            if nxt is not None:
+                notes.append(f"{nxt} XP to level {dnd5e.level_for_xp(new) + 1}")
+            return notes, True, data
         if new >= 1000:
             notes.append("⚠ 1000 XP reached — level up (system/11-leveling-up.md), then subtract 1000")
         return notes, True, data
@@ -1968,12 +2474,18 @@ def dispatch(args: argparse.Namespace) -> tuple[list[str], bool, dict[str, Any] 
             return encounter_next(data), True, data
         if sub == "status":
             return encounter_status(data), False, data
+        if sub == "end" and is_5e(data):
+            out = encounter_end(data)
+            out[1] = "Now: award XP (sum of monster XP by CR), record treasure, note which conditions persist,"
+            return out, True, data
         if sub == "end":
             return encounter_end(data), True, data
         if sub == "action":
             return encounter_action(data, args.who, args.n), True, data
         if sub == "map-step":
             return encounter_map_step(data, args.who, args.step), True, data
+        if sub == "bonus":
+            return encounter_bonus(data, args.who, args.what), True, data
         if sub == "reaction":
             return encounter_reaction(data, args.who, args.what, args.restore), True, data
         if sub == "position":

@@ -13,6 +13,7 @@ install. Every tool runs as `python3 tools/<name>.py`.
 | `roll.py` | The dice engine and the append-only audit log. The only source of random numbers. |
 | `state.py` | The only writer of `campaigns/<slug>/state.json`. Also renders `CHECKPOINT.md`, takes checkpoints, makes the git commit, and restores. |
 | `pf2e.py` | The rules tables as data, each with a `Source:` line. Encounter budgets, treasure, DCs, the calendar. |
+| `dnd5e.py` | The D&D 5e (2024 / SRD 5.2.1) tables as data, same `Source:` discipline: proficiency, XP by level and by CR, encounter budgets, DCs, death saves, exhaustion, rests, coins. **Every table currently unverified.** |
 | `new_campaign.py` | Scaffolds `campaigns/<slug>/` from `templates/`. |
 | `validate.py` | Catches mechanical drift. Run it when something feels off, and before a long session. |
 | `oracle.py` | Yes/no questions on a published likelihood ladder, scene checks, meaning tables, quantities. |
@@ -22,7 +23,24 @@ install. Every tool runs as `python3 tools/<name>.py`.
 | `dashboard.py` | One offline, self-contained HTML file per campaign, regenerated at every checkpoint. |
 
 Import graph, so a change stays predictable: `roll.py` depends on nothing; `pf2e.py` imports
-`roll.py` for its path helpers; everything else imports those two.
+`roll.py` for its path helpers; `dnd5e.py` depends on nothing; everything else imports those.
+
+**Two systems.** `state.json`'s `system` field is `pf2e` (default) or `dnd5e`. `roll.py` reads it
+whenever `--campaign` is given (or take `--system`), and `state.py` branches on it. A command
+that belongs to the other system refuses and names the one to use. The 5e surface:
+
+```
+python3 tools/roll.py check "1d20+5" --dc 15 --attack --adv     # 5e attack: nat 20 crits, nat 1 misses
+python3 tools/roll.py save  "1d20+2" --dc 13 --dis              # pass/fail, disadvantage
+python3 tools/roll.py damage "2d6+3" --crit                     # 5e crit: 4d6+3
+python3 tools/roll.py deathsave --actor Brin
+python3 tools/state.py --campaign X deathsave|inspiration|exhaustion|hitdice|short-rest|long-rest|concentration ...
+python3 tools/state.py --campaign X encounter bonus <who> [what]
+python3 tools/dnd5e.py encounter|level|dc|rules|sources
+python3 tools/new_campaign.py "<title>" --system dnd5e
+```
+
+Full mapping: `system/dnd5e/README.md`.
 
 ## `roll.py` — dice
 

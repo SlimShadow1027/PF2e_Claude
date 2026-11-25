@@ -276,25 +276,42 @@ def render(slug: str) -> str:
               + (f'<span class="temp" style="width:{tpct}%"></span>' if tpct else "")
               + "</div>")
             a('<div class="stats">')
-            for label, value in (
-                ("AC", pc.get("ac", 0)),
-                ("Fort", f"{int(s.get('fortitude', 0)):+d}"),
-                ("Ref", f"{int(s.get('reflex', 0)):+d}"),
-                ("Will", f"{int(s.get('will', 0)):+d}"),
-                ("Perc", f"{int(pc.get('perception', 0)):+d}"),
-                ("Speed", f"{pc.get('speed', 0)} ft"),
-            ):
+            if st.is_5e(data):
+                stat_rows = [("AC", pc.get("ac", 0))] + [
+                    (ab.title(), f"{int(s.get(ab, 0)):+d}") for ab in st.ABILITIES
+                ] + [("PP", pc.get("passive_perception", 10)), ("Speed", f"{pc.get('speed', 0)} ft")]
+            else:
+                stat_rows = [
+                    ("AC", pc.get("ac", 0)),
+                    ("Fort", f"{int(s.get('fortitude', 0)):+d}"),
+                    ("Ref", f"{int(s.get('reflex', 0)):+d}"),
+                    ("Will", f"{int(s.get('will', 0)):+d}"),
+                    ("Perc", f"{int(pc.get('perception', 0)):+d}"),
+                    ("Speed", f"{pc.get('speed', 0)} ft"),
+                ]
+            for label, value in stat_rows:
                 a(f'<div class="stat"><b>{esc(value)}</b><span>{esc(label)}</span></div>')
             a("</div>")
             # Dying / wounded / doomed get their own prominent treatment.
             dire = []
+            conds: list[str] = []
             for nm in ("dying", "wounded", "doomed"):
                 v = int(pc.get(nm, 0))
                 if v:
                     limit = int(pc.get("dying_max", 4)) - int(pc.get("doomed", 0))
                     extra = f" of {limit}" if nm == "dying" else ""
                     dire.append(f'<span class="tag dire">{nm.upper()} {v}{extra}</span>')
-            conds = []
+            if st.is_5e(data):
+                if int(pc.get("exhaustion", 0)):
+                    dire.append(f'<span class="tag dire">EXHAUSTION {int(pc["exhaustion"])} of 6</span>')
+                if cur <= 0:
+                    ds = pc.get("death_saves") or {}
+                    dire.append('<span class="tag dire">'
+                                + ("STABLE AT 0 HP" if pc.get("stable") else
+                                   f"DEATH SAVES {int(ds.get('successes', 0))}&#10003; "
+                                   f"{int(ds.get('failures', 0))}&#10007;") + "</span>")
+                if pc.get("concentration"):
+                    conds.append(f'<span class="tag">concentrating: {esc(pc["concentration"])}</span>')
             for c in pc.get("conditions") or []:
                 name = c["name"] + (f" {c['value']}" if c.get("value") else "")
                 dur = c.get("duration") or {}
@@ -314,16 +331,22 @@ def render(slug: str) -> str:
     # ---- resources --------------------------------------------------------
     if pcs:
         a("<h2>Resources</h2>")
-        a('<div class="card"><table><thead><tr><th>Character</th><th class="n">Hero</th>'
-          '<th class="n">Focus</th><th>Refocus</th><th>Spell slots</th>'
-          "<th>Consumables, ammunition, charges</th></tr></thead><tbody>")
+        five = st.is_5e(data)
+        if five:
+            a('<div class="card"><table><thead><tr><th>Character</th><th>Heroic Inspiration</th>'
+              '<th class="n">Hit Point Dice</th><th>Spell slots</th>'
+              "<th>Consumables, ammunition, charges</th></tr></thead><tbody>")
+        else:
+            a('<div class="card"><table><thead><tr><th>Character</th><th class="n">Hero</th>'
+              '<th class="n">Focus</th><th>Refocus</th><th>Spell slots</th>'
+              "<th>Consumables, ammunition, charges</th></tr></thead><tbody>")
         for key, pc in pcs.items():
             f = pc.get("focus") or {}
             slots = []
             for rank in sorted(pc.get("spell_slots") or {}, key=lambda r: int(r)):
                 e = (pc["spell_slots"])[rank]
                 left = int(e.get("max", 0)) - int(e.get("used", 0))
-                slots.append(f"r{rank}&nbsp;{left}/{e.get('max', 0)}")
+                slots.append(f"{'L' if five else 'r'}{rank}&nbsp;{left}/{e.get('max', 0)}")
             cons = []
             for it in pc.get("items") or []:
                 if it.get("kind") in ("consumable", "ammunition") or it.get("charges") is not None:
@@ -334,6 +357,14 @@ def render(slug: str) -> str:
                         bits += f" ({it['charges']} charges)"
                     cons.append(bits)
             dash = '<span class="muted">—</span>'
+            if five:
+                hd = pc.get("hit_dice") or {}
+                a(f"<tr><td>{esc(pc.get('name', key))}</td>"
+                  f"<td>{'yes' if pc.get('heroic_inspiration') else dash}</td>"
+                  f"<td class=\"n\">{esc(hd.get('current', 0))} / {esc(hd.get('max', 0))}{esc(hd.get('die', ''))}</td>"
+                  f"<td>{' &middot; '.join(slots) or dash}</td>"
+                  f"<td>{', '.join(cons) or dash}</td></tr>")
+                continue
             a(f"<tr><td>{esc(pc.get('name', key))}</td>"
               f"<td class=\"n\">{esc(pc.get('hero_points', 0))} / {esc(pc.get('hero_points_max', 3))}</td>"
               f"<td class=\"n\">{esc(f.get('current', 0))} / {esc(f.get('max', 0))}</td>"
@@ -353,8 +384,10 @@ def render(slug: str) -> str:
             ' <span class="tag bad">not yet telegraphed to the player</span>'
         )
         a(f"<p><strong>Objective:</strong> {esc(enc.get('objective'))}{warn}</p>")
+        five = st.is_5e(data)
         a('<table><thead><tr><th></th><th>Combatant</th><th class="n">Init</th><th>HP</th>'
-          '<th>Actions</th><th class="n">MAP</th><th>Reaction</th><th>Position</th>'
+          + ('<th>Action</th><th>Bonus</th>' if five else '<th>Actions</th><th class="n">MAP</th>')
+          + '<th>Reaction</th><th>Position</th>'
           "<th>Conditions</th></tr></thead><tbody>")
         idx = int(enc.get("turn_index", 0))
         for i, c in enumerate(enc.get("combatants") or []):
@@ -379,12 +412,17 @@ def render(slug: str) -> str:
                 cs = f"<strong>dying {dying}</strong>" + (f", {cs}" if cs else "")
             left = int(c.get("actions_remaining", 3))
             pips = "◆" * max(0, left) + "◇" * max(0, 3 - left)
+            if five:
+                pips = "available" if left > 0 else "used"
+                map_cell = f'<td>{"available" if c.get("bonus_available", True) else "used"}</td>'
+            else:
+                map_cell = f'<td class="n">{esc(c.get("map_step", 0))}</td>'
             a(f'<tr class="{"turn" if i == idx else ""}">'
               f'<td>{"&rarr;" if i == idx else ""}</td><td>{esc(c.get("name"))}'
               + (f' <span class="muted">(squad {esc(c["squad"])})</span>' if c.get("squad") else "")
               + f'</td><td class="n">{esc(c.get("initiative") if c.get("initiative") is not None else "—")}</td>'
               f"<td>{hp_text}</td><td>{pips}</td>"
-              f'<td class="n">{esc(c.get("map_step", 0))}</td>'
+              + map_cell +
               f'<td>{"available" if c.get("reaction_available") else esc("used: " + str(c.get("reaction_used_for") or ""))}</td>'
               f'<td>{esc(c.get("position") or "—")}</td><td>{cs or "—"}</td></tr>')
         a("</tbody></table>")
@@ -398,16 +436,19 @@ def render(slug: str) -> str:
     a('<div class="grid two">')
     gold = (data.get("party") or {}).get("gold") or {}
     a('<div class="card"><h3>Purse</h3><div class="stats">')
-    for coin in ("pp", "gp", "sp", "cp"):
+    for coin in st.coin_order(st.system_of(data)):
         a(f'<div class="stat"><b>{esc(int(gold.get(coin, 0)))}</b><span>{coin}</span></div>')
     a("</div>")
     a(f'<p class="gen">Total value {st.coins_to_cp(gold)} cp &middot; XP '
       f"{esc((data.get('party') or {}).get('xp', 0))} &middot; party level "
       f"{esc((data.get('party') or {}).get('level', 1))}</p></div>")
 
-    a('<div class="card"><h3>Bulk</h3>')
+    a('<div class="card"><h3>' + ("Carrying" if st.is_5e(data) else "Bulk") + '</h3>')
     rows = st.bulk_report(data)
-    if rows:
+    if st.is_5e(data):
+        a('<p class="empty">5e carrying capacity is by weight (Strength score &times; 15 lb.); '
+          "it is tracked on the character sheet, not here.</p>")
+    elif rows:
         a('<table><thead><tr><th>Carrier</th><th class="n">Bulk</th><th class="n">Encumbered after</th>'
           '<th class="n">Max</th><th></th></tr></thead><tbody>')
         for r in rows:

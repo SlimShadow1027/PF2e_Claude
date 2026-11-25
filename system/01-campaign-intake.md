@@ -17,6 +17,20 @@ and a pause.
 
 ---
 
+## Block 0 — which game system
+
+Ask this before anything else, because the scaffold depends on it.
+
+1. **Pathfinder Second Edition (Remaster)** — the default; everything in `system/` is written for it.
+2. **D&D Fifth Edition (2024 rules, SRD 5.2.1)** — scaffold with
+   `python3 tools/new_campaign.py "<title>" --system dnd5e`, then read `system/dnd5e/README.md`.
+   Where a later question offers a PF2e-specific answer (Golarion, Adventure Paths, Free
+   Archetype, 1000 XP per level), offer the 5e equivalent instead.
+
+> Recorded automatically in `CAMPAIGN.md` (`System:`) and `state.json` (`system`).
+
+---
+
 ## Block 1 — shape and length
 
 **How long is this campaign?**

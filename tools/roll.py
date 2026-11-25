@@ -57,6 +57,25 @@ def list_campaigns() -> list[str]:
                   if p.is_dir() and not p.name.startswith(".") and not p.name.startswith("_"))
 
 
+SYSTEMS = ("pf2e", "dnd5e")
+
+
+def campaign_system(slug: str | None) -> str:
+    """The game system a campaign runs: `state.json`'s `system` field, `pf2e` if absent.
+
+    Every campaign created before 5e support has no `system` field and is PF2e, so the
+    default keeps them exactly as they were.
+    """
+    if not slug:
+        return "pf2e"
+    p = campaign_dir(slug) / "state.json"
+    try:
+        value = json.loads(p.read_text(encoding="utf-8")).get("system", "pf2e")
+    except (OSError, json.JSONDecodeError, AttributeError):
+        return "pf2e"
+    return value if value in SYSTEMS else "pf2e"
+
+
 def atomic_write(path: Path, text: str) -> None:
     """Write `text` to `path` via a temp file + rename, so a crash never truncates state."""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -287,6 +306,9 @@ def _rewrite_d20(expr: str, replacement: str) -> str:
 
 DEGREES = ("critical failure", "failure", "success", "critical success")
 DEGREE_LABELS = ("CRITICAL FAILURE", "FAILURE", "SUCCESS", "CRITICAL SUCCESS")
+# D&D 5e has no degrees on checks or saves; only an attack roll's natural 20 / natural 1
+# reach the outer two, and they mean a critical hit and an automatic miss.
+DEGREE_LABELS_5E = ("AUTOMATIC MISS", "MISS", "HIT", "CRITICAL HIT")
 
 
 @dataclass
@@ -295,6 +317,8 @@ class Degree:
     unadjusted_index: int
     shift: int
     natural: int | None
+    system: str = "pf2e"
+    attack: bool = False
 
     @property
     def name(self) -> str:
@@ -302,6 +326,8 @@ class Degree:
 
     @property
     def label(self) -> str:
+        if self.system == "dnd5e" and self.attack:
+            return DEGREE_LABELS_5E[self.index]
         return DEGREE_LABELS[self.index]
 
     @property
@@ -332,6 +358,24 @@ def degree_of_success(total: int, dc: int, natural: int | None) -> Degree:
         shift = -1
     idx = max(0, min(3, base + shift))
     return Degree(index=idx, unadjusted_index=base, shift=idx - base, natural=natural)
+
+
+def degree_5e(total: int, dc: int, natural: int | None, *, attack: bool) -> Degree:
+    """D&D 5e: meet or beat the DC (or AC) to succeed. Nothing else, except on attacks.
+
+    Source (UNVERIFIED, see tools/dnd5e.py `d20_tests`): SRD 5.2.1 Rules Glossary, "D20
+    Test", "Attack Roll", "Critical Hit". On an attack roll a natural 20 hits regardless and
+    is a Critical Hit; a natural 1 misses regardless. On ability checks and saving throws a
+    natural 20 or 1 has no special effect.
+    """
+    base = 2 if total >= dc else 1
+    idx = base
+    if attack and natural == 20:
+        idx = 3
+    elif attack and natural == 1:
+        idx = 0
+    return Degree(index=idx, unadjusted_index=base, shift=idx - base, natural=natural,
+                  system="dnd5e", attack=attack)
 
 
 # --------------------------------------------------------------------------------------
@@ -431,6 +475,10 @@ class Roll:
     misfortune: bool = False
     extra: dict[str, Any] = field(default_factory=dict)
     logged_seq: int | None = None
+    system: str = "pf2e"
+    attack: bool = False
+    advantage: bool = False
+    disadvantage: bool = False
 
     # -- rendering ---------------------------------------------------------------
 
@@ -452,7 +500,9 @@ class Roll:
         body = f" → {self.result.faces_line()} = {self.result.total}"
         tail = ""
         if self.kind == "damage":
-            if self.crit:
+            if self.crit and self.system == "dnd5e":
+                body = f" → {self.result.faces_line()} = {self.result.total}"
+            elif self.crit:
                 base = self.extra.get("base_total")
                 body = f" → {self.result.faces_line()} = {base} x2 = {self.result.total}"
             tail = f" {self.damage_type}" if self.damage_type else ""
@@ -461,7 +511,12 @@ class Roll:
         elif self.dc is not None and self.degree is not None:
             vs = self.extra.get("dc_label") or "DC"
             tail = f" vs {vs} {self.dc} → {self.degree.label}"
-            if self.degree.shift:
+            if self.system == "dnd5e":
+                if self.degree.shift:
+                    nat = self.degree.natural
+                    tail += ("  [natural 20: hits regardless of AC, critical]" if nat == 20
+                             else "  [natural 1: misses regardless]")
+            elif self.degree.shift:
                 nat = self.degree.natural
                 word = "upgraded" if self.degree.shift > 0 else "downgraded"
                 tail += f"  [natural {nat}: {word} from {self.degree.unadjusted_name.upper()}]"
@@ -470,9 +525,15 @@ class Roll:
             tail = f" vs DC {self.dc} → {'SUCCESS' if ok else 'FAILURE'}"
         if self.map_step:
             tail += f"  (MAP step {self.map_step})"
-        if self.fortune:
+        if self.advantage and self.disadvantage:
+            tail += "  [advantage and disadvantage cancel]"
+        elif self.advantage:
+            tail += "  [advantage]"
+        elif self.disadvantage:
+            tail += "  [disadvantage]"
+        elif self.fortune:
             tail += "  [fortune]"
-        if self.misfortune:
+        elif self.misfortune:
             tail += "  [misfortune]"
         return head + body + tail
 
@@ -485,6 +546,7 @@ class Roll:
             "tool_version": TOOL_VERSION,
             "rng": "random.SystemRandom",
             "campaign": campaign,
+            "system": self.system,
             "session": session,
             "checkpoint": checkpoint,
             "kind": self.kind,
@@ -506,6 +568,9 @@ class Roll:
             "map_step": self.map_step,
             "fortune": self.fortune,
             "misfortune": self.misfortune,
+            "attack": self.attack,
+            "advantage": self.advantage,
+            "disadvantage": self.disadvantage,
             "detail": self.detail_line(),
         }
         if self.degree is not None:
@@ -565,20 +630,40 @@ def make_roll(
     misfortune: bool = False,
     extra: dict[str, Any] | None = None,
     compute_degree: bool = True,
+    system: str = "pf2e",
+    attack: bool = False,
+    advantage: bool = False,
+    disadvantage: bool = False,
 ) -> Roll:
     """Roll one expression and interpret it. Nothing here consults an expected outcome."""
+    if system not in SYSTEMS:
+        raise DiceError(f"unknown system {system!r} (have: {', '.join(SYSTEMS)})")
     if fortune and misfortune:
         raise DiceError("a roll cannot be both fortune and misfortune")
+    if system == "pf2e" and (advantage or disadvantage):
+        raise DiceError("advantage/disadvantage are 5e; in PF2e use `fortune` / `misfortune`")
+    if system == "pf2e" and attack:
+        raise DiceError("--attack is a 5e flag; PF2e attacks use degrees of success already")
+    if system == "dnd5e" and map_step:
+        raise DiceError("5e has no multiple attack penalty; drop --map")
     use = expr
-    if fortune:
+    if advantage and disadvantage:
+        pass  # one of each cancels to a single d20, however many sources there are
+    elif fortune or advantage:
         use = to_fortune(expr)
-    elif misfortune:
+    elif misfortune or disadvantage:
         use = to_misfortune(expr)
+
+    extra = dict(extra or {})
+    if kind == "damage" and crit and system == "dnd5e":
+        # 5e criticals roll the damage dice twice; modifiers are added once.
+        # Source (UNVERIFIED): tools/dnd5e.py `critical_damage`.
+        use = double_dice(use)
+        extra["crit_rule"] = "dnd5e: dice doubled, modifiers once"
 
     result = roll_expression(use)
 
-    extra = dict(extra or {})
-    if kind == "damage" and crit:
+    if kind == "damage" and crit and system == "pf2e":
         # PF2e criticals double the whole damage roll, modifiers included.
         # Source: Player Core, "Critical Hits" — verified in system/12-rules-quick-reference.md.
         extra["base_total"] = result.total
@@ -591,7 +676,10 @@ def make_roll(
 
     degree = None
     if dc is not None and compute_degree:
-        degree = degree_of_success(result.total, dc, result.natural)
+        if system == "dnd5e":
+            degree = degree_5e(result.total, dc, result.natural, attack=attack)
+        else:
+            degree = degree_of_success(result.total, dc, result.natural)
 
     r = Roll(
         kind=kind,
@@ -610,9 +698,26 @@ def make_roll(
         fortune=fortune,
         misfortune=misfortune,
         extra=extra,
+        system=system,
+        attack=attack,
+        advantage=advantage,
+        disadvantage=disadvantage,
     )
     r.shown = _shown(secret, private, transparency)
     return r
+
+
+def double_dice(expr: str) -> str:
+    """`2d6+1d8+4` -> `4d6+2d8+4`: every dice group doubled, flat modifiers untouched."""
+    text = str(expr).replace(" ", "")
+    if re.search(r"k[hl]|r\d", text, re.IGNORECASE):
+        raise DiceError(f"cannot double the dice of {expr!r} (keep/reroll groups); roll the crit dice by hand")
+
+    def dbl(m: re.Match[str]) -> str:
+        n = int(m.group(1) or 1)
+        return f"{2 * n}d{m.group(2)}"
+
+    return re.sub(r"(?<![\d])(\d*)d(\d+)", dbl, text, flags=re.IGNORECASE)
 
 
 # --------------------------------------------------------------------------------------
@@ -744,6 +849,13 @@ def _common(p: argparse.ArgumentParser) -> None:
     p.add_argument("--json", action="store_true", help="machine-readable output")
     p.add_argument("--gm", action="store_true", help="also print withheld numbers in a GM-ONLY block")
     p.add_argument("--quiet", action="store_true", help="suppress the not-logged warning")
+    p.add_argument("--system", choices=SYSTEMS, default=None,
+                   help="rules to interpret by; default is the campaign's state.json, else pf2e")
+
+
+def _adv(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--adv", action="store_true", help="5e advantage: 2d20, keep the higher")
+    p.add_argument("--dis", action="store_true", help="5e disadvantage: 2d20, keep the lower")
 
 
 def _visibility(p: argparse.ArgumentParser) -> None:
@@ -770,6 +882,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--actor", action="append", default=[], help="repeat to name each expression's roller")
     p.add_argument("--map", dest="map_step", type=int, default=0, help="multiple attack penalty step reached")
     p.add_argument("--dc-label", default=None, help="what the DC is, e.g. 'AC'")
+    p.add_argument("--attack", action="store_true",
+                   help="5e: an attack roll, so natural 20 crits and natural 1 misses")
+    _adv(p)
     _visibility(p)
 
     p = add("save", "a saving throw")
@@ -777,11 +892,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dc", type=int, required=True)
     p.add_argument("--label")
     p.add_argument("--actor", action="append", default=[])
+    _adv(p)
     _visibility(p)
 
     p = add("damage", "a damage roll")
     p.add_argument("expr", nargs="+")
-    p.add_argument("--crit", action="store_true", help="double the whole roll, modifiers included")
+    p.add_argument("--crit", action="store_true",
+                   help="PF2e: double the whole roll; 5e: double the dice, modifiers once")
     p.add_argument("--type", dest="dtype", default=None)
     p.add_argument("--label")
     p.add_argument("--actor", action="append", default=[])
@@ -798,6 +915,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--bonus", type=int, default=0, help="modifier to the recovery check, if any")
     p.add_argument("--actor")
     p.add_argument("--label")
+    _visibility(p)
+
+    p = add("deathsave", "a 5e death saving throw (DC 10; natural 20 and 1 are special)")
+    p.add_argument("--bonus", type=int, default=0, help="modifier to the death save, if any")
+    p.add_argument("--actor")
+    p.add_argument("--label")
+    _adv(p)
     _visibility(p)
 
     p = add("init", "roll initiative for several actors and return the ordered table")
@@ -861,6 +985,10 @@ def cmd_check(args: argparse.Namespace, kind: str = "check") -> list[Roll]:
             make_roll(
                 kind,
                 expr,
+                system=args.system,
+                attack=getattr(args, "attack", False),
+                advantage=getattr(args, "adv", False),
+                disadvantage=getattr(args, "dis", False),
                 dc=args.dc,
                 label=args.label,
                 actor=actor,
@@ -881,6 +1009,7 @@ def cmd_damage(args: argparse.Namespace) -> list[Roll]:
         make_roll(
             "damage",
             expr,
+            system=args.system,
             label=args.label,
             actor=actor,
             secret=args.secret,
@@ -899,6 +1028,7 @@ def cmd_flat(args: argparse.Namespace) -> list[Roll]:
         make_roll(
             "flat",
             "1d20",
+            system=args.system,
             dc=args.dc,
             label=args.label or f"Flat check DC {args.dc}",
             actor=args.actor,
@@ -911,7 +1041,53 @@ def cmd_flat(args: argparse.Namespace) -> list[Roll]:
     ]
 
 
+def deathsave_outcome(r: Roll) -> dict[str, Any]:
+    """Interpret a 5e death save. Source (UNVERIFIED): tools/dnd5e.py `death_saves`."""
+    nat = r.result.natural
+    if nat == 20:
+        return {"successes": 0, "failures": 0, "regain_hp": 1, "text": "natural 20 — regain 1 HP"}
+    if nat == 1:
+        return {"successes": 0, "failures": 2, "regain_hp": 0, "text": "natural 1 — two failures"}
+    if r.result.total >= 10:
+        return {"successes": 1, "failures": 0, "regain_hp": 0, "text": "success"}
+    return {"successes": 0, "failures": 1, "regain_hp": 0, "text": "failure"}
+
+
+def make_deathsave(*, bonus: int = 0, actor: str | None = None, label: str | None = None,
+                   transparency: str = "standard", tags: Sequence[str] = (), secret: bool = False,
+                   private: bool = False, advantage: bool = False, disadvantage: bool = False) -> Roll:
+    r = make_roll(
+        "deathsave",
+        f"1d20{bonus:+d}" if bonus else "1d20",
+        dc=10,
+        label=label or "Death saving throw",
+        actor=actor,
+        secret=secret,
+        private=private,
+        transparency=transparency,
+        tags=list(tags) + ["deathsave"],
+        compute_degree=False,
+        system="dnd5e",
+        advantage=advantage,
+        disadvantage=disadvantage,
+    )
+    out = deathsave_outcome(r)
+    r.extra.update({"deathsave": out})
+    r.label = (r.label or "") + f" → {out['text']}"
+    return r
+
+
+def cmd_deathsave(args: argparse.Namespace) -> list[Roll]:
+    if args.system != "dnd5e":
+        raise DiceError("death saves are 5e; a PF2e character makes a `recovery` check")
+    return [make_deathsave(bonus=args.bonus, actor=args.actor, label=args.label,
+                           transparency=args.transparency, tags=args.tag, secret=args.secret,
+                           private=args.private, advantage=args.adv, disadvantage=args.dis)]
+
+
 def cmd_recovery(args: argparse.Namespace) -> list[Roll]:
+    if args.system == "dnd5e":
+        raise DiceError("recovery checks are PF2e; a 5e character makes a `deathsave`")
     if args.dying < 1:
         raise DiceError("a recovery check is only made while dying 1 or worse")
     dc = 10 + args.dying
@@ -964,6 +1140,7 @@ def cmd_init(args: argparse.Namespace) -> tuple[list[Roll], list[dict[str, Any]]
             make_roll(
                 "initiative",
                 f"1d20{m:+d}" if m else "1d20",
+                system=args.system,
                 label="Initiative",
                 actor=name,
                 secret=False,
@@ -1016,6 +1193,7 @@ def cmd_table(args: argparse.Namespace) -> list[Roll]:
         r = make_roll(
             "table",
             f"1d{die}",
+            system=args.system,
             label=f"{heading}",
             secret=args.secret,
             private=args.private,
@@ -1059,7 +1237,11 @@ def cmd_batch(args: argparse.Namespace) -> list[Roll]:
                 map_step=s.get("map"),
                 fortune=bool(s.get("fortune")),
                 misfortune=bool(s.get("misfortune")),
-                compute_degree=kind != "flat",
+                compute_degree=kind not in ("flat", "deathsave"),
+                system=s.get("system", args.system),
+                attack=bool(s.get("attack")),
+                advantage=bool(s.get("adv")),
+                disadvantage=bool(s.get("dis")),
             )
         )
     return out
@@ -1068,6 +1250,8 @@ def cmd_batch(args: argparse.Namespace) -> list[Roll]:
 def main(argv: Sequence[str] | None = None) -> int:
     ap = build_parser()
     args = ap.parse_args(argv)
+    if getattr(args, "system", None) is None:
+        args.system = campaign_system(getattr(args, "campaign", None))
     log = log_path_for(getattr(args, "campaign", None), getattr(args, "log", None))
     try:
         if args.cmd == "check":
@@ -1080,11 +1264,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             rolls = cmd_flat(args)
         elif args.cmd == "recovery":
             rolls = cmd_recovery(args)
+        elif args.cmd == "deathsave":
+            rolls = cmd_deathsave(args)
         elif args.cmd in ("fortune", "misfortune"):
             rolls = [
                 make_roll(
                     args.cmd,
                     args.expr,
+                    system=args.system,
                     dc=args.dc,
                     label=args.label,
                     actor=args.actor,
@@ -1102,6 +1289,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 make_roll(
                     "expr",
                     e,
+                    system=args.system,
                     label=args.label,
                     actor=args.actor,
                     secret=args.secret,
@@ -1126,7 +1314,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                     mark = "P" if row["side"] == "party" else "-"
                     print(f"  {row['order']:>2}. [{mark}] {row['actor']:<20} {row['total']:>3}"
                           f"  (natural {row['natural']})")
-                print("  Cross-side ties: the adversary acts first (Player Core, Roll Initiative).")
+                if args.system == "dnd5e":
+                    print("  Cross-side ties: the adversary acts first (this framework's convention;"
+                          " 5e leaves ties to the GM).")
+                else:
+                    print("  Cross-side ties: the adversary acts first (Player Core, Roll Initiative).")
             else:
                 print(json.dumps({"order": table}, indent=2))
             return rc

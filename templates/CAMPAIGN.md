@@ -2,6 +2,7 @@
 
 - **Slug:** {{CAMPAIGN_SLUG}}
 - **Created:** {{CREATED_DATE}}
+- **System:** {{SYSTEM}}
 - **World:** none
 - **Era:** {{ERA}}
 - **Start date:** {{START_DATE}}

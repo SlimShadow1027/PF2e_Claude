@@ -6,6 +6,10 @@ unreplaced placeholder the moment it is created. The intake interview
 (`system/01-campaign-intake.md`) then overwrites those defaults with the player's real
 answers — the defaults exist so the scaffold is valid, not so it is finished.
 
+`--system dnd5e` scaffolds a D&D 5e campaign: files under `templates/dnd5e/` replace the
+matching base templates, and `state.json` is created with `"system": "dnd5e"`. Without the
+flag the campaign is PF2e, exactly as before.
+
 Files whose name begins with `_` stay in `templates/` and are not copied: they are the
 per-character, per-NPC, per-creature, per-map and per-session forms the GM copies as needed,
 and they are only useful with their placeholders intact.
@@ -37,9 +41,31 @@ EMPTY_DIRS = ["characters", "npcs", "bestiary", "encounters", "maps", "sessions"
               "logs", "gm-private/prep"]
 
 
-def defaults(title: str, slug: str) -> dict[str, str]:
+SYSTEM_LABELS = {
+    "pf2e": "Pathfinder Second Edition (Remaster)",
+    "dnd5e": "D&D Fifth Edition (2024 rules, SRD 5.2.1)",
+}
+OVERLAY = {"dnd5e": "dnd5e"}  # system -> subdirectory of templates/ that overrides the base
+
+
+def system_defaults(system: str) -> dict[str, str]:
+    """Placeholder defaults that differ by game system."""
+    if system == "dnd5e":
+        return {
+            "START_DATE": "not yet decided (day 1 of the campaign calendar)",
+            "CALENDAR": "generic (12 months of 30 days) until intake names one",
+            "HERO_POINTS": "per class and species features (5e as written)",
+            "HERO_REFRESH": "as written (5e: features and GM awards)",
+            "HP_CRIT_FIX": "n/a in 5e",
+            "FREE_TREAT_WOUNDS": "off",
+        }
+    return {}
+
+
+def defaults(title: str, slug: str, system: str = "pf2e") -> dict[str, str]:
     """Neutral values for every placeholder. Intake replaces these with real answers."""
     return {
+        "SYSTEM": SYSTEM_LABELS[system],
         "CAMPAIGN_TITLE": title,
         "CAMPAIGN_SLUG": slug,
         "CREATED_DATE": utc_now()[:10],
@@ -126,7 +152,7 @@ def defaults(title: str, slug: str) -> dict[str, str]:
         "SESSION_TITLE": "not run yet",
         "PREP_NUMBER": "000",
         "PREP_DATE": utc_now()[:10],
-    }
+    } | system_defaults(system)
 
 
 def slugify(name: str) -> str:
@@ -147,7 +173,24 @@ def fill(text: str, values: dict[str, str]) -> tuple[str, set[str]]:
     return PLACEHOLDER_RE.sub(sub, text), missing
 
 
-def scaffold(title: str, slug: str, overrides: dict[str, str], force: bool) -> tuple[Path, list[str]]:
+def template_sources(tdir: Path, system: str) -> dict[Path, Path]:
+    """relative path -> source file, with the system's overlay replacing base files."""
+    overlay_dirs = {tdir / d for d in OVERLAY.values()}
+    out: dict[Path, Path] = {}
+    for src in sorted(tdir.rglob("*")):
+        if src.is_dir() or any(o in src.parents for o in overlay_dirs):
+            continue
+        out[src.relative_to(tdir)] = src
+    if system in OVERLAY:
+        odir = tdir / OVERLAY[system]
+        for src in sorted(odir.rglob("*")):
+            if src.is_file():
+                out[src.relative_to(odir)] = src
+    return out
+
+
+def scaffold(title: str, slug: str, overrides: dict[str, str], force: bool,
+             system: str = "pf2e") -> tuple[Path, list[str]]:
     tdir = repo_root() / "templates"
     if not tdir.is_dir():
         raise SystemExit(f"new_campaign.py: no templates/ directory at {tdir}")
@@ -158,15 +201,12 @@ def scaffold(title: str, slug: str, overrides: dict[str, str], force: bool) -> t
             "overwrite a live campaign's files."
         )
 
-    values = defaults(title, slug)
+    values = defaults(title, slug, system)
     values.update(overrides)
     written: list[str] = []
     missing: set[str] = set()
 
-    for src in sorted(tdir.rglob("*")):
-        if src.is_dir():
-            continue
-        rel = src.relative_to(tdir)
+    for rel, src in sorted(template_sources(tdir, system).items()):
         if rel.name.startswith("_"):
             continue  # a form, not a campaign file
         dst = cdir / rel
@@ -210,6 +250,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap.add_argument("title")
     ap.add_argument("--slug", default=None)
     ap.add_argument("--transparency", default="standard", choices=["glass", "standard", "mystery"])
+    ap.add_argument("--system", default="pf2e", choices=list(SYSTEM_LABELS),
+                    help="game system: pf2e (default) or dnd5e")
     ap.add_argument("--set", action="append", default=[], metavar="KEY=VALUE",
                     help="override a placeholder; repeatable")
     ap.add_argument("--force", action="store_true")
@@ -224,10 +266,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         k, v = item.split("=", 1)
         overrides[k.strip().upper()] = v
 
-    cdir, written = scaffold(args.title, slug, overrides, args.force)
+    cdir, written = scaffold(args.title, slug, overrides, args.force, args.system)
 
     rc = st.main(["--campaign", slug, "init", "--title", args.title,
-                  "--transparency", args.transparency, "--force"])
+                  "--transparency", args.transparency, "--system", args.system, "--force"])
     if rc != 0:
         return rc
 
@@ -260,11 +302,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     print()
     print("Per-character, per-NPC, per-creature, per-map and per-session forms stay in templates/")
     print("with their placeholders intact. Copy one when you need it:")
+    tdir = repo_root() / "templates"
     for f in ("characters/_CHARACTER_TEMPLATE.md", "npcs/_NPC_TEMPLATE.md",
               "bestiary/_CREATURE_TEMPLATE.md", "maps/_MAP_TEMPLATE.md",
               "sessions/_SESSION_TEMPLATE.md", "gm-private/prep/_PREP_TEMPLATE.md"):
-        print(f"  templates/{f}")
+        src = template_sources(tdir, args.system).get(Path(f))
+        print(f"  {src.relative_to(repo_root()) if src else 'templates/' + f}")
     print()
+    if args.system == "dnd5e":
+        print("System: D&D 5e. Read system/dnd5e/README.md before anything else — it says which")
+        print("system/ docs apply as written and which numbers come from tools/dnd5e.py instead.")
+        print()
     print("Next: run the intake interview — system/01-campaign-intake.md. Nothing in this folder is")
     print("decided yet; the defaults exist so the scaffold is valid, not so it is finished.")
 

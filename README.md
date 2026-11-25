@@ -1,7 +1,9 @@
 # PF2e_Claude
 
 A kit for running **Pathfinder Second Edition (Remaster)** campaigns with Claude as Game Master,
-built for solo and very small tables.
+built for solo and very small tables. It also runs **D&D Fifth Edition (2024 rules, SRD 5.2.1)**
+campaigns: `python3 tools/new_campaign.py "<title>" --system dnd5e`, then see
+`system/dnd5e/README.md`.
 
 The framework is built. `PROMPT.md` is the specification it was built from, kept for reference.
 
@@ -112,6 +114,8 @@ python3 tools/roll.py check "1d20+5" --dc 15          # real dice, with the degr
 python3 tools/state.py --campaign X damage kaelen 12  # the only writer of state.json
 python3 tools/pf2e.py encounter --party-level 3 --party-size 1 --threat moderate
 python3 tools/pf2e.py sources                         # provenance of every table
+python3 tools/dnd5e.py encounter --party-level 3 --party-size 1 --difficulty moderate  # 5e tables
+python3 tools/new_campaign.py "The Salt Road" --system dnd5e                           # a 5e campaign
 python3 tools/new_campaign.py "The Ashen Covenant"
 python3 tools/validate.py --campaign X                # catches mechanical drift
 python3 tools/oracle.py ask "Is the gate guarded?" --odds unlikely

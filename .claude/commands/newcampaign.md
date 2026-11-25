@@ -8,8 +8,12 @@ Create a new campaign. Two steps, and the second is the long one.
 **1. Scaffold the folder** so there is somewhere to write answers as they arrive:
 
 ```
-python3 tools/new_campaign.py "$ARGUMENTS"
+python3 tools/new_campaign.py "$ARGUMENTS"                    # Pathfinder 2e
+python3 tools/new_campaign.py "$ARGUMENTS" --system dnd5e     # D&D 5e (2024 / SRD 5.2.1)
 ```
+
+Ask which system first (intake Block 0) if the player has not said. For 5e, read
+`system/dnd5e/README.md` before the interview.
 
 Every `{{PLACEHOLDER}}` is filled with a neutral "not yet decided" default and the tool proves it
 by scanning the result. Those defaults exist so the scaffold is valid, not so it is finished.

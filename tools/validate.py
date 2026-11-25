@@ -90,6 +90,13 @@ def check_campaign(slug: str, r: Report) -> None:
     if data.get("transparency") not in ("glass", "standard", "mystery"):
         r.error(f"transparency mode {data.get('transparency')!r} is not one of glass/standard/mystery")
 
+    system = st.system_of(data)
+    five = system == "dnd5e"
+    if system not in ("pf2e", "dnd5e"):
+        r.error(f"state.json names system {system!r}; this tooling knows pf2e and dnd5e")
+    valued, unvalued, tracked = st.condition_sets(system)
+    sys_label = "5e" if five else "PF2e"
+
     # -- characters ------------------------------------------------------------
     for key, pc in (data.get("pcs") or {}).items():
         name = pc.get("name", key)
@@ -106,10 +113,32 @@ def check_campaign(slug: str, r: Report) -> None:
         if mx <= 0:
             r.warn(f"{name}: maximum HP is {mx} — set it before play")
 
-        for field in ("hero_points", "dying", "wounded", "doomed", "level"):
+        for field in ("hero_points", "dying", "wounded", "doomed", "level", "exhaustion"):
             v = pc.get(field, 0)
             if isinstance(v, int) and v < 0:
                 r.error(f"{name}: {field} is negative ({v})")
+        if five:
+            ex = int(pc.get("exhaustion", 0))
+            if ex > 6:
+                r.error(f"{name}: exhaustion {ex}; it runs 0-6")
+            elif ex == 6:
+                r.warn(f"{name}: exhaustion 6 is death")
+            ds = pc.get("death_saves") or {}
+            for k in ("successes", "failures"):
+                if not 0 <= int(ds.get(k, 0)) <= 3:
+                    r.error(f"{name}: {ds.get(k)} death-save {k}; they run 0-3")
+            if cur > 0 and (int(ds.get("successes", 0)) or int(ds.get("failures", 0))):
+                r.error(f"{name}: death saves recorded while at {cur} HP — they reset on any healing")
+            if int(ds.get("failures", 0)) >= 3:
+                r.warn(f"{name}: three death-save failures — dead unless something intervened")
+            hd = pc.get("hit_dice") or {}
+            if not 0 <= int(hd.get("current", 0)) <= int(hd.get("max", 0)):
+                r.error(f"{name}: {hd.get('current')} of {hd.get('max')} Hit Point Dice")
+            if int(hd.get("max", 0)) != int(pc.get("level", 1)):
+                r.warn(f"{name}: {hd.get('max')} Hit Point Dice at level {pc.get('level')} — usually equal")
+            for stray in ("dying", "wounded", "doomed", "hero_points", "focus"):
+                if pc.get(stray):
+                    r.error(f"{name}: carries a PF2e field {stray!r} in a 5e campaign")
         if int(pc.get("hero_points", 0)) > int(pc.get("hero_points_max", 3)):
             r.error(f"{name}: {pc.get('hero_points')} Hero Points, above the cap of {pc.get('hero_points_max')}")
         dying_limit = int(pc.get("dying_max", 4)) - int(pc.get("doomed", 0))
@@ -123,22 +152,23 @@ def check_campaign(slug: str, r: Report) -> None:
             r.error(f"{name}: {f.get('current')} Focus Points, above the pool maximum {f.get('max')}")
         if int(f.get("current", 0)) < 0:
             r.error(f"{name}: negative Focus Points")
+        word = "level" if five else "rank"
         for rank, e in (pc.get("spell_slots") or {}).items():
             if int(e.get("used", 0)) > int(e.get("max", 0)):
-                r.error(f"{name}: rank {rank} has {e.get('used')} of {e.get('max')} slots used")
+                r.error(f"{name}: {word} {rank} has {e.get('used')} of {e.get('max')} slots used")
             if int(e.get("used", 0)) < 0:
-                r.error(f"{name}: rank {rank} has negative slots used")
+                r.error(f"{name}: {word} {rank} has negative slots used")
 
         for c in pc.get("conditions") or []:
             cname = c.get("name")
-            if cname not in st.KNOWN_CONDITIONS:
-                r.error(f"{name}: {cname!r} is not a PF2e condition")
-            if cname in st.TRACKED_SEPARATELY:
+            if cname in tracked:
                 r.error(f"{name}: {cname} is in the conditions list as well as its own field — "
                         "two copies of the same number")
-            if cname in st.VALUED_CONDITIONS and not c.get("value"):
+            elif cname not in valued | unvalued:
+                r.error(f"{name}: {cname!r} is not a {sys_label} condition")
+            if cname in valued and not c.get("value"):
                 r.error(f"{name}: {cname} carries no value but always takes one")
-            if cname in st.UNVALUED_CONDITIONS and c.get("value") is not None:
+            if cname in unvalued and c.get("value") is not None:
                 r.error(f"{name}: {cname} carries a value but does not take one")
             dur = c.get("duration") or {}
             if dur.get("kind") not in st.DURATION_KINDS:
@@ -157,9 +187,11 @@ def check_campaign(slug: str, r: Report) -> None:
 
     # -- party -----------------------------------------------------------------
     gold = (data.get("party") or {}).get("gold") or {}
-    for coin in ("pp", "gp", "sp", "cp"):
+    for coin in st.coin_order(system):
         if int(gold.get(coin, 0)) < 0:
             r.error(f"the purse holds {gold.get(coin)} {coin} — negative coins")
+    if not five and int(gold.get("ep", 0)):
+        r.error("the purse holds electrum, which PF2e does not have")
     if int((data.get("party") or {}).get("xp", 0)) < 0:
         r.error("party XP is negative")
 
@@ -200,7 +232,7 @@ def check_campaign(slug: str, r: Report) -> None:
                 r.error(f"combatant {c.get('name')} is not a party member and has no HP block")
             if int(c.get("actions_remaining", 0)) < 0:
                 r.error(f"combatant {c.get('name')} has negative actions remaining")
-            if int(c.get("map_step", 0)) not in (0, 1, 2):
+            if not five and int(c.get("map_step") or 0) not in (0, 1, 2):
                 r.error(f"combatant {c.get('name')} has MAP step {c.get('map_step')}; it runs 0-2")
         idx = int(enc.get("turn_index", 0))
         if enc.get("combatants") and not 0 <= idx < len(enc["combatants"]):
