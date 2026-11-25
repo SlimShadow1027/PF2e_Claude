@@ -77,6 +77,7 @@ Anything here is this table's invention and is marked as such.
 |---|---|---|---|
 | True minion mode | **on** (below) | The disparity fantasy | much easier against crowds |
 | Fourth action | 4 actions every turn, all campaign | Solo action economy, and part of the "near demigod" fantasy | **much** easier: about a third more output per turn. Encounters are budgeted with this in mind, and the difficulty check-ins watch for trivial fights. |
+| Veteran's starting kit | On top of the published level 2 wealth (GM Core p.61: one 1st-level common permanent item + 20 gp): the full level-1 starting gear (15 gp of kit, not deducted), plus 2 Healing Potions (Minor) and 1 Healing Potion (Lesser) (GM Core p.259) | The stranger arrives as a veteran of another world, at the player's request | slightly easier early |
 | Unfamiliar native lore | +5 DC on the first Recall Knowledge about a native creature type | The stranger doesn't know this world; serves flag 1 | harder, early only |
 
 ### True minion mode
@@ -94,3 +95,4 @@ listed XP, so budget the real threat with the creatures that are **not** minions
 |---|---|---|---|
 | 2026-11-25 | not yet set | Campaign created with the custom "Demigod" preset | intake |
 | 2026-11-25 | not yet set | Player confirmed: Free Archetype on, ABP on, Dual Class off, Mythic revisit at level 4–5, a 4th action every turn for the whole campaign, minion mode on, safety and information levers as proposed | player's choice |
+| 2026-11-25 | not yet set | Starting wealth set: published level 2 allowance plus a veteran's kit | player asked for extras |
