@@ -6,8 +6,10 @@ touched, plus anything that diverges locally.
 
 ## Where we are
 
-- **Region:** not yet decided
-- **Home base:** not yet decided
+- **Region:** set by the pitch the player picks. The protagonist arrives on a battlefield in a
+  border region between two nations.
+- **Home base:** none at the start; the protagonist arrives with nothing. The first home base
+  comes from the pitch.
 
 ## Settlements
 
@@ -51,4 +53,12 @@ the miles-per-day column is marked unverified).
 Anything true here that would surprise a visitor: magic that does not work, a law with
 teeth, a custom that gets outsiders killed.
 
-- _(none recorded yet)_
+- **The gods' peace is fragile.** Each nation reflects its gods' alignments, from lawful good to
+  chaotic evil.
+- **Magic law varies by nation.** Lawful, advanced states license it through churches and
+  academies; some lands distrust or outlaw it. Everyone knows magic exists.
+- **Firearms and crossbows are regional.** Some armies field them and others never have.
+- **Slavery** is legal and common in the evil nations, and practised in one or two neutral or
+  good ones under their own justifications.
+- **Native people are measured on a lower scale than the stranger.** Ordinary soldiers and
+  champions are built low; native **magic** and great **monsters** are not.

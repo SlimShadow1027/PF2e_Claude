@@ -15,7 +15,11 @@ only and are never treated as established elements of this campaign.
 
 | # | The request, in the player's words | Heat | Status | Where it has been seeded |
 |---|---|---|---|---|
-| | | | | |
+| 1 | "A too difficult monster that I wait to learn more about this world and how to handle it before combatting openly." | burning (the player called it short-term) | open | — |
+| 2 | "Earning a title and recognition, even in this new world. Maybe especially." | warm (the player called it longer-term) | open | — |
+
+The heat values were inferred from "short term" and "longer term". The player can correct
+them with one line.
 
 - **Heat:** `burning` (aim at it now) / `warm` (soon) / `someday` (whenever it fits)
 - **Status:** `open` / `set up` / `paid off` / `retired`

@@ -23,9 +23,18 @@ _Not written yet. Intake ends with three one-page pitches; the player picks one 
 
 ## Premise and stakes
 
-- **What is wrong with the world:** not yet decided
-- **Who is causing it:** not yet decided
-- **What happens if nobody stops it:** not yet decided
+Sandbox: there is deliberately no villain plot at the start. The backdrop is this:
+
+- **What is wrong with the world:** the gods keep a **very unstable, fragile peace**, and the
+  nations that worship them sit on the brink of war. Every border incident is a spark.
+- **Who is causing it:** nobody yet, as far as the protagonist knows. The pressure comes from
+  the gods' rivalries working through their nations. Someone, or something, **dragged the
+  protagonist here for a purpose**; who, and why, is left to emerge in play.
+- **What happens if nobody stops it:** open war between the nations, and perhaps between the
+  gods themselves. Left deliberately vague until play makes it specific.
+
+The eventual story grows from the enemies the protagonist makes and the dominoes they knock
+over. The pitches below propose a starting region and a first local problem, not a plot.
 
 ## Protagonist framing
 
@@ -65,15 +74,18 @@ See `system/03-difficulty-and-solo-levers.md` for what each party shape does to 
 
 | Assumption | Decision |
 |---|---|
-| Gods and religion | not yet decided |
-| Planes and afterlife | not yet decided |
-| Ancestries present | not yet decided |
-| Magic prevalence | not yet decided |
-| Technology level | not yet decided |
+| Gods and religion | An **original pantheon**, with obvious nods to real myths. Each culture has its own few most important gods, plus a smattering of widely important gods that most states worship to some degree. They range from lawful good to chaotic evil, and each nation's people and actions reflect its gods' alignments. The gods of the protagonist's home world have **counterparts here, or are replaced by these gods, or have no representation at all**. The peace between the gods is fragile. |
+| Planes and afterlife | Not yet decided. It matters only once world-hopping comes up. |
+| Ancestries present | Human-majority, with dwarves present (the protagonist is probably one or the other). Other peoples to be decided at world-build. |
+| Magic prevalence | **Varies by nation.** The most advanced and most lawful states concentrate and regulate magic in churches and academies. Some lands disavow and distrust magic because of the evil it brought them. Everyone knows magic exists and can do great and terrible things; what a given person knows depends on where they grew up. Native magic is **potent**. |
+| Technology level | Medieval, with **basic firearms and crossbows that vary by region**. |
 
 ## Themes to keep returning to
 
-_Not yet decided._
+- **Disparity.** The stranger is a near-demigod among ordinary people, yet outclassed by this
+  world's magic and its great monsters.
+- **A world on a knife-edge.** Every victory moves a domino.
+- **Earning a name in a world that has never heard of you.**
 
 ## Intake answers not captured above
 
@@ -85,3 +97,10 @@ Recorded 2026-11-25, in the player's words where possible:
 - **Story:** "no overarching story at first, let's have one develop somewhat naturally over
   time as I make enemies or push dominoes over in places."
 - **Working title:** *Stranger in a Strange Land*.
+- **The arrival, as the player imagines it** (the shape of the opening scene, not yet canon):
+  the protagonist falls on a battlefield in their own world and expects to die. They wake on a
+  *similar-looking* battlefield in this one, where the signs of the fighting are vastly
+  different. Their war was steel, blood and arrows. This one has fire, wood and magical energy
+  in the air, some metal weapons and gear but not much, and strange materials and unfamiliar
+  flags. **They were dragged here for some purpose.** What it is, the player does not want
+  decided yet: "narrative to be determined in play".

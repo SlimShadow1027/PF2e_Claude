@@ -7,9 +7,18 @@ any line mid-game with one sentence (`meta: ...`).
 
 These outrank everything else in this repository, including flags.
 
-- **Lines** (never appears, at all): _Not asked yet. Ask plainly, once, during intake._
-- **Veils** (happens, off-screen, not described): _Not asked yet._
-- **Check in before:** _Not asked yet._
+Asked 2026-11-25.
+
+- **Lines** (never appears, at all):
+  - **Graphic sexual violence.** It is never described.
+- **Veils** (happens, off-screen, not described):
+  - **Sexual violence** may be used as a narrative fact; it is never described.
+  - **Violence towards children** is kept minimal and never shown in detail.
+- **Explicitly in bounds:**
+  - **Sex and intimacy** are fine.
+  - **Slavery** should be fairly prominent in the more evil nations, with one or two neutral
+    or good places practising it under their own cultural justifications.
+- **Check in before:** nothing named.
 
 ## Transparency
 
@@ -24,20 +33,24 @@ These outrank everything else in this repository, including flags.
 
 ## Narration
 
-- **Length:** not yet decided
-- **Prose vs. bullets:** not yet decided
+- **Length:** short. "Lightweight and quick story beats." About a paragraph per beat; short and
+  fast in combat.
+- **Prose vs. bullets:** prose for scenes, bullets for mechanics
 - **Person:** second person
 - **Tense:** present
-- **Name the rules being applied:** not yet decided
-- **Offer tactical suggestions:** not yet decided
-- **Remind the player of available actions and feats:** not yet decided
+- **Name the rules being applied:** when it matters
+- **Offer tactical suggestions:** when asked
+- **Remind the player of available actions and feats:** when they seem stuck
+- **Enemy HP shown as:** descriptors
+- **Play focus:** mostly combat, with roleplay secondary. Encounters come frequently, at
+  least half of each session's scenes.
 
 ## Session rhythm
 
-- **Typical sitting:** not yet decided
-- **Target scene count:** not yet decided
+- **Typical sitting:** about two hours
+- **Target scene count:** 3–4, at least half of them fights
 - **Open with:** trailer (trailer / cold open)
-- **Aim for a cliffhanger:** not yet decided
+- **Aim for a cliffhanger:** only when it is earned
 - **Checkpoint aggressiveness:** as specified in system/05-checkpoint-protocol.md
 
 The scene budget is a steering aid, never a timer. It never truncates a scene. See
@@ -45,8 +58,8 @@ The scene budget is a steering aid, never a timer. It never truncates a scene. S
 
 ## Between-session world prep
 
-- **Off-screen turns:** off (off by default)
-- **Cadence:** —
+- **Off-screen turns:** on, so rivals and factions act while the player is away
+- **Cadence:** between sessions
 - **`world_pace`:** steady (glacial / slow / steady / brisk / runaway)
 - **Cap per pass:** 3 clocks and factions
 
