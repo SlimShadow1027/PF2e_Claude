@@ -19,7 +19,34 @@
 
 ## The pitch
 
-_Not written yet. Intake ends with three one-page pitches; the player picks one before anything else is generated._
+Chosen by the player on 2026-11-25 from three offered: **B, then C**, with **A kept for later.**
+
+### Opening — Monster Country (pitch B)
+
+A frontier march in **Hohenwald**, a Germanic-Scottish highland stand-in nation that distrusts
+magic. Behind it, the hills were blasted by an old magic war and keep spilling monsters. A
+monster-hunters' lodge drags the stranger off the battlefield, mistaking them for one of
+their own gone missing. Bounties and frequent hunts; lodge ranks to climb. A **rival guild**
+has been luring monsters down from the hills to keep bounties high, and the valley-killing
+beast that the lodge will not touch is **the monster the stranger is not ready for yet**.
+
+### The turn — into the arena (pitch C), as the player has asked
+
+The player has set this transition themselves: the stranger **defeats the too-strong
+monster**, which the rival guild lured into the valley, then **collapses after the fight and
+is captured**, ending up sold into slavery in the arena of the **Vessarine Dominion**, an evil
+stand-in empire built on Rome and Italy. From there: the arena master who wants a champion,
+fame as currency, and escape or revolt.
+
+Because the player wrote this arc, it is a **destination, not a script**. When and how the
+capture happens is built in play, and the player keeps every rewind and veto.
+
+### Saved for later — The Burning Field (pitch A)
+
+Not canon yet. It is kept as a future story beat or encounter. **Albrecht**, a lawful kingdom
+with church-licensed war-mages (an England/France stand-in), at war with the **Hrimmark**
+raiders (Norse). A battlefield where both sides want to claim the stranger, a deserter
+crossbowman, a chained fire-drake, and a jarl's plan to break the truce at the river fords.
 
 ## Premise and stakes
 
