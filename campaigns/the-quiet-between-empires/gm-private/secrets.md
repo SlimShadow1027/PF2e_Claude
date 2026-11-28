@@ -68,3 +68,4 @@ Mushfens framing survives: no low water, no thaw, no causeways.
 - **If the alarm cord is pulled:** it rattles bones and tin down the side passage to the band's den. **Three rounds later**, 2 more Goblin Warriors (Monster Core p.174) arrive from the side passage. For the rest of this delve the upper workings are on alert: sentries are doubled and Stealth is contested at Perception +2 (an alert-state ruling, GM call).
 - If a goblin flees down the side passage, the same result follows on a 2-round delay.
 - Commando tactic: reach 10 ft and trips with the horsechopper. It hangs back by the fire and lets the warrior run.
+- **Played R1:** the oracle ("does the commando go for the cord?", likely) came up **yes, and**. It double-yanked the cord, an urgent signal, so the reinforcement delay drops from 3 rounds to **2 rounds**: 2 Goblin Warriors arrive at the start of round 3. The commando holds the passage mouth.

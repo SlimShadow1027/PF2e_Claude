@@ -3,18 +3,18 @@
   "campaign": "the-quiet-between-empires",
   "title": "The Quiet Between Empires",
   "created_at": "2026-10-06T20:28:33Z",
-  "updated_at": "2026-11-04T20:33:28Z",
+  "updated_at": "2026-11-28T13:18:00Z",
   "transparency": "standard",
   "difficulty_preset": "Custom",
   "session_in_progress": true,
   "session_number": 1,
   "scene_count": 3,
-  "checkpoint_counter": 18,
+  "checkpoint_counter": 19,
   "last_checkpoint": {
-    "id": "018",
-    "name": "watch post: initiative rolled, round 1, Shavi to act",
-    "at": "2026-11-04T20:33:28Z",
-    "slug": "watch-post-initiative-rolled-round-1-shavi-to-act"
+    "id": "019",
+    "name": "watch post round 1: sentry dead, alarm pulled; round 2 Shavi to act",
+    "at": "2026-11-28T13:18:00Z",
+    "slug": "watch-post-round-1-sentry-dead-alarm-pulled-round-2-shavi-to"
   },
   "time": {
     "calendar": "golarion",
@@ -94,7 +94,7 @@
       "hero_points": 1,
       "hero_points_max": 3,
       "focus": {
-        "current": 1,
+        "current": 0,
         "max": 1,
         "refocus_available": true
       },
@@ -196,7 +196,7 @@
         }
       ],
       "sheet": "characters/shavi-beifong.md",
-      "notes": ""
+      "notes": "Gravity Weapon active (cast R1, 1 min; first Weapon-Infusion blast each round +2). Kinetic aura active (Channel Elements R1). Hunted prey: Goblin Warrior (dead), so needs a new Hunt Prey. Shield raised until start of R2 turn. No reactions at level 1."
     }
   },
   "clocks": {},
@@ -210,7 +210,7 @@
     "name": "Upper workings watch post",
     "objective": "Silence the watch post before the alarm cord is pulled or a goblin escapes down the side passage. If the alarm sounds, the band is roused and more goblins come. Retreat is also open.",
     "map": null,
-    "round": 1,
+    "round": 2,
     "turn_index": 0,
     "started_at": "2026-11-04T20:33:15Z",
     "combatants": [
@@ -229,7 +229,7 @@
         "map_step": 0,
         "reaction_available": true,
         "reaction_used_for": null,
-        "position": "gallery, 30 ft from the fire, in darkness (hidden to goblins)",
+        "position": "gallery mouth, 30 ft from the fire; observed (revealed by the attack)",
         "squad": null,
         "persistent": [],
         "sustained": [],
@@ -245,7 +245,7 @@
         "initiative": 20,
         "initiative_natural": null,
         "hp": {
-          "current": 6,
+          "current": 0,
           "max": 6,
           "temp": 0
         },
@@ -262,7 +262,7 @@
         "sustained": [],
         "level": -1,
         "notes": "Monster Core p.174",
-        "defeated": false
+        "defeated": true
       },
       {
         "id": "kelda-vornshield",
@@ -301,12 +301,12 @@
         },
         "conditions": [],
         "dying": 0,
-        "actions_remaining": 3,
-        "actions_spent": 0,
+        "actions_remaining": 0,
+        "actions_spent": 3,
         "map_step": 0,
         "reaction_available": true,
         "reaction_used_for": null,
-        "position": "at the fire, 30 ft from Shavi",
+        "position": "in the side-passage mouth beside the alarm cord, 35 ft from Shavi",
         "squad": null,
         "persistent": [],
         "sustained": [],
@@ -317,7 +317,7 @@
     ],
     "log": [],
     "telegraphed": true,
-    "telegraph_text": "Goblin Warrior's hand is on the alarm cord. On its turn (init 20) it will yank it (Interact) unless stopped."
+    "telegraph_text": "ALARM PULLED (R1, urgent double-yank). Answering clicks from down the side passage. Reinforcements: 2 Goblin Warriors arrive from the side passage at the start of round 3. The commando holds the passage mouth until then."
   },
   "notes": {
     "situation": "Session 1, scene 3. Shavi and Kelda have entered the abandoned upper workings through the adit by the upper lift-head, 11:15. Kelda reacted sharply to the crossed-tally chalk detail. Fresh goblin sign ahead. Awaiting the player's exploration activities.",

@@ -3,8 +3,8 @@
 > Rendered from `state.json` by `tools/state.py render`. **Do not hand-edit this file.**
 > If a number here disagrees with `state.json`, `state.json` wins and this gets re-rendered.
 
-- Checkpoint: **018** watch post: initiative rolled, round 1, Shavi to act
-- Rendered at: 2026-11-04T20:33:28Z
+- Checkpoint: **019** watch post round 1: sentry dead, alarm pulled; round 2 Shavi to act
+- Rendered at: 2026-11-28T13:18:00Z
 - Session: 1 (in progress)
 - Party level 1, 0 XP
 - Transparency mode: `standard` — difficulty preset: **Custom**
@@ -21,7 +21,7 @@ Session 1, scene 3. Shavi and Kelda have entered the abandoned upper workings th
 | Character | HP | AC | Fort | Ref | Will | Perc | Hero | Focus | Conditions |
 |---|---|---|---|---|---|---|---|---|---|
 | Kelda Vornshield | 13/13 | 13 | +3 | +5 | +9 | +7 | 0 | 0/0 | — |
-| Shavi Beifong | 31/31 | 18 | +9 | +6 | +4 | +6 | 1 | 1/1 | — |
+| Shavi Beifong | 31/31 | 18 | +9 | +6 | +4 | +6 | 1 | 0/1 | — |
 
 ## Money and carried items
 
@@ -37,13 +37,13 @@ Session 1, scene 3. Shavi and Kelda have entered the abandoned upper workings th
 ## Live encounter
 
 ```
-Upper workings watch post — round 1, objective: Silence the watch post before the alarm cord is pulled or a goblin escapes down the side passage. If the alarm sounds, the band is roused and more goblins come. Retreat is also open.
+Upper workings watch post — round 2, objective: Silence the watch post before the alarm cord is pulled or a goblin escapes down the side passage. If the alarm sounds, the band is roused and more goblins come. Retreat is also open.
 
    combatant              init           HP act   MAP rxn  pos   conditions
-→  Shavi Beifong            23        31/31 ◆◆◆     0 yes  gallery, 30 ft from the fire, in darkness (hidden to goblins) 
-   Goblin Warrior           20          6/6 ◆◆◆     0 yes  mouth of the side passage, 35 ft from Shavi, 5 ft from the alarm cord 
+→  Shavi Beifong            23        31/31 ◆◆◆     0 yes  gallery mouth, 30 ft from the fire; observed (revealed by the attack) 
+   Goblin Warrior           20          0/6 ◆◆◆     0 yes  mouth of the side passage, 35 ft from Shavi, 5 ft from the alarm cord 
    Kelda Vornshield         13        13/13 ◆◆◆     0 yes  40 ft back up the gallery, low and out of sight 
-   Goblin Commando           9        18/18 ◆◆◆     0 yes  at the fire, 30 ft from Shavi 
+   Goblin Commando           9        18/18 ◇◇◇     0 yes  in the side-passage mouth beside the alarm cord, 35 ft from Shavi 
 ```
 
 This encounter is mid-fight. Restoring this checkpoint restores the tracker exactly:

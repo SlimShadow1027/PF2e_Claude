@@ -71,6 +71,7 @@ contradicted but also are not treated as something the character has heard.
 | 55 | 18 Arodus -1000 AR | The abandoned **upper lift-head** is a roofless stone house over a capped shaft. An open adit beside it leads into the upper workings. The summer air drafts steadily *into* the adit. | session 1, scene 3 | known |
 | 56 | 18 Arodus -1000 AR | Goblin watch posts in the upper workings check in with each other by clicking stones in pairs, call and answer. | session 1, scene 3 | known |
 | 57 | 18 Arodus -1000 AR | The first watch post sits at a junction about 150 ft into the upper workings. It has an ember-pot fire and an alarm cord hung with bones and tin running down a side passage. Two goblins hold it: a horsechopper-armed leader and a sentry with a shortbow. | session 1, scene 3 | known |
+| 58 | 18 Arodus -1000 AR | Shavi killed the watch-post sentry with an infused earth blast. The goblin leader then double-yanked the alarm cord, and answering clicks came back up the side passage. | session 1, scene 3, round 1 | known |
 
 Visibility: `known` (the player heard it) · `GM-side truth` (true, not yet learned) ·
 `local divergence` (this campaign contradicts world canon; the world keeps its version)
