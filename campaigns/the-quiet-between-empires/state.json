@@ -3,18 +3,18 @@
   "campaign": "the-quiet-between-empires",
   "title": "The Quiet Between Empires",
   "created_at": "2026-10-06T20:28:33Z",
-  "updated_at": "2026-11-28T13:18:00Z",
+  "updated_at": "2026-11-28T13:30:51Z",
   "transparency": "standard",
   "difficulty_preset": "Custom",
   "session_in_progress": true,
   "session_number": 1,
   "scene_count": 3,
-  "checkpoint_counter": 19,
+  "checkpoint_counter": 20,
   "last_checkpoint": {
-    "id": "019",
-    "name": "watch post round 1: sentry dead, alarm pulled; round 2 Shavi to act",
-    "at": "2026-11-28T13:18:00Z",
-    "slug": "watch-post-round-1-sentry-dead-alarm-pulled-round-2-shavi-to"
+    "id": "020",
+    "name": "watch post round 2: Shavi's blast misses; Hero Point offer pending",
+    "at": "2026-11-28T13:30:51Z",
+    "slug": "watch-post-round-2-shavi-s-blast-misses-hero-point-offer-pen"
   },
   "time": {
     "calendar": "golarion",
@@ -196,7 +196,7 @@
         }
       ],
       "sheet": "characters/shavi-beifong.md",
-      "notes": "Gravity Weapon active (cast R1, 1 min; first Weapon-Infusion blast each round +2). Kinetic aura active (Channel Elements R1). Hunted prey: Goblin Warrior (dead), so needs a new Hunt Prey. Shield raised until start of R2 turn. No reactions at level 1."
+      "notes": "Gravity Weapon active (cast R1, 1 min). Kinetic aura active. Hunted prey: Goblin Commando (R2; Monster Hunter RK failed). No reactions at level 1. R2: 2-action blast missed (15 vs AC 17) — Hero Point reroll offered, pending."
     }
   },
   "clocks": {},
@@ -224,12 +224,12 @@
         "hp": null,
         "conditions": null,
         "dying": null,
-        "actions_remaining": 3,
-        "actions_spent": 0,
+        "actions_remaining": 0,
+        "actions_spent": 3,
         "map_step": 0,
         "reaction_available": true,
         "reaction_used_for": null,
-        "position": "gallery mouth, 30 ft from the fire; observed (revealed by the attack)",
+        "position": "15 ft into the junction chamber, 20 ft from the commando (outside its 10-ft reach)",
         "squad": null,
         "persistent": [],
         "sustained": [],
